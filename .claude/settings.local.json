@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//e/programFile/AIProgram/docxServer/pdf/task/1978018096320905217/**)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(py app/utils/file_reader.py)",
+      "Bash(pip install:*)",
+      "Bash(.venv/Scripts/python.exe -m pip install:*)",
+      "Bash(.venv/Scripts/pip.exe install:*)",
+      "Bash(.venv/Scripts/python.exe -m pip config:*)",
+      "Bash(.venv/Scripts/python.exe app/services/tenderTag.py:*)",
+      "Bash(.venv/Scripts/python.exe test_model.py:*)",
+      "Bash(.venv/Scripts/python.exe app/services/section_tagger.py:*)",
+      "Bash(set PYTHONPATH=.)",
+      "Bash(../../.venv/Scripts/python.exe -c \"import sys; sys.path.insert(0, ''../..''); from app.utils.file_reader import FileReader; print(''Import OK'')\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
