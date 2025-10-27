@@ -30,6 +30,195 @@ class PDFTableExtractor:
         # 可能需要：1.先扫描全文档 2.按位置排序所有块 3.统一编号
         self.block_counter = 0
 
+    def _cell_has_inner_grid(self, pymupdf_page, bbox, min_h=2, min_v=2, min_cross=4, min_len=8):
+        """
+        用 PyMuPDF 统计 bbox 内的横/竖线段，粗判是否可能存在网格
+
+        Args:
+            pymupdf_page: PyMuPDF的page对象
+            bbox: 单元格边界框 (x0, y0, x1, y1)
+            min_h: 最小横线数量
+            min_v: 最小竖线数量
+            min_cross: 最小交点数量
+            min_len: 最小线段长度
+
+        Returns:
+            是否可能存在网格
+        """
+        try:
+            x0_box, y0_box, x1_box, y1_box = bbox
+            rect = fitz.Rect(bbox)
+
+            # 单元格太小，不可能包含嵌套表格
+            cell_width = x1_box - x0_box
+            cell_height = y1_box - y0_box
+            if cell_width < 50 or cell_height < 50:  # 最小50点（约1.8cm）
+                return False
+
+            h_lines, v_lines = [], []
+
+            # 获取页面中的所有绘图对象
+            drawings = pymupdf_page.get_drawings()
+            if not drawings:
+                return False
+
+            for d in drawings:
+                if not isinstance(d, dict) or "items" not in d:
+                    continue
+
+                for item in d["items"]:
+                    if not isinstance(item, (list, tuple)) or len(item) < 2:
+                        continue
+                    if item[0] != "l":  # 只要线段
+                        continue
+
+                    line_coords = item[1]
+                    if not isinstance(line_coords, (list, tuple)) or len(line_coords) < 4:
+                        continue
+
+                    x0, y0, x1, y1 = line_coords[:4]
+
+                    # 排除单元格边框本身的线段（在边界上的线）
+                    tolerance = 2.0
+                    on_border = (
+                        abs(y0 - y0_box) < tolerance or abs(y0 - y1_box) < tolerance or
+                        abs(y1 - y0_box) < tolerance or abs(y1 - y1_box) < tolerance or
+                        abs(x0 - x0_box) < tolerance or abs(x0 - x1_box) < tolerance or
+                        abs(x1 - x0_box) < tolerance or abs(x1 - x1_box) < tolerance
+                    )
+                    if on_border:
+                        continue
+
+                    seg = fitz.Rect(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))
+                    if not rect.intersects(seg):
+                        continue
+                    dx, dy = abs(x1 - x0), abs(y1 - y0)
+                    length = max(dx, dy)
+                    if length < min_len:
+                        continue
+                    if dy < 0.5:  # 横线
+                        h_lines.append((x0, y0, x1, y1))
+                    elif dx < 0.5:  # 竖线
+                        v_lines.append((x0, y0, x1, y1))
+
+            # 粗略交点数：以端点近似
+            cross = 0
+            for _, y0, _, _ in h_lines:
+                for x0, _, _, _ in v_lines:
+                    if rect.contains(fitz.Point(x0, y0)):
+                        cross += 1
+
+            return (len(h_lines) >= min_h and len(v_lines) >= min_v and cross >= min_cross)
+        except Exception as e:
+            # 任何异常都返回False，表示没有嵌套网格
+            return False
+
+    def _extract_nested_tables_in_cell(self, pdf_page, pymupdf_page, cell_bbox, depth=1, max_depth=2):
+        """
+        在一个 cell 的 bbox 内再次用 pdfplumber 检测表格；必要时递归
+
+        Args:
+            pdf_page: pdfplumber的page对象
+            pymupdf_page: PyMuPDF的page对象
+            cell_bbox: 单元格边界框 (x0, y0, x1, y1)
+            depth: 当前递归深度
+            max_depth: 最大递归深度
+
+        Returns:
+            嵌套表格列表
+        """
+        if depth > max_depth:
+            return []
+
+        # 先用网格迹象做快速筛选，避免无谓计算（没格就不用找）
+        if not self._cell_has_inner_grid(pymupdf_page, cell_bbox):
+            return []
+
+        # 在子区域找表（先 lines，空则 text）
+        sub_view = pdf_page.within_bbox(cell_bbox, relative=False)
+        strategies = [
+            {"vertical_strategy": "lines", "horizontal_strategy": "lines",
+             "intersection_x_tolerance": 2, "intersection_y_tolerance": 2},
+            {"vertical_strategy": "text", "horizontal_strategy": "text"}
+        ]
+        results = []
+
+        for st in strategies:
+            try:
+                tables = sub_view.find_tables(table_settings=st)
+                if tables:
+                    for t in tables:
+                        # 取行列文本（仍用 PyMuPDF clip）
+                        pdfplumber_data = t.extract()
+                        if not pdfplumber_data or len(pdfplumber_data) < 2:  # 至少需要表头+1行数据
+                            continue
+
+                        rows_data = []
+                        for row_cells in pdfplumber_data:
+                            row = []
+                            for cell_content in row_cells:
+                                # 这里简化处理，直接使用pdfplumber的文本
+                                # 如需更精确，可用PyMuPDF再次提取
+                                row.append((cell_content or "").replace('\n', '').replace('\r', '').strip())
+                            rows_data.append(row)
+
+                        # 构建嵌套表格的列定义
+                        header_row = rows_data[0] if rows_data else []
+                        columns = []
+                        for ci, header_text in enumerate(header_row):
+                            columns.append({
+                                "id": f"c{ci + 1:03d}",
+                                "index": ci,
+                                "name": header_text
+                            })
+
+                        # 构建嵌套表格的行数据
+                        nested_rows = []
+                        for ri, row_data in enumerate(rows_data[1:], start=2):  # 跳过表头
+                            row_id = f"r{ri:03d}"
+                            row_first_cell = row_data[0] if row_data else ""
+
+                            nested_cells = []
+                            for ci, cell_content in enumerate(row_data):
+                                col_id = f"c{ci + 1:03d}"
+                                col_name = header_row[ci] if ci < len(header_row) else ""
+
+                                # 递归：子表内部是否还有更小的表（如需要，可在此处递归调用）
+                                # nested2 = self._extract_nested_tables_in_cell(pdf_page, pymupdf_page, ..., depth=depth+1)
+
+                                nested_cells.append({
+                                    "id": f"nested-{row_id}-{col_id}",
+                                    "row_id": row_id,
+                                    "col_id": col_id,
+                                    "rowPath": [row_first_cell] if row_first_cell else [],
+                                    "cellPath": [col_name] if col_name else [],
+                                    "content": cell_content,
+                                    "bbox": None,  # 子表单元格bbox可在需要时提取
+                                    "nested_tables": []  # 如需更深嵌套，在此递归
+                                })
+
+                            nested_rows.append({
+                                "id": row_id,
+                                "rowPath": [row_first_cell] if row_first_cell else [],
+                                "cells": nested_cells
+                            })
+
+                        results.append({
+                            "type": "table",
+                            "level": depth + 1,  # 嵌套层级
+                            "parent_table_id": None,  # 回填在父表落结构时
+                            "bbox": list(t.bbox),
+                            "columns": columns,
+                            "rows": nested_rows,
+                            "method": f"nested (depth={depth + 1})"
+                        })
+                    break  # lines 命中就不再跑 text
+            except Exception as e:
+                # 子表检测失败不影响主流程
+                continue
+
+        return results
+
     def _is_bbox_overlap(self, bbox1: tuple, bbox2: tuple, threshold: float = 0.5) -> bool:
         """
         判断两个bbox是否重叠
@@ -57,6 +246,64 @@ class PDFTableExtractor:
             return False
 
         return (overlap_area / bbox1_area) > threshold
+
+    def _clean_spurious_columns(self, table_data: List[List[str]], bbox_data: List[List[tuple]], cells: list):
+        """
+        清理外层表中误吸收的子表列（空列）
+
+        识别逻辑：
+        1. 列表头为空字符串
+        2. 该列在90%以上的数据行中也为空
+
+        Args:
+            table_data: 表格数据（二维数组）
+            bbox_data: bbox数据（二维数组）
+            cells: 原始cells列表
+
+        Returns:
+            (清理后的table_data, 清理后的bbox_data, 保留的列索引列表)
+        """
+        if not table_data or len(table_data) < 2:
+            return table_data, bbox_data, list(range(len(table_data[0]) if table_data else 0))
+
+        num_cols = len(table_data[0])
+        num_rows = len(table_data)
+        keep_cols = []
+
+        for col_idx in range(num_cols):
+            # 获取表头
+            header = (table_data[0][col_idx] or "").strip()
+
+            # 统计该列在数据行中非空的数量
+            non_empty_count = 0
+            for row_idx in range(1, num_rows):
+                if row_idx < len(table_data) and col_idx < len(table_data[row_idx]):
+                    cell_value = (table_data[row_idx][col_idx] or "").strip()
+                    if cell_value:
+                        non_empty_count += 1
+
+            # 判断是否保留：有表头 或 多于10%的数据行有值
+            threshold = max(1, (num_rows - 1) * 0.1)  # 至少1行有值，或超过10%
+            if header or non_empty_count >= threshold:
+                keep_cols.append(col_idx)
+
+        # 如果所有列都保留，直接返回
+        if len(keep_cols) == num_cols:
+            return table_data, bbox_data, keep_cols
+
+        # 重建table_data
+        cleaned_table_data = []
+        for row in table_data:
+            cleaned_row = [row[j] for j in keep_cols if j < len(row)]
+            cleaned_table_data.append(cleaned_row)
+
+        # 重建bbox_data
+        cleaned_bbox_data = []
+        for row in bbox_data:
+            cleaned_row = [row[j] for j in keep_cols if j < len(row)]
+            cleaned_bbox_data.append(cleaned_row)
+
+        return cleaned_table_data, cleaned_bbox_data, keep_cols
 
     def extract_cell_text_with_pymupdf(self, page, bbox, debug=False) -> str:
         """
@@ -104,8 +351,18 @@ class PDFTableExtractor:
                 # 获取PyMuPDF的对应页面
                 pymupdf_page = doc_pymupdf[page_num - 1]
 
-                # 使用pdfplumber找到表格
-                tables = page.find_tables()
+                # 使用pdfplumber找到表格（优先使用lines策略，避免误合并子表）
+                table_settings = {
+                    "vertical_strategy": "lines",
+                    "horizontal_strategy": "lines",
+                    "intersection_x_tolerance": 3,
+                    "intersection_y_tolerance": 3
+                }
+                tables = page.find_tables(table_settings=table_settings)
+
+                # 如果lines策略没找到表格，回退到默认策略
+                if not tables:
+                    tables = page.find_tables()
 
                 for table_idx, table in enumerate(tables):
                     # 先用pdfplumber提取表格结构（用于获取行列结构）
@@ -157,6 +414,25 @@ class PDFTableExtractor:
                         table_data.append(new_row)
                         bbox_data.append(bbox_row)
 
+                    # 清理误吸收的子表空列
+                    table_data, bbox_data, keep_cols = self._clean_spurious_columns(
+                        table_data, bbox_data, cells
+                    )
+
+                    # 嵌套表格检测：基于 bbox_data 做嵌套抽取映射
+                    nested_map = {}  # key=(abs_row_idx, col_idx) ; value=[nested_table,...]
+                    for r in range(len(bbox_data)):
+                        for c in range(len(bbox_data[r])):
+                            bb = bbox_data[r][c]
+                            if not bb:
+                                continue
+                            # 检测单元格内的嵌套表格
+                            nested = self._extract_nested_tables_in_cell(
+                                page, pymupdf_page, bb, depth=1, max_depth=2
+                            )
+                            if nested:
+                                nested_map[(r, c)] = nested
+
                     if table_data:  # 确保表格不为空
                         # 生成表格ID（使用block_counter作为docN）
                         self.block_counter += 1
@@ -168,7 +444,8 @@ class PDFTableExtractor:
                             table_data=table_data,
                             bbox_data=bbox_data,
                             page_num=page_num,
-                            cells_bbox=cells
+                            cells_bbox=cells,
+                            nested_map=nested_map
                         )
 
                         tables_data.append(structured_table)
@@ -242,7 +519,8 @@ class PDFTableExtractor:
         table_data: List[List[str]],
         bbox_data: List[List[tuple]],
         page_num: int,
-        cells_bbox: list
+        cells_bbox: list,
+        nested_map: Dict[tuple, List[Dict]] = None
     ) -> Dict[str, Any]:
         """
         构建结构化表格数据（对齐Word文档格式）
@@ -253,12 +531,16 @@ class PDFTableExtractor:
             bbox_data: 每个单元格的边界框数据 (二维数组)
             page_num: 页码
             cells_bbox: 单元格边界框列表
+            nested_map: 嵌套表格映射，key=(row_idx, col_idx), value=[nested_tables]
 
         Returns:
             结构化表格字典
         """
         if not table_data:
             return {}
+
+        if nested_map is None:
+            nested_map = {}
 
         num_cols = len(table_data[0]) if table_data else 0
 
@@ -299,6 +581,12 @@ class PDFTableExtractor:
                     if bbox_tuple:
                         cell_bbox = list(bbox_tuple)  # 转换为列表便于JSON序列化
 
+                # 获取嵌套表格（注意：bbox_row_idx 与 nested_map 的 r 对齐）
+                nested_here = nested_map.get((bbox_row_idx, col_idx), [])
+                # 回填 parent_table_id
+                for nt in nested_here:
+                    nt["parent_table_id"] = table_id
+
                 cell_obj = {
                     "id": cell_id,
                     "row_id": row_id,
@@ -306,12 +594,12 @@ class PDFTableExtractor:
                     "rowPath": [row_first_cell] if row_first_cell else [],  # 行路径（数组），支持多层
                     "cellPath": [col_name] if col_name else [],              # 列路径（数组），支持多层
                     "content": cell_content,
-                    "bbox": cell_bbox,  # 单元格边界框坐标 (x0, y0, x1, y1)
-                    # TODO: 嵌套表格检测
-                    # PDF中嵌套表格需要通过bbox包含关系判断
-                    # 可能需要：1.检测单元格内是否有其他表格bbox 2.递归提取
-                    "nested_tables": []
+                    "bbox": cell_bbox  # 单元格边界框坐标 (x0, y0, x1, y1)
                 }
+
+                # 只有识别到嵌套表格时才添加 nested_tables 字段
+                if nested_here:
+                    cell_obj["nested_tables"] = nested_here
 
                 cells.append(cell_obj)
 
@@ -627,7 +915,7 @@ def main():
     主测试方法 - 直接运行此文件来测试PDF内容提取功能（表格+段落）
     """
     # 测试用的PDF文件路径
-    pdf_path = r"E:\programFile\AIProgram\docxServer\pdf\task\1979102567573037058\1979102567573037058.pdf"
+    pdf_path = r"E:\programFile\AIProgram\docxServer\pdf\task\1979102567573037058\table.pdf"
 
     print(f"开始提取PDF内容（表格+段落）...")
     print(f"PDF文件: {pdf_path}")
