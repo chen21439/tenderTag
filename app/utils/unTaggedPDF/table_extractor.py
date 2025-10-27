@@ -288,7 +288,7 @@ class PDFTableExtractor:
                 col_id = f"c{col_idx + 1:03d}"
                 cell_id = f"{table_id}-{row_id}-{col_id}"
 
-                # cellPath: 只使用列表头（列名）
+                # cellPath: 只使用列表头（列名），数组格式支持多层树结构
                 col_name = header_row[col_idx] if col_idx < len(header_row) else ""
 
                 # 获取单元格的bbox坐标（row_idx从2开始，bbox_data索引从0开始）
@@ -303,8 +303,8 @@ class PDFTableExtractor:
                     "id": cell_id,
                     "row_id": row_id,
                     "col_id": col_id,
-                    "rowPath": row_first_cell,  # 行的第一列内容
-                    "cellPath": col_name,        # 列表头（列名）
+                    "rowPath": [row_first_cell] if row_first_cell else [],  # 行路径（数组），支持多层
+                    "cellPath": [col_name] if col_name else [],              # 列路径（数组），支持多层
                     "content": cell_content,
                     "bbox": cell_bbox,  # 单元格边界框坐标 (x0, y0, x1, y1)
                     # TODO: 嵌套表格检测
@@ -317,7 +317,7 @@ class PDFTableExtractor:
 
             rows.append({
                 "id": row_id,
-                "rowPath": row_first_cell,  # 行的第一列内容
+                "rowPath": [row_first_cell] if row_first_cell else [],  # 行路径（数组），支持多层
                 "cells": cells
             })
 
