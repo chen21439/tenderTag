@@ -231,13 +231,15 @@ class PDFContentExtractor:
             "page_metadata": metadata
         }
 
-    def save_to_json(self, output_dir: str = None, include_paragraphs: bool = True) -> Dict[str, str]:
+    def save_to_json(self, output_dir: str = None, include_paragraphs: bool = True,
+                     task_id: str = None) -> Dict[str, str]:
         """
         提取内容并保存到JSON文件
 
         Args:
             output_dir: 输出目录路径，如果为None则保存到PDF同目录
             include_paragraphs: 是否提取并保存段落
+            task_id: 任务ID，用于生成文件名（如：taskId_table.json）
 
         Returns:
             保存的文件路径字典
@@ -251,11 +253,19 @@ class PDFContentExtractor:
         # 确保输出目录存在
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # 确定文件名前缀
+        if task_id:
+            table_filename = f"{task_id}_table.json"
+            paragraph_filename = f"{task_id}_paragraph.json"
+        else:
+            table_filename = "table.json"
+            paragraph_filename = "paragraph.json"
+
         result_paths = {}
 
         # 提取并保存表格
         tables_result = self.extract_all_tables()
-        table_path = output_dir / "table.json"
+        table_path = output_dir / table_filename
         with open(table_path, 'w', encoding='utf-8') as f:
             json.dump(tables_result, f, ensure_ascii=False, indent=2)
         result_paths["tables"] = str(table_path)
@@ -263,7 +273,7 @@ class PDFContentExtractor:
         # 提取并保存段落（如果需要）
         if include_paragraphs:
             paragraphs_result = self.extract_all_paragraphs()
-            paragraph_path = output_dir / "paragraph.json"
+            paragraph_path = output_dir / paragraph_filename
             with open(paragraph_path, 'w', encoding='utf-8') as f:
                 json.dump(paragraphs_result, f, ensure_ascii=False, indent=2)
             result_paths["paragraphs"] = str(paragraph_path)
@@ -353,16 +363,20 @@ def main():
     """
     主测试方法
     """
-    pdf_path = r"E:\programFile\AIProgram\docxServer\pdf\task\1979102567573037058\真正的嵌套表格-示例.pdf"
+    # 从taskId构建路径
+    task_id = "行header和列header都是多层树"
+    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\table")
+    pdf_path = base_dir / f"{task_id}.pdf"
 
     print(f"开始测试PDF内容提取...")
+    print(f"Task ID: {task_id}")
     print(f"PDF文件: {pdf_path}")
 
     try:
-        extractor = PDFContentExtractor(pdf_path)
+        extractor = PDFContentExtractor(str(pdf_path))
 
-        # 保存结果
-        output_paths = extractor.save_to_json(include_paragraphs=True)
+        # 保存结果，使用task_id作为文件名前缀
+        output_paths = extractor.save_to_json(include_paragraphs=True, task_id=task_id)
 
         print(f"\n提取成功!")
         print(f"输出文件:")

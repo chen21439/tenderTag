@@ -258,12 +258,12 @@ class NestedTableHandler:
         if not self.cell_has_inner_grid(pymupdf_page, cell_bbox):
             return []
 
-        # 在子区域找表（先 lines，空则 text）
+        # 在子区域找表（只用lines策略，不用text）
         sub_view = pdf_page.within_bbox(cell_bbox, relative=False)
         strategies = [
             {"vertical_strategy": "lines", "horizontal_strategy": "lines",
-             "intersection_x_tolerance": 2, "intersection_y_tolerance": 2},
-            {"vertical_strategy": "text", "horizontal_strategy": "text"}
+             "intersection_x_tolerance": 2, "intersection_y_tolerance": 2}
+            # 移除text策略：{"vertical_strategy": "text", "horizontal_strategy": "text"}
         ]
         results = []
 

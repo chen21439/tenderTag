@@ -11,9 +11,11 @@ import fitz  # PyMuPDF
 try:
     from .nested_table_handler import NestedTableHandler
     from .bbox_utils import rect, contains_with_tol
+    from .header_analyzer import HeaderAnalyzer
 except ImportError:
     from nested_table_handler import NestedTableHandler
     from bbox_utils import rect, contains_with_tol
+    from header_analyzer import HeaderAnalyzer
 
 
 class TableExtractor:
@@ -32,6 +34,9 @@ class TableExtractor:
 
         # 嵌套表格处理器
         self.nested_handler = NestedTableHandler(self)
+
+        # 多层表头分析器
+        self.header_analyzer = HeaderAnalyzer()
 
     def extract_tables(self) -> List[Dict[str, Any]]:
         """
@@ -52,7 +57,7 @@ class TableExtractor:
                 # 获取PyMuPDF的对应页面
                 pymupdf_page = doc_pymupdf[page_num - 1]
 
-                # 使用pdfplumber找到表格（优先使用lines策略，避免误合并子表）
+                # 使用pdfplumber找到表格（只使用lines策略，不回退到text）
                 table_settings = {
                     "vertical_strategy": "lines",
                     "horizontal_strategy": "lines",
@@ -61,9 +66,9 @@ class TableExtractor:
                 }
                 tables = page.find_tables(table_settings=table_settings)
 
-                # 如果lines策略没找到表格，回退到默认策略
-                if not tables:
-                    tables = page.find_tables()
+                # 不再回退到默认策略（text不准确）
+                # if not tables:
+                #     tables = page.find_tables()
 
                 for table_idx, table in enumerate(tables):
                     # 先用pdfplumber提取表格结构（用于获取行列结构）
@@ -124,9 +129,11 @@ class TableExtractor:
                         structured_table = self._build_structured_table(
                             table_data=table_data,
                             bbox_data=bbox_data,
+                            cells_bbox=cells,
                             page_num=page_num,
                             table_bbox=list(table.bbox),
-                            nested_map=nested_map
+                            nested_map=nested_map,
+                            pymupdf_page=pymupdf_page
                         )
 
                         tables_data.append(structured_table)
@@ -240,22 +247,108 @@ class TableExtractor:
         self,
         table_data: List[List[str]],
         bbox_data: List[List[tuple]],
+        cells_bbox: list,
         page_num: int,
         table_bbox: list,
-        nested_map: Dict[tuple, List[Dict]] = None
+        nested_map: Dict[tuple, List[Dict]] = None,
+        pymupdf_page = None,
+        hint_col_levels: int = None,
+        hint_row_levels: int = None
     ) -> Dict[str, Any]:
         """
-        构建结构化表格数据
+        构建结构化表格数据（支持多层表头）
+
+        ## 多层表头支持
+
+        ### 输入数据
+        - table_data: 原始表格文本数据（二维数组）
+        - cells_bbox: pdfplumber的cells列表，包含每个单元格的bbox和合并信息
+        - hint_col_levels/hint_row_levels: 可选的手动指定表头层数
+
+        ### 处理流程
+        1. **尝试多层表头分析**：调用 HeaderAnalyzer.analyze_table_headers()
+           - 成功：返回 HeaderModel（包含 col_paths/row_paths）
+           - 失败：返回 None，回退到单层表头
+
+        2. **多层表头模式** (_build_table_with_multi_level_headers)：
+           - 使用 HeaderModel.col_paths 构建每个数据列的路径
+           - 使用 HeaderModel.row_paths 构建每个数据行的路径
+           - 跳过表头区域（前col_levels行 + 前row_levels列）
+           - 数据单元格的 cellPath 和 rowPath 都是多层列表
+
+        3. **单层表头模式** (_build_table_with_single_level_headers)：
+           - 第一行作为列表头
+           - 第一列作为行表头
+           - cellPath/rowPath 都是单元素列表（保持向后兼容）
+
+        ### 输出格式差异
+
+        **多层表头** (multi_level=True):
+        ```json
+        {
+          "header_info": {
+            "col_levels": 2,
+            "row_levels": 3,
+            "multi_level": true
+          },
+          "columns": [
+            {"name": "每周", "path": ["药物消杀安排", "每周"]},
+            {"name": "每月", "path": ["药物消杀安排", "每月"]}
+          ],
+          "rows": [
+            {
+              "rowPath": ["1", "卫生间", "蜂蜡"],
+              "cells": [
+                {
+                  "cellPath": ["药物消杀安排", "每周"],
+                  "rowPath": ["1", "卫生间", "蜂蜡"],
+                  "content": "10%复方三·查斗酮..."
+                }
+              ]
+            }
+          ]
+        }
+        ```
+
+        **单层表头** (multi_level=False):
+        ```json
+        {
+          "header_info": {
+            "col_levels": 1,
+            "row_levels": 1,
+            "multi_level": false
+          },
+          "columns": [
+            {"name": "序号"}
+          ],
+          "rows": [
+            {
+              "rowPath": ["1"],
+              "cells": [
+                {
+                  "cellPath": ["序号"],
+                  "rowPath": ["1"],
+                  "content": "1"
+                }
+              ]
+            }
+          ]
+        }
+        ```
 
         Args:
             table_data: 表格数据 (二维数组)
             bbox_data: 每个单元格的边界框数据 (二维数组)
+            cells_bbox: pdfplumber的cells列表（用于表头分析）
             page_num: 页码
             table_bbox: 表格整体的bbox
             nested_map: 嵌套表格映射
+            pymupdf_page: PyMuPDF页面对象
+            hint_col_levels: 手动指定列表头层数
+            hint_row_levels: 手动指定行表头列数
 
         Returns:
-            结构化表格字典
+            结构化表格字典（带 header_info 字段指示多层表头状态）
         """
         if not table_data:
             return {}
@@ -263,6 +356,182 @@ class TableExtractor:
         if nested_map is None:
             nested_map = {}
 
+        # 尝试进行多层表头分析
+        header_model = None
+        try:
+            header_model = self.header_analyzer.analyze_table_headers(
+                cells_bbox=cells_bbox,
+                table_data=table_data,
+                pymupdf_page=pymupdf_page,
+                hint_col_levels=hint_col_levels,
+                hint_row_levels=hint_row_levels
+            )
+        except Exception as e:
+            print(f"[INFO] 表头分析失败，使用单层表头: {e}")
+
+        # 如果表头分析成功，使用多层路径
+        if header_model:
+            return self._build_table_with_multi_level_headers(
+                table_data=table_data,
+                bbox_data=bbox_data,
+                page_num=page_num,
+                table_bbox=table_bbox,
+                nested_map=nested_map,
+                header_model=header_model
+            )
+        else:
+            # 回退到单层表头逻辑
+            return self._build_table_with_single_level_headers(
+                table_data=table_data,
+                bbox_data=bbox_data,
+                page_num=page_num,
+                table_bbox=table_bbox,
+                nested_map=nested_map
+            )
+
+    def _build_table_with_multi_level_headers(
+        self,
+        table_data: List[List[str]],
+        bbox_data: List[List[tuple]],
+        page_num: int,
+        table_bbox: list,
+        nested_map: Dict[tuple, List[Dict]],
+        header_model
+    ) -> Dict[str, Any]:
+        """
+        使用多层表头模型构建表格
+
+        Args:
+            table_data: 表格数据
+            bbox_data: bbox数据
+            page_num: 页码
+            table_bbox: 表格bbox
+            nested_map: 嵌套表格映射
+            header_model: HeaderModel对象
+
+        Returns:
+            结构化表格字典
+        """
+        col_levels = header_model.col_levels
+        row_levels = header_model.row_levels
+        col_paths = header_model.col_paths
+        row_paths = header_model.row_paths
+
+        # 1. 构建列定义（使用第一层表头）
+        columns = []
+        header_row = table_data[0] if table_data else []
+
+        # 数据列从row_levels开始
+        for data_col_idx in range(len(col_paths)):
+            actual_col_idx = row_levels + data_col_idx
+            col_name = header_row[actual_col_idx] if actual_col_idx < len(header_row) else ""
+
+            columns.append({
+                "id": f"c{actual_col_idx + 1:03d}",
+                "index": actual_col_idx,
+                "name": col_name,
+                "path": col_paths[data_col_idx]  # 多层路径
+            })
+
+        # 2. 构建行数据（从col_levels行之后开始，即数据区）
+        rows = []
+        data_start_row = col_levels
+
+        for data_row_idx in range(len(row_paths)):
+            actual_row_idx = data_start_row + data_row_idx
+
+            # 跳过超出table_data范围的行
+            if actual_row_idx >= len(table_data):
+                break
+
+            row_id = f"r{actual_row_idx + 1:03d}"
+            row_data = table_data[actual_row_idx]
+
+            # 获取该行的多层行路径
+            row_path = row_paths[data_row_idx]
+
+            cells = []
+            for data_col_idx in range(len(col_paths)):
+                actual_col_idx = row_levels + data_col_idx
+
+                # 跳过超出行数据范围的列
+                if actual_col_idx >= len(row_data):
+                    continue
+
+                col_id = f"c{actual_col_idx + 1:03d}"
+                cell_content = row_data[actual_col_idx]
+
+                # 获取该列的多层列路径
+                cell_path = col_paths[data_col_idx]
+
+                # 获取单元格的bbox坐标
+                cell_bbox = None
+                if actual_row_idx < len(bbox_data) and actual_col_idx < len(bbox_data[actual_row_idx]):
+                    bbox_tuple = bbox_data[actual_row_idx][actual_col_idx]
+                    if bbox_tuple:
+                        cell_bbox = list(bbox_tuple)
+
+                # 获取嵌套表格
+                nested_here = nested_map.get((actual_row_idx, actual_col_idx), [])
+
+                cell_obj = {
+                    "row_id": row_id,
+                    "col_id": col_id,
+                    "rowPath": row_path,  # 多层行路径
+                    "cellPath": cell_path,  # 多层列路径
+                    "content": cell_content,
+                    "bbox": cell_bbox
+                }
+
+                # 只有识别到嵌套表格时才添加 nested_tables 字段
+                if nested_here:
+                    cell_obj["nested_tables"] = nested_here
+
+                cells.append(cell_obj)
+
+            rows.append({
+                "id": row_id,
+                "rowPath": row_path,  # 多层行路径
+                "cells": cells
+            })
+
+        return {
+            "type": "table",
+            "level": 1,
+            "parent_table_id": None,
+            "page": page_num,
+            "bbox": table_bbox,
+            "columns": columns,
+            "rows": rows,
+            "header_info": {
+                "col_levels": col_levels,
+                "row_levels": row_levels,
+                "multi_level": True
+            },
+            "method": "hybrid (pdfplumber cells + pymupdf text + multi-level headers)"
+        }
+
+    def _build_table_with_single_level_headers(
+        self,
+        table_data: List[List[str]],
+        bbox_data: List[List[tuple]],
+        page_num: int,
+        table_bbox: list,
+        nested_map: Dict[tuple, List[Dict]]
+    ) -> Dict[str, Any]:
+        """
+        使用单层表头构建表格（回退逻辑）
+
+        Args:
+            table_data: 表格数据
+            bbox_data: bbox数据
+            page_num: 页码
+            table_bbox: 表格bbox
+            nested_map: 嵌套表格映射
+
+        Returns:
+            结构化表格字典
+        """
         # 1. 提取表头（第一行）
         header_row = table_data[0] if table_data else []
 
@@ -326,6 +595,11 @@ class TableExtractor:
             "bbox": table_bbox,
             "columns": columns,
             "rows": rows,
+            "header_info": {
+                "col_levels": 1,
+                "row_levels": 1,
+                "multi_level": False
+            },
             "method": "hybrid (pdfplumber cells + pymupdf text)"
         }
 
