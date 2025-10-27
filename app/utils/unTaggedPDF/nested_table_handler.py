@@ -131,27 +131,36 @@ class NestedTableHandler:
             # 任何异常都返回False，表示没有嵌套网格
             return False
 
-    def collect_page_tables_pymupdf(self, pymupdf_page) -> List[List[float]]:
+    def collect_page_tables_pymupdf(self, pymupdf_page):
         """
-        使用PyMuPDF一次性获取全页的所有表格bbox（方案B主判）
+        使用PyMuPDF一次性获取全页的所有表格（方案B主判）
 
         Args:
             pymupdf_page: PyMuPDF的page对象
 
         Returns:
-            表格bbox列表 [[x0,y0,x1,y1], ...]
+            (bbox列表, bbox到table对象的映射)
+            例如: ([bbox1, bbox2], {tuple(bbox1): table1, tuple(bbox2): table2})
         """
         try:
             if not hasattr(pymupdf_page, 'find_tables'):
-                return []
+                return [], {}
 
             tf = pymupdf_page.find_tables()
             if not hasattr(tf, 'tables'):
-                return []
+                return [], {}
 
-            return [list(t.bbox) for t in tf.tables]
+            bboxes = []
+            bbox_to_table = {}
+            for t in tf.tables:
+                bbox = list(t.bbox)
+                bboxes.append(bbox)
+                # 用tuple作为字典key（list不能作为key）
+                bbox_to_table[tuple(bbox)] = t
+
+            return bboxes, bbox_to_table
         except Exception:
-            return []
+            return [], {}
 
     def assign_nested_by_containment(self, sub_bboxes: List[List[float]],
                                      bbox_data: List[List[tuple]]) -> Dict[Tuple[int, int], List[List[float]]]:
@@ -468,6 +477,75 @@ class NestedTableHandler:
 
         return results
 
+    def extract_table_from_pymupdf(self, pymupdf_table, depth: int = 1) -> Dict[str, Any]:
+        """
+        直接从PyMuPDF的table对象提取数据并构建结构化表格
+
+        Args:
+            pymupdf_table: PyMuPDF的table对象
+            depth: 嵌套层级
+
+        Returns:
+            结构化表格字典
+        """
+        # 使用PyMuPDF的extract()方法获取表格数据
+        data = pymupdf_table.extract()
+        if not data or len(data) < 2:  # 至少需要表头+1行数据
+            return None
+
+        # 第一行是表头
+        header_row = data[0]
+
+        # 构建列定义
+        columns = []
+        for ci, header_text in enumerate(header_row):
+            # 清理换行符（竖排文字的\n）
+            clean_header = str(header_text).replace('\n', '')
+            columns.append({
+                "id": f"c{ci+1:03d}",
+                "index": ci,
+                "name": clean_header
+            })
+
+        # 构建行数据（从第二行开始）
+        rows = []
+        for ri, row_data in enumerate(data[1:], start=2):
+            row_id = f"r{ri:03d}"
+            # 清理第一列内容作为rowPath
+            first_cell = str(row_data[0]).replace('\n', '') if row_data else ""
+
+            cells = []
+            for ci, cell_content in enumerate(row_data):
+                # 清理换行符
+                clean_content = str(cell_content).replace('\n', '')
+
+                cells.append({
+                    "id": f"nested-{row_id}-c{ci+1:03d}",
+                    "row_id": row_id,
+                    "col_id": f"c{ci+1:03d}",
+                    "rowPath": [first_cell] if first_cell else [],
+                    "cellPath": [columns[ci]["name"]] if ci < len(columns) else [],
+                    "content": clean_content,
+                    "bbox": None,
+                    "nested_tables": []
+                })
+
+            rows.append({
+                "id": row_id,
+                "rowPath": [first_cell] if first_cell else [],
+                "cells": cells
+            })
+
+        return {
+            "type": "table",
+            "level": depth + 1,
+            "parent_table_id": None,  # 回填在父表
+            "bbox": list(pymupdf_table.bbox),
+            "columns": columns,
+            "rows": rows,
+            "method": f"pymupdf-direct (depth={depth+1})"
+        }
+
     def detect_and_extract_nested_tables(self, pdf_page, pymupdf_page, table,
                                         bbox_data: List[List[tuple]]) -> Dict[Tuple[int, int], List[Dict[str, Any]]]:
         """
@@ -483,22 +561,34 @@ class NestedTableHandler:
             嵌套表格映射 {(row_idx, col_idx): [nested_tables]}
         """
         # ========== 方案B 主判：PyMuPDF 全页表 + 包含关系分配 ========== #
-        seed_bboxes = self.collect_page_tables_pymupdf(pymupdf_page)  # 全页表bbox
+        seed_bboxes, bbox_to_table = self.collect_page_tables_pymupdf(pymupdf_page)
 
         # 去掉"自身顶层表"的bbox（只过滤互相包含的，保留单向包含的子表）
         top_like = list(table.bbox)
-        seed_bboxes = [bb for bb in seed_bboxes
-                       if not (self._contains_with_tol(bb, top_like, tol=1.5)
-                              and self._contains_with_tol(top_like, bb, tol=1.5))]
+        filtered_bboxes = []
+        filtered_tables = {}
+
+        for bb in seed_bboxes:
+            # 只过滤互相包含的（同一个表）
+            if (self._contains_with_tol(bb, top_like, tol=1.5)
+                and self._contains_with_tol(top_like, bb, tol=1.5)):
+                continue
+            filtered_bboxes.append(bb)
+            filtered_tables[tuple(bb)] = bbox_to_table[tuple(bb)]
 
         # 把 PyMuPDF 找到的表，按包含关系分配到父 cell
-        hit = self.assign_nested_by_containment(seed_bboxes, bbox_data)
+        hit = self.assign_nested_by_containment(filtered_bboxes, bbox_data)
 
         nested_map = {}  # key=(abs_row_idx, col_idx) ; value=[nested_table,...]
         for (r, c), child_bbs in hit.items():
             packs = []
             for bb in child_bbs:
-                packs.extend(self.extract_table_by_bbox(pdf_page, pymupdf_page, bb, depth=1))
+                # 直接使用PyMuPDF的table对象提取数据
+                pymupdf_table = filtered_tables.get(tuple(bb))
+                if pymupdf_table:
+                    structured_table = self.extract_table_from_pymupdf(pymupdf_table, depth=1)
+                    if structured_table:
+                        packs.append(structured_table)
             if packs:
                 nested_map[(r, c)] = packs
 

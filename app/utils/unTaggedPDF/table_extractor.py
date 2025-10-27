@@ -252,6 +252,8 @@ class PDFTableExtractor:
         """
         使用PyMuPDF一次性获取全页的所有表格bbox（方案B主判）
 
+        注意：此方法已废弃，请使用nested_handler.collect_page_tables_pymupdf
+
         Args:
             pymupdf_page: PyMuPDF的page对象
 
