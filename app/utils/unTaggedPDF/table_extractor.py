@@ -219,6 +219,159 @@ class PDFTableExtractor:
 
         return results
 
+    def _rect(self, bb):
+        """辅助函数：将bbox转换为fitz.Rect"""
+        return fitz.Rect(bb[0], bb[1], bb[2], bb[3])
+
+    def _contains_with_tol(self, outer, inner, tol=1.0):
+        """
+        判断outer是否包含inner（带容差）
+
+        Args:
+            outer: 外层bbox (x0, y0, x1, y1)
+            inner: 内层bbox (x0, y0, x1, y1)
+            tol: 容差值
+
+        Returns:
+            是否包含
+        """
+        o = self._rect((outer[0]-tol, outer[1]-tol, outer[2]+tol, outer[3]+tol))
+        i = self._rect(inner)
+        return o.contains(i)
+
+    def _collect_page_tables_pymupdf(self, pymupdf_page):
+        """
+        使用PyMuPDF一次性获取全页的所有表格bbox（方案B主判）
+
+        Args:
+            pymupdf_page: PyMuPDF的page对象
+
+        Returns:
+            表格bbox列表 [[x0,y0,x1,y1], ...]
+        """
+        try:
+            if not hasattr(pymupdf_page, 'find_tables'):
+                return []
+
+            tf = pymupdf_page.find_tables()
+            if not hasattr(tf, 'tables'):
+                return []
+
+            return [list(t.bbox) for t in tf.tables]
+        except Exception:
+            return []
+
+    def _assign_nested_by_containment(self, sub_bboxes, bbox_data):
+        """
+        根据包含关系将子表bbox分配到父cell
+
+        Args:
+            sub_bboxes: PyMuPDF找到的子表bbox列表
+            bbox_data: 父表的单元格bbox数据 (二维数组)
+
+        Returns:
+            {(r,c): [bbox, ...]} 映射
+        """
+        nested_hit = {}
+        for sb in sub_bboxes:
+            found = False
+            for r in range(len(bbox_data)):
+                for c in range(len(bbox_data[r])):
+                    cb = bbox_data[r][c]
+                    if not cb:
+                        continue
+                    if self._contains_with_tol(cb, sb, tol=1.5):
+                        nested_hit.setdefault((r, c), []).append(sb)
+                        found = True
+                        break
+                if found:
+                    break
+        return nested_hit
+
+    def _extract_table_by_bbox(self, pdf_page, pymupdf_page, bbox, depth=1):
+        """
+        按给定bbox直接提取表格（跳过网格粗筛）
+
+        Args:
+            pdf_page: pdfplumber的page对象
+            pymupdf_page: PyMuPDF的page对象
+            bbox: 表格边界框
+            depth: 当前深度
+
+        Returns:
+            提取的表格列表
+        """
+        sub_view = pdf_page.within_bbox(bbox, relative=False)
+
+        # 策略优先级：lines > text
+        strategies = [
+            {"vertical_strategy": "lines", "horizontal_strategy": "lines",
+             "intersection_x_tolerance": 2, "intersection_y_tolerance": 2},
+            {"vertical_strategy": "text", "horizontal_strategy": "text"}
+        ]
+
+        for st in strategies:
+            try:
+                tables = sub_view.find_tables(table_settings=st)
+                if not tables:
+                    continue
+
+                result = []
+                for t in tables:
+                    data = t.extract()
+                    if not data or len(data) < 2:  # 至少需要表头+1行
+                        continue
+
+                    # 构建表头
+                    header = [(h or "").replace("\n", "").replace("\r", "").strip() for h in data[0]]
+                    columns = [
+                        {"id": f"c{ci+1:03d}", "index": ci, "name": header[ci]}
+                        for ci in range(len(header))
+                    ]
+
+                    # 构建行数据
+                    rows = []
+                    for ri, r in enumerate(data[1:], start=2):
+                        row_id = f"r{ri:03d}"
+                        first = (r[0] or "").strip() if r else ""
+
+                        cells = []
+                        for ci, val in enumerate(r):
+                            cells.append({
+                                "id": f"nested-{row_id}-c{ci+1:03d}",
+                                "row_id": row_id,
+                                "col_id": f"c{ci+1:03d}",
+                                "rowPath": [first] if first else [],
+                                "cellPath": [header[ci]] if ci < len(header) and header[ci] else [],
+                                "content": (val or "").replace("\n", "").replace("\r", "").strip(),
+                                "bbox": None,
+                                "nested_tables": []
+                            })
+
+                        rows.append({
+                            "id": row_id,
+                            "rowPath": [first] if first else [],
+                            "cells": cells
+                        })
+
+                    result.append({
+                        "type": "table",
+                        "level": depth + 1,
+                        "parent_table_id": None,  # 回填在父表
+                        "bbox": list(t.bbox),
+                        "columns": columns,
+                        "rows": rows,
+                        "method": f"pymupdf-seed (depth={depth+1})"
+                    })
+
+                if result:
+                    return result
+
+            except Exception:
+                continue
+
+        return []
+
     def _is_bbox_overlap(self, bbox1: tuple, bbox2: tuple, threshold: float = 0.5) -> bool:
         """
         判断两个bbox是否重叠
@@ -332,6 +485,112 @@ class PDFTableExtractor:
 
         return text.strip()
 
+    def extract_tables_with_pymupdf_native(self) -> List[Dict[str, Any]]:
+        """
+        使用PyMuPDF原生的find_tables()方法提取表格（v1.23.0+）
+        测试对比pdfplumber的效果
+
+        Returns:
+            提取的表格列表
+        """
+        print("\n" + "="*60)
+        print("使用 PyMuPDF 原生 find_tables() 方法")
+        print("="*60)
+
+        tables_data = []
+        doc = fitz.open(self.pdf_path)
+
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            print(f"\n处理第 {page_num + 1} 页...")
+
+            # 使用PyMuPDF的find_tables()
+            try:
+                # 检查是否有find_tables方法
+                if not hasattr(page, 'find_tables'):
+                    print(f"  [警告] PyMuPDF版本不支持find_tables()，当前版本: {fitz.version}")
+                    continue
+
+                tables = page.find_tables()
+                print(f"  发现 {len(tables.tables) if hasattr(tables, 'tables') else 0} 个表格")
+
+                if hasattr(tables, 'tables'):
+                    for table_idx, table in enumerate(tables.tables):
+                        print(f"\n  表格 {table_idx + 1}:")
+                        print(f"    行数: {table.row_count}")
+                        print(f"    列数: {table.col_count}")
+                        print(f"    bbox: {table.bbox}")
+
+                        # 提取表格数据
+                        extracted_data = table.extract()
+                        print(f"    提取的行数: {len(extracted_data)}")
+
+                        if extracted_data:
+                            print(f"    表头: {extracted_data[0][:3] if len(extracted_data[0]) >= 3 else extracted_data[0]}")
+
+                            # 构建结构化表格
+                            self.block_counter += 1
+                            table_id = f"doc{self.block_counter:03d}"
+
+                            header_row = extracted_data[0]
+                            columns = []
+                            for col_idx, header_text in enumerate(header_row):
+                                columns.append({
+                                    "id": f"c{col_idx + 1:03d}",
+                                    "index": col_idx,
+                                    "name": str(header_text or "")
+                                })
+
+                            rows = []
+                            for row_idx, row_data in enumerate(extracted_data[1:], start=2):
+                                row_id = f"r{row_idx:03d}"
+                                row_first_cell = str(row_data[0] if row_data else "")
+
+                                cells = []
+                                for col_idx, cell_content in enumerate(row_data):
+                                    col_id = f"c{col_idx + 1:03d}"
+                                    cell_id = f"{table_id}-{row_id}-{col_id}"
+                                    col_name = str(header_row[col_idx] if col_idx < len(header_row) else "")
+
+                                    cells.append({
+                                        "id": cell_id,
+                                        "row_id": row_id,
+                                        "col_id": col_id,
+                                        "rowPath": [row_first_cell] if row_first_cell else [],
+                                        "cellPath": [col_name] if col_name else [],
+                                        "content": str(cell_content or "").replace('\n', '').replace('\r', '').strip(),
+                                        "bbox": None
+                                    })
+
+                                rows.append({
+                                    "id": row_id,
+                                    "rowPath": [row_first_cell] if row_first_cell else [],
+                                    "cells": cells
+                                })
+
+                            tables_data.append({
+                                "type": "table",
+                                "id": table_id,
+                                "level": 1,
+                                "parent_table_id": None,
+                                "page": page_num + 1,
+                                "columns": columns,
+                                "rows": rows,
+                                "method": "pymupdf native find_tables()"
+                            })
+                            print(f"    ✓ 已构建表格 {table_id}")
+
+            except Exception as e:
+                print(f"  [错误] PyMuPDF find_tables() 失败: {e}")
+                import traceback
+                traceback.print_exc()
+
+        doc.close()
+        print(f"\n{'='*60}")
+        print(f"PyMuPDF 方法完成，共提取 {len(tables_data)} 个表格")
+        print(f"{'='*60}\n")
+        return tables_data
+
     def extract_tables_hybrid(self) -> List[Dict[str, Any]]:
         """
         混合使用pdfplumber和PyMuPDF提取表格
@@ -419,10 +678,31 @@ class PDFTableExtractor:
                         table_data, bbox_data, cells
                     )
 
-                    # 嵌套表格检测：基于 bbox_data 做嵌套抽取映射
+                    # ========== 方案B 主判：PyMuPDF 全页表 + 包含关系分配 ========== #
+                    seed_bboxes = self._collect_page_tables_pymupdf(pymupdf_page)  # 全页表bbox
+
+                    # 去掉"自身顶层表"的bbox（只过滤互相包含的，保留单向包含的子表）
+                    top_like = list(table.bbox)
+                    seed_bboxes = [bb for bb in seed_bboxes
+                                   if not (self._contains_with_tol(bb, top_like, tol=1.5)
+                                          and self._contains_with_tol(top_like, bb, tol=1.5))]
+
+                    # 把 PyMuPDF 找到的表，按包含关系分配到父 cell
+                    hit = self._assign_nested_by_containment(seed_bboxes, bbox_data)
+
                     nested_map = {}  # key=(abs_row_idx, col_idx) ; value=[nested_table,...]
+                    for (r, c), child_bbs in hit.items():
+                        packs = []
+                        for bb in child_bbs:
+                            packs.extend(self._extract_table_by_bbox(page, pymupdf_page, bb, depth=1))
+                        if packs:
+                            nested_map[(r, c)] = packs
+
+                    # ========== 方案A 兜底：逐 cell 检测（避免漏掉 PyMuPDF 没检出的子表） ========== #
                     for r in range(len(bbox_data)):
                         for c in range(len(bbox_data[r])):
+                            if (r, c) in nested_map:
+                                continue  # 已被方案B检测到，跳过
                             bb = bbox_data[r][c]
                             if not bb:
                                 continue
@@ -912,19 +1192,79 @@ def extract_pdf_tables(pdf_path: str, output_path: str = None) -> str:
 
 def main():
     """
-    主测试方法 - 直接运行此文件来测试PDF内容提取功能（表格+段落）
+    主测试方法 - 对比测试 PyMuPDF native vs pdfplumber
     """
     # 测试用的PDF文件路径
-    pdf_path = r"E:\programFile\AIProgram\docxServer\pdf\task\1979102567573037058\table.pdf"
+    pdf_path = r"E:\programFile\AIProgram\docxServer\pdf\task\1979102567573037058\真正的嵌套表格-示例.pdf"
 
-    print(f"开始提取PDF内容（表格+段落）...")
+    print(f"开始对比测试...")
     print(f"PDF文件: {pdf_path}")
 
     try:
         # 创建提取器
         extractor = PDFTableExtractor(pdf_path)
 
-        # 提取并保存所有内容（表格+段落）
+        # 方法1：测试 PyMuPDF 原生 find_tables()
+        print("\n" + "█"*60)
+        print("方法1：PyMuPDF 原生 find_tables()")
+        print("█"*60)
+        extractor.block_counter = 0  # 重置计数器
+        pymupdf_tables = extractor.extract_tables_with_pymupdf_native()
+
+        # 方法2：测试 pdfplumber + PyMuPDF 混合方法
+        print("\n" + "█"*60)
+        print("方法2：pdfplumber + PyMuPDF 混合方法")
+        print("█"*60)
+        extractor.block_counter = 0  # 重置计数器
+        hybrid_tables = extractor.extract_tables_hybrid()
+
+        # 对比结果
+        print("\n" + "█"*60)
+        print("对比结果")
+        print("█"*60)
+        print(f"PyMuPDF方法提取: {len(pymupdf_tables)} 个表格")
+        print(f"混合方法提取: {len(hybrid_tables)} 个表格")
+
+        if pymupdf_tables:
+            print(f"\nPyMuPDF方法 - 第一个表格:")
+            print(f"  列数: {len(pymupdf_tables[0].get('columns', []))}")
+            print(f"  行数: {len(pymupdf_tables[0].get('rows', []))}")
+            print(f"  列名: {[c['name'] for c in pymupdf_tables[0].get('columns', [])]}")
+
+        if hybrid_tables:
+            print(f"\n混合方法 - 第一个表格:")
+            print(f"  列数: {len(hybrid_tables[0].get('columns', []))}")
+            print(f"  行数: {len(hybrid_tables[0].get('rows', []))}")
+            print(f"  列名: {[c['name'] for c in hybrid_tables[0].get('columns', [])]}")
+
+        # 保存结果用于检查
+        output_dir = Path(pdf_path).parent
+
+        # 保存 PyMuPDF 结果
+        pymupdf_output = output_dir / "table_pymupdf.json"
+        with open(pymupdf_output, 'w', encoding='utf-8') as f:
+            json.dump({
+                "pdf_file": str(pdf_path),
+                "total_tables": len(pymupdf_tables),
+                "tables": pymupdf_tables
+            }, f, ensure_ascii=False, indent=2)
+        print(f"\nPyMuPDF结果已保存: {pymupdf_output}")
+
+        # 保存混合方法结果
+        hybrid_output = output_dir / "table_hybrid.json"
+        with open(hybrid_output, 'w', encoding='utf-8') as f:
+            json.dump({
+                "pdf_file": str(pdf_path),
+                "total_tables": len(hybrid_tables),
+                "tables": hybrid_tables
+            }, f, ensure_ascii=False, indent=2)
+        print(f"混合方法结果已保存: {hybrid_output}")
+
+        # 原来的完整提取
+        print("\n" + "█"*60)
+        print("完整提取（表格+段落）")
+        print("█"*60)
+        extractor.block_counter = 0  # 重置计数器
         output_paths = extractor.save_to_json(include_paragraphs=True)
 
         print(f"\n[成功] 提取成功!")
