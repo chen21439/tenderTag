@@ -114,10 +114,11 @@ class TableExtractor:
                         table_data.append(new_row)
                         bbox_data.append(bbox_row)
 
-                    # 清理误吸收的子表空列
-                    table_data, bbox_data, keep_cols = self._clean_spurious_columns(
-                        table_data, bbox_data, cells
-                    )
+                    # 注释掉：现在嵌套表格识别已经不依赖空列清理
+                    # 保留原始的 table_data 和 bbox_data，避免误删除行表头列
+                    # table_data, bbox_data, keep_cols = self._clean_spurious_columns(
+                    #     table_data, bbox_data, cells
+                    # )
 
                     # 使用嵌套表格处理器进行检测（方案B主判 + 方案A兜底）
                     nested_map = self.nested_handler.detect_and_extract_nested_tables(
@@ -366,8 +367,20 @@ class TableExtractor:
                 hint_col_levels=hint_col_levels,
                 hint_row_levels=hint_row_levels
             )
+
+            # 调试：打印表头分析结果
+            if header_model:
+                print(f"\n[DEBUG] 表头分析结果 - 页码 {page_num}")
+                print(f"  col_levels: {header_model.col_levels}, row_levels: {header_model.row_levels}")
+                print(f"  table_data 前3行前3列:")
+                for i in range(min(3, len(table_data))):
+                    print(f"    行{i}: {table_data[i][:3] if len(table_data[i]) >= 3 else table_data[i]}")
+                print(f"  row_paths (前5个): {header_model.row_paths[:5]}")
+                print(f"  col_paths (前3个): {header_model.col_paths[:3]}")
         except Exception as e:
             print(f"[INFO] 表头分析失败，使用单层表头: {e}")
+            import traceback
+            traceback.print_exc()
 
         # 如果表头分析成功，使用多层路径
         if header_model:

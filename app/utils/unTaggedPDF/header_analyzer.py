@@ -119,17 +119,18 @@ class HeaderAnalyzer:
 
     def __init__(self):
         """初始化分析器"""
-        pass
+        self.table_count = 0  # 表格计数器，用于debug
 
     def build_grid_and_spans(self, cells_bbox: list, table_data: List[List[str]],
-                            pymupdf_page=None) -> Tuple[TableGrid, List[SpanCell]]:
+                            pymupdf_page=None, debug: bool = False) -> Tuple[TableGrid, List[SpanCell]]:
         """
         Step 1: 构建规则网格与跨度映射
 
         Args:
             cells_bbox: pdfplumber的cells列表 [(x0,y0,x1,y1), ...]
-            table_data: 表格文本数据（二维数组）
+            table_data: 表格文本数据（二维数组）- 仅用于兜底
             pymupdf_page: PyMuPDF页面对象（用于提取文本）
+            debug: 是否输出调试信息
 
         Returns:
             (TableGrid, List[SpanCell])
@@ -154,6 +155,15 @@ class HeaderAnalyzer:
         C = len(x_edges) - 1  # 列数
         R = len(y_edges) - 1  # 行数
 
+        if debug:
+            print(f"\n[DEBUG build_grid_and_spans] R={R}, C={C}")
+            print(f"  cells_bbox总数: {len(cells_bbox)}")
+            print(f"  前10个cells_bbox:")
+            for i in range(min(10, len(cells_bbox))):
+                print(f"    [{i}] {cells_bbox[i]}")
+            print(f"  y_edges前5个: {y_edges[:5]}")
+            print(f"  x_edges前5个: {x_edges[:5]}")
+
         # 2. 初始化网格（None表示空）
         grid = [[None for _ in range(C)] for _ in range(R)]
 
@@ -174,10 +184,33 @@ class HeaderAnalyzer:
             rowspan = r1 - r0
             colspan = c1 - c0
 
-            # 提取文本（从table_data中获取）
+            # 提取文本 - 直接从PyMuPDF使用bbox提取（避免grid索引与table_data索引不匹配）
             text = ""
-            if r0 < len(table_data) and c0 < len(table_data[r0]):
-                text = table_data[r0][c0] if table_data[r0][c0] else ""
+            if pymupdf_page:
+                try:
+                    import fitz
+                    rect_obj = fitz.Rect(bbox)
+                    text = pymupdf_page.get_text("text", clip=rect_obj)
+                    # 移除换行符
+                    text = text.replace('\n', '').replace('\r', '').strip()
+                except Exception:
+                    # 失败时尝试从table_data兜底
+                    if r0 < len(table_data) and c0 < len(table_data[r0]):
+                        text = table_data[r0][c0] if table_data[r0][c0] else ""
+            else:
+                # 没有pymupdf_page时从table_data获取（兜底）
+                if r0 < len(table_data) and c0 < len(table_data[r0]):
+                    text = table_data[r0][c0] if table_data[r0][c0] else ""
+
+            # 调试：打印前5个单元格的详细信息
+            if debug and cell_id < 5:
+                print(f"  [Cell {cell_id}] bbox={bbox}")
+                print(f"    y0={y0:.2f} -> r0={r0}, y1={y1:.2f} -> r1={r1}, rowspan={rowspan}")
+                print(f"    x0={x0:.2f} -> c0={c0}, x1={x1:.2f} -> c1={c1}, colspan={colspan}")
+                print(f"    text='{self._clean_text(text)}'")
+                print(f"    填充grid范围: rows[{r0}:{r1}] x cols[{c0}:{c1}]")
+                if rowspan == 0 or colspan == 0:
+                    print(f"    ⚠️ WARNING: rowspan={rowspan}, colspan={colspan} - 不会填充grid!")
 
             # 创建SpanCell
             span_cell = SpanCell(
@@ -295,7 +328,7 @@ class HeaderAnalyzer:
         return col_paths
 
     def build_row_paths(self, grid: TableGrid, span_cells: List[SpanCell],
-                       col_levels: int, row_levels: int) -> List[List[str]]:
+                       col_levels: int, row_levels: int, debug: bool = False) -> List[List[str]]:
         """
         Step 4: 构建行表头层级（Left-to-right）
 
@@ -304,12 +337,22 @@ class HeaderAnalyzer:
             span_cells: 跨度单元格列表
             col_levels: 列表头层数
             row_levels: 行表头列数
+            debug: 是否输出调试信息
 
         Returns:
             row_paths: 每个数据行的完整路径
         """
         R, C = grid.R, grid.C
         data_rows = R - col_levels  # 数据区行数
+
+        if debug:
+            print(f"\n[DEBUG build_row_paths] R={R}, C={C}, col_levels={col_levels}, row_levels={row_levels}, data_rows={data_rows}")
+            print(f"  grid.grid前3行前3列:")
+            for r in range(min(3, R)):
+                print(f"    行{r}: {grid.grid[r][:min(3, C)]}")
+            print(f"  span_cells前5个text:")
+            for i in range(min(5, len(span_cells))):
+                print(f"    cell{i}: '{span_cells[i].text}' at ({span_cells[i].r0},{span_cells[i].c0})")
 
         if data_rows <= 0:
             return []
@@ -328,6 +371,13 @@ class HeaderAnalyzer:
                     # 写入矩阵
                     data_row_idx = i - col_levels
                     V[data_row_idx][c] = text
+                    if debug and data_row_idx < 3:
+                        print(f"  V[{data_row_idx}][{c}] = '{text}' (cell_id={cell_id})")
+
+        if debug:
+            print(f"  V矩阵(前3行):")
+            for i in range(min(3, data_rows)):
+                print(f"    V[{i}]: {V[i]}")
 
         # 层级传播
         for i in range(data_rows):
@@ -353,6 +403,9 @@ class HeaderAnalyzer:
                     path.append(text)
             row_paths.append(path)
 
+        if debug:
+            print(f"  最终row_paths(前3个): {row_paths[:3]}")
+
         return row_paths
 
     def analyze_table_headers(self, cells_bbox: list, table_data: List[List[str]],
@@ -373,8 +426,14 @@ class HeaderAnalyzer:
             HeaderModel 或 None（如果分析失败）
         """
         try:
-            # Step 1: 构建网格和跨度
-            grid, span_cells = self.build_grid_and_spans(cells_bbox, table_data, pymupdf_page)
+            # 判断是否是第一个表格（启用debug）
+            self.table_count += 1
+            is_first_table = (self.table_count == 1)
+
+            # Step 1: 构建网格和跨度（第一个表格启用debug）
+            grid, span_cells = self.build_grid_and_spans(
+                cells_bbox, table_data, pymupdf_page, debug=is_first_table
+            )
             if not grid:
                 return None
 
@@ -386,8 +445,10 @@ class HeaderAnalyzer:
             # Step 3: 构建列路径
             col_paths = self.build_col_paths(grid, span_cells, col_levels, row_levels)
 
-            # Step 4: 构建行路径
-            row_paths = self.build_row_paths(grid, span_cells, col_levels, row_levels)
+            # Step 4: 构建行路径（第一个表格启用debug）
+            row_paths = self.build_row_paths(
+                grid, span_cells, col_levels, row_levels, debug=is_first_table
+            )
 
             # 构建HeaderModel
             header_model = HeaderModel(
@@ -453,6 +514,7 @@ class HeaderAnalyzer:
         策略：
         1. 检测前N列，看是否存在跨行合并
         2. 统计连续的表头列数
+        3. 只有检测到跨行合并时，才认为有行表头
         """
         R, C = grid.R, grid.C
         max_check_cols = min(5, C)
@@ -484,8 +546,8 @@ class HeaderAnalyzer:
                     break
             return max(2, levels)
 
-        # 默认1列
-        return 1
+        # 没有检测到跨行合并，返回0（没有行表头）
+        return 0
 
     def _find_index(self, coord: float, coords_list: List[float]) -> int:
         """
@@ -498,10 +560,18 @@ class HeaderAnalyzer:
         Returns:
             索引位置
         """
+        # 处理精确匹配的情况（单元格边界坐标）
+        for i, edge_coord in enumerate(coords_list):
+            if abs(coord - edge_coord) < 0.01:  # 浮点数比较，允许0.01的误差
+                return i
+
+        # 处理区间匹配的情况
         for i in range(len(coords_list) - 1):
             if coords_list[i] <= coord < coords_list[i + 1]:
                 return i
-        return len(coords_list) - 2 if coords_list else 0
+
+        # 兜底：返回最后一个有效索引
+        return len(coords_list) - 2 if len(coords_list) >= 2 else 0
 
     def _clean_text(self, text: str) -> str:
         """

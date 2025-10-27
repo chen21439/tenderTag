@@ -364,8 +364,8 @@ def main():
     主测试方法
     """
     # 从taskId构建路径
-    task_id = "行header和列header都是多层树"
-    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\table")
+    task_id = "国土空间规划实施监测网络建设项目"
+    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目")
     pdf_path = base_dir / f"{task_id}.pdf"
 
     print(f"开始测试PDF内容提取...")
