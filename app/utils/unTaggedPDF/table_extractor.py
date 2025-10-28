@@ -57,7 +57,18 @@ def validate_and_fix_bbox(table_bbox: list, cells: List[Dict], page_height: floa
     all_x0, all_y0, all_x1, all_y1 = [], [], [], []
 
     for cell in cells:
-        cell_bbox = cell.get('bbox')
+        # 支持两种格式：
+        # 1. pdfplumber原始cells：tuple (x0, y0, x1, y1)
+        # 2. processed cells：dict {'bbox': (x0, y0, x1, y1)}
+        if isinstance(cell, tuple) and len(cell) == 4:
+            # pdfplumber原始cells格式
+            cell_bbox = cell
+        elif isinstance(cell, dict):
+            # processed cells格式
+            cell_bbox = cell.get('bbox')
+        else:
+            cell_bbox = None
+
         if cell_bbox:
             all_x0.append(cell_bbox[0])
             all_y0.append(cell_bbox[1])
@@ -331,7 +342,7 @@ class TableExtractor:
                             pymupdf_page=pymupdf_page
                         )
 
-                        # [TEXT-FALLBACK] 触发条件：左侧缺口很大 或 列索引不从0开始
+                        # [TEXT-FALLBACK] 触发条件：左侧缺口很大 或 列索引不从0开始 或 bbox异常偏右
                         try:
                             left_gap = self._left_gap_pt(bbox_data, list(table.bbox))
                         except Exception:
@@ -341,14 +352,19 @@ class TableExtractor:
                         first_col_index = structured_table.get("columns", [{}])[0].get("index", 0) if structured_table.get("columns") else 0
                         row_levels = (structured_table.get("header_info", {}) or {}).get("row_levels", 1)
 
+                        # 检查原始table.bbox的x0是否异常偏右（说明pdfplumber漏检了左侧列）
+                        orig_bbox_x0 = list(table.bbox)[0]
+                        bbox_suspicious = orig_bbox_x0 > 70.0  # 正常页边距通常 < 50pt
+
                         # 触发条件：
                         # 1. left_gap >= 40pt
                         # 2. first_col_index > 0 (列缺失)
                         # 3. row_levels >= 2 且 left_gap >= 25pt
-                        need_fallback = (left_gap >= 40.0) or (first_col_index > 0) or (row_levels >= 2 and left_gap >= 25.0)
+                        # 4. bbox的x0 > 70pt (pdfplumber原始检测就漏了左侧列)
+                        need_fallback = (left_gap >= 40.0) or (first_col_index > 0) or (row_levels >= 2 and left_gap >= 25.0) or bbox_suspicious
 
                         if need_fallback:
-                            print(f"  [TEXT-FALLBACK] 触发：left_gap={left_gap:.1f}pt, first_col_index={first_col_index}, row_levels={row_levels}")
+                            print(f"  [TEXT-FALLBACK] 触发：left_gap={left_gap:.1f}pt, first_col_index={first_col_index}, row_levels={row_levels}, bbox_x0={orig_bbox_x0:.1f}")
                             # 注意：text策略可能检测不到目标表格（尤其是多层表头+空列的情况）
                             # 所以如果text失败，我们保留原结果
                             re_struct = self._reextract_with_text_strategy(page, pymupdf_page, list(table.bbox))
@@ -796,7 +812,8 @@ class TableExtractor:
                 table_bbox=table_bbox,
                 nested_map=nested_map,
                 header_model=header_model,
-                page_height=page_height
+                page_height=page_height,
+                cells_bbox_orig=cells_bbox  # 传递原始pdfplumber cells用于bbox修正
             )
 
             # 检查是否存在列缺失问题（first_col_index > 0）
@@ -811,7 +828,8 @@ class TableExtractor:
                     page_num=page_num,
                     table_bbox=table_bbox,
                     nested_map=nested_map,
-                    page_height=page_height
+                    page_height=page_height,
+                    cells_bbox_orig=cells_bbox  # 传递原始pdfplumber cells用于bbox修正
                 )
 
             return multi_level_result
@@ -823,7 +841,8 @@ class TableExtractor:
                 page_num=page_num,
                 table_bbox=table_bbox,
                 nested_map=nested_map,
-                page_height=page_height
+                page_height=page_height,
+                cells_bbox_orig=cells_bbox  # 传递原始pdfplumber cells用于bbox修正
             )
 
     def _build_table_with_multi_level_headers(
@@ -834,7 +853,8 @@ class TableExtractor:
         table_bbox: list,
         nested_map: Dict[tuple, List[Dict]],
         header_model,
-        page_height: float
+        page_height: float,
+        cells_bbox_orig: list = None
     ) -> Dict[str, Any]:
         """
         使用多层表头模型构建表格
@@ -847,6 +867,7 @@ class TableExtractor:
             nested_map: 嵌套表格映射
             header_model: HeaderModel对象
             page_height: 页面高度
+            cells_bbox_orig: pdfplumber原始cells（用于bbox修正）
 
         Returns:
             结构化表格字典
@@ -934,12 +955,16 @@ class TableExtractor:
                 "cells": cells
             })
 
-        # 3. 验证并修正table bbox（收集所有cell用于验证）
-        all_cells = []
-        for row in rows:
-            all_cells.extend(row['cells'])
+        # 3. 验证并修正table bbox
+        # 优先使用pdfplumber原始cells（避免多层表头分析导致的列缺失影响bbox计算）
+        # 如果没有原始cells，则使用processed cells作为fallback
+        cells_for_validation = cells_bbox_orig if cells_bbox_orig is not None else []
+        if not cells_for_validation:
+            # Fallback: 收集processed cells
+            for row in rows:
+                cells_for_validation.extend(row['cells'])
 
-        validated_bbox = validate_and_fix_bbox(table_bbox, all_cells, page_height)
+        validated_bbox = validate_and_fix_bbox(table_bbox, cells_for_validation, page_height)
 
         return {
             "type": "table",
@@ -964,7 +989,8 @@ class TableExtractor:
         page_num: int,
         table_bbox: list,
         nested_map: Dict[tuple, List[Dict]],
-        page_height: float
+        page_height: float,
+        cells_bbox_orig: list = None
     ) -> Dict[str, Any]:
         """
         使用单层表头构建表格（回退逻辑）
@@ -976,6 +1002,7 @@ class TableExtractor:
             table_bbox: 表格bbox
             nested_map: 嵌套表格映射
             page_height: 页面高度
+            cells_bbox_orig: pdfplumber原始cells（用于bbox修正）
 
         Returns:
             结构化表格字典
@@ -1035,12 +1062,16 @@ class TableExtractor:
                 "cells": cells
             })
 
-        # 4. 验证并修正table bbox（收集所有cell用于验证）
-        all_cells = []
-        for row in rows:
-            all_cells.extend(row['cells'])
+        # 4. 验证并修正table bbox
+        # 优先使用pdfplumber原始cells（避免列缺失影响bbox计算）
+        # 如果没有原始cells，则使用processed cells作为fallback
+        cells_for_validation = cells_bbox_orig if cells_bbox_orig is not None else []
+        if not cells_for_validation:
+            # Fallback: 收集processed cells
+            for row in rows:
+                cells_for_validation.extend(row['cells'])
 
-        validated_bbox = validate_and_fix_bbox(table_bbox, all_cells, page_height)
+        validated_bbox = validate_and_fix_bbox(table_bbox, cells_for_validation, page_height)
 
         return {
             "type": "table",
