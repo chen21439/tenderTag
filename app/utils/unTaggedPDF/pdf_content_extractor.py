@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any
 import fitz  # PyMuPDF
+from datetime import datetime
 
 try:
     from .table_extractor import TableExtractor
@@ -205,9 +206,10 @@ class PDFContentExtractor:
             if 'id' not in table or table['id'] is None:
                 table['id'] = f"temp_{i:03d}"
 
-        # 保存合并前的原始表格（用于调试）
+        # 保存第一轮原始提取结果（用于调试）
         import copy
-        tables_before_merge = copy.deepcopy(tables)
+        tables_first_round = copy.deepcopy(tables)  # 真正的原始表格
+        tables_before_merge = copy.deepcopy(tables)  # 将被更新为重提取后的表格
 
         # 第二轮：使用续页hint重新提取（如果启用跨页合并）
         if self.enable_cross_page_merge and self.cross_page_merger and tables:
@@ -276,7 +278,11 @@ class PDFContentExtractor:
             "page_metadata": metadata
         }
 
-        # 同时保存合并前的表格（用于调试）
+        # 保存第一轮原始提取（用于调试）
+        if tables_first_round:
+            result["tables_first_round"] = tables_first_round
+
+        # 保存重提取后、合并前的表格（用于调试）
         if tables_before_merge:
             result["tables_before_merge"] = tables_before_merge
 
@@ -345,22 +351,42 @@ class PDFContentExtractor:
         # 确保输出目录存在
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 确定文件名前缀
+        # 生成时间戳
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # 确定文件名（带时间戳）
         if task_id:
-            table_filename = f"{task_id}_table.json"
-            paragraph_filename = f"{task_id}_paragraph.json"
+            table_filename = f"{task_id}_table_{timestamp}.json"
+            table_raw_filename = f"{task_id}_table_raw_{timestamp}.json"
+            paragraph_filename = f"{task_id}_paragraph_{timestamp}.json"
         else:
-            table_filename = "table.json"
-            paragraph_filename = "paragraph.json"
+            table_filename = f"table_{timestamp}.json"
+            table_raw_filename = f"table_raw_{timestamp}.json"
+            paragraph_filename = f"paragraph_{timestamp}.json"
 
         result_paths = {}
 
         # 提取并保存表格
         tables_result = self.extract_all_tables()
+
+        # 保存完整结果（包含合并后的表格）
         table_path = output_dir / table_filename
         with open(table_path, 'w', encoding='utf-8') as f:
             json.dump(tables_result, f, ensure_ascii=False, indent=2)
         result_paths["tables"] = str(table_path)
+
+        # 保存原始表格（table_raw.json，仅包含第一轮提取结果）
+        if 'tables_first_round' in tables_result:
+            raw_result = {
+                "pdf_file": tables_result['pdf_file'],
+                "total_tables": len(tables_result['tables_first_round']),
+                "tables": tables_result['tables_first_round'],
+                "page_metadata": tables_result['page_metadata']
+            }
+            table_raw_path = output_dir / table_raw_filename
+            with open(table_raw_path, 'w', encoding='utf-8') as f:
+                json.dump(raw_result, f, ensure_ascii=False, indent=2)
+            result_paths["tables_raw"] = str(table_raw_path)
 
         # 提取并保存段落（如果需要）
         if include_paragraphs:
