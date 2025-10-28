@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import json
 from openai import OpenAI
+from datetime import datetime
 
 # 添加项目根目录到 Python 路径
 _project_root = Path(__file__).parent.parent.parent
@@ -369,7 +370,8 @@ def main():
         print("自动获取最新的分析JSON文件...")
         try:
             results = tagger.tag_latest_json()
-            output_path = Path(DEFAULT_FILE_DIR) / "latest_tagged.json"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = Path(DEFAULT_FILE_DIR) / f"latest_tagged_{timestamp}.json"
         except FileNotFoundError as e:
             print(f"错误: {e}")
             return
@@ -381,7 +383,8 @@ def main():
 
         # 执行标注
         results = tagger.tag_json_file(json_path)
-        output_path = json_path.parent / f"{json_path.stem}_tagged.json"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = json_path.parent / f"{json_path.stem}_tagged_{timestamp}.json"
 
     # 保存结果
     tagger.save_results(results, output_path)

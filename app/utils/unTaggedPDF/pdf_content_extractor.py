@@ -210,7 +210,6 @@ class PDFContentExtractor:
         import copy
         tables_first_round = copy.deepcopy(tables)  # 真正的原始表格
         tables_before_merge = copy.deepcopy(tables)  # 将被更新为重提取后的表格
-        hints_by_page = {}  # 保存hints信息（用于调试）
 
         # 第二轮：使用续页hint重新提取（如果启用跨页合并）
         if self.enable_cross_page_merge and self.cross_page_merger and tables:
@@ -229,7 +228,7 @@ class PDFContentExtractor:
             # 如果有hints，重新提取
             if hints_by_page:
                 tables = self.table_extractor.reextract_with_hints(hints_by_page, tables)
-                # 更新重提取后、合并前的备份
+                # 更新合并前的备份
                 tables_before_merge = copy.deepcopy(tables)
 
         # 跨页表格合并（如果启用）
@@ -286,10 +285,6 @@ class PDFContentExtractor:
         # 保存重提取后、合并前的表格（用于调试）
         if tables_before_merge:
             result["tables_before_merge"] = tables_before_merge
-
-        # 保存hints信息（用于调试）
-        if hints_by_page:
-            result["hints_by_page"] = hints_by_page
 
         return result
 
@@ -356,23 +351,42 @@ class PDFContentExtractor:
         # 确保输出目录存在
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 确定文件名前缀（带时间戳）
+        # 生成时间戳
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # 确定文件名（带时间戳）
         if task_id:
             table_filename = f"{task_id}_table_{timestamp}.json"
+            table_raw_filename = f"{task_id}_table_raw_{timestamp}.json"
             paragraph_filename = f"{task_id}_paragraph_{timestamp}.json"
         else:
             table_filename = f"table_{timestamp}.json"
+            table_raw_filename = f"table_raw_{timestamp}.json"
             paragraph_filename = f"paragraph_{timestamp}.json"
 
         result_paths = {}
 
         # 提取并保存表格
         tables_result = self.extract_all_tables()
+
+        # 保存完整结果（包含合并后的表格）
         table_path = output_dir / table_filename
         with open(table_path, 'w', encoding='utf-8') as f:
             json.dump(tables_result, f, ensure_ascii=False, indent=2)
         result_paths["tables"] = str(table_path)
+
+        # 保存原始表格（table_raw.json，仅包含第一轮提取结果）
+        if 'tables_first_round' in tables_result:
+            raw_result = {
+                "pdf_file": tables_result['pdf_file'],
+                "total_tables": len(tables_result['tables_first_round']),
+                "tables": tables_result['tables_first_round'],
+                "page_metadata": tables_result['page_metadata']
+            }
+            table_raw_path = output_dir / table_raw_filename
+            with open(table_raw_path, 'w', encoding='utf-8') as f:
+                json.dump(raw_result, f, ensure_ascii=False, indent=2)
+            result_paths["tables_raw"] = str(table_raw_path)
 
         # 提取并保存段落（如果需要）
         if include_paragraphs:
@@ -596,8 +610,8 @@ def main():
     主测试方法
     """
     # 从taskId构建路径
-    task_id = "国土空间规划实施监测网络建设项目"
-    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目")
+    task_id = "1981173691773419522"
+    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\1981173691773419522")
     pdf_path = base_dir / f"{task_id}.pdf"
 
     print(f"开始测试PDF内容提取...")
@@ -637,9 +651,13 @@ def main():
 
                 # 显示前3行的第一个单元格内容预览
                 for row_idx, row in enumerate(table.get('rows', [])[:3], start=1):
-                    first_cell = row.get('cells', [{}])[0]
-                    content = first_cell.get('content', '')[:50]
-                    print(f"         行{row_idx}: {content}...")
+                    cells = row.get('cells', [])
+                    if cells:
+                        first_cell = cells[0]
+                        content = first_cell.get('content', '')[:50]
+                        print(f"         行{row_idx}: {content}...")
+                    else:
+                        print(f"         行{row_idx}: (无单元格)")
 
                 print()
 
