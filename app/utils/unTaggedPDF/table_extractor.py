@@ -221,6 +221,160 @@ class TableExtractor:
         print(f"\n[表格提取] 完成，共提取 {len(tables_data)} 个表格\n")
         return tables_data
 
+    def reextract_with_hints(self,
+                            hints_by_page: Dict[int, Dict],
+                            original_tables: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        使用续页hint重新提取指定页面的表格（显式列边界）
+
+        原理：
+        - 对命中hint的页面，使用上一页的列边界（col_xs）强制切分
+        - 使用 vertical_strategy='explicit' 避免pdfplumber漏检列
+
+        Args:
+            hints_by_page: {page_num: {"col_xs": [...], "bbox": [...], "score": ...}}
+            original_tables: 第一轮提取的原始表格列表
+
+        Returns:
+            更新后的表格列表（替换了重新提取的表格）
+        """
+        if not hints_by_page:
+            return original_tables
+
+        print(f"\n[表格重提取] 开始对 {len(hints_by_page)} 个页面使用显式列边界重提取")
+
+        # 按页分组原始表格
+        tables_by_page = {}
+        for table in original_tables:
+            page = table.get('page', 1)
+            if page not in tables_by_page:
+                tables_by_page[page] = []
+            tables_by_page[page].append(table)
+
+        # 打开PDF
+        doc_pymupdf = fitz.open(self.pdf_path)
+
+        with pdfplumber.open(self.pdf_path) as pdf:
+            for page_num, hint in hints_by_page.items():
+                print(f"\n[页{page_num}] 使用hint重新提取")
+                print(f"  来源: 页{hint['source_page']}表{hint['source_table_id']}")
+                print(f"  评分: {hint['score']:.2f}")
+                print(f"  列边界: {[f'{x:.1f}' for x in hint['col_xs'][:5]]}...")
+
+                # 获取页面
+                page = pdf.pages[page_num - 1]
+                pymupdf_page = doc_pymupdf[page_num - 1]
+                page_height = pymupdf_page.rect.height
+
+                # 使用显式列边界重新查找表格
+                col_xs = hint['col_xs']
+
+                # 使用pdfplumber的显式列策略
+                table_settings = {
+                    "vertical_strategy": "explicit",
+                    "explicit_vertical_lines": col_xs,
+                    "horizontal_strategy": "lines_strict",  # 或 "text"
+                }
+
+                print(f"  使用设置: {table_settings}")
+
+                # 重新查找表格
+                new_tables = page.find_tables(table_settings=table_settings)
+
+                print(f"  重新检测到 {len(new_tables)} 个表格")
+
+                if not new_tables:
+                    print(f"  警告: 重提取失败，保留原表格")
+                    continue
+
+                # 重新提取表格数据（使用与 extract_tables 相同的逻辑）
+                reextracted_tables = []
+                for table_idx, table in enumerate(new_tables):
+                    table_bbox = list(table.bbox)
+                    pdfplumber_data = table.extract()
+                    cells = table.cells
+
+                    print(f"  [表格 {table_idx + 1}] bbox: {[f'{x:.1f}' for x in table_bbox]}")
+                    print(f"  [表格 {table_idx + 1}] 行数: {len(pdfplumber_data)}")
+
+                    # 构建单元格坐标映射（与extract_tables相同）
+                    y_coords = sorted(set([cell[1] for cell in cells] + [cell[3] for cell in cells]))
+                    x_coords = sorted(set([cell[0] for cell in cells] + [cell[2] for cell in cells]))
+
+                    # 使用PyMuPDF提取文本（与extract_tables相同）
+                    table_data = []
+                    bbox_data = []
+
+                    for row_idx, row in enumerate(pdfplumber_data):
+                        new_row = []
+                        bbox_row = []
+                        for col_idx in range(len(row)):
+                            cell_text = ""
+                            cell_bbox_found = None
+                            for cell_bbox in cells:
+                                x0, y0, x1, y1 = cell_bbox
+                                cell_row = self._find_index(y0, y_coords)
+                                cell_col = self._find_index(x0, x_coords)
+
+                                if cell_row == row_idx and cell_col == col_idx:
+                                    cell_text = self.extract_cell_text(pymupdf_page, cell_bbox)
+                                    cell_bbox_found = cell_bbox
+                                    break
+
+                            new_row.append(cell_text if cell_text else "")
+                            bbox_row.append(cell_bbox_found)
+                        table_data.append(new_row)
+                        bbox_data.append(bbox_row)
+
+                    # 检测嵌套表格
+                    nested_map = self.nested_handler.detect_and_extract_nested_tables(
+                        page, pymupdf_page, table, bbox_data
+                    )
+
+                    # 构建结构化表格
+                    if table_data:
+                        structured_table = self._build_structured_table(
+                            table_data=table_data,
+                            bbox_data=bbox_data,
+                            cells_bbox=cells,
+                            page_num=page_num,
+                            table_bbox=table_bbox,
+                            nested_map=nested_map,
+                            pymupdf_page=pymupdf_page
+                        )
+
+                        if structured_table:
+                            reextracted_tables.append(structured_table)
+                            print(f"  [表格 {table_idx + 1}] [OK] 重提取成功")
+
+                # 替换原表格
+                if reextracted_tables:
+                    # 找到这一页最顶部的表格（min y0）
+                    original_top_table = min(tables_by_page.get(page_num, []),
+                                            key=lambda t: t.get('bbox', [0,0,0,0])[1],
+                                            default=None)
+
+                    if original_top_table and len(reextracted_tables) > 0:
+                        # 用重提取的第一个表格替换原表格
+                        reextracted_table = reextracted_tables[0]
+
+                        # 保留原表格的ID（用于合并链）
+                        original_id = original_top_table.get('id')
+                        reextracted_table['id'] = original_id
+
+                        # 替换
+                        for i, table in enumerate(original_tables):
+                            if table.get('id') == original_id:
+                                original_tables[i] = reextracted_table
+                                print(f"  [OK] 替换表格 {original_id}")
+                                print(f"       原行数: {len(original_top_table.get('rows', []))}")
+                                print(f"       新行数: {len(reextracted_table.get('rows', []))}")
+                                break
+
+        doc_pymupdf.close()
+        print(f"\n[表格重提取] 完成\n")
+        return original_tables
+
     def extract_cell_text(self, pymupdf_page, bbox: tuple, debug: bool = False) -> str:
         """
         使用PyMuPDF从指定边界框提取文本

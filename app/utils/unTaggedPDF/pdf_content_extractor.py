@@ -8,10 +8,6 @@ from pathlib import Path
 from typing import Dict, Any
 import fitz  # PyMuPDF
 
-
-
-
-
 try:
     from .table_extractor import TableExtractor
     from .paragraph_extractor import ParagraphExtractor
@@ -58,6 +54,8 @@ class PDFContentExtractor:
 
         # 页面宽度缓存
         self._page_widths = None
+        # 页面高度缓存
+        self._page_heights = None
         # 页面drawings缓存
         self._page_drawings = None
 
@@ -199,12 +197,37 @@ class PDFContentExtractor:
         Returns:
             包含表格数据和元数据的字典
         """
+        # 第一轮：正常提取
         tables = self.table_extractor.extract_tables()
 
         # 先为表格分配临时id（用于跨页合并）
         for i, table in enumerate(tables):
             if 'id' not in table or table['id'] is None:
                 table['id'] = f"temp_{i:03d}"
+
+        # 保存合并前的原始表格（用于调试）
+        import copy
+        tables_before_merge = copy.deepcopy(tables)
+
+        # 第二轮：使用续页hint重新提取（如果启用跨页合并）
+        if self.enable_cross_page_merge and self.cross_page_merger and tables:
+            page_widths = self._get_page_widths()
+            page_heights = self._get_page_heights()
+            page_drawings = self._get_page_drawings()
+
+            # 生成续页hints
+            hints_by_page = self.cross_page_merger.build_continuation_hints(
+                tables,
+                page_widths,
+                page_heights,
+                page_drawings
+            )
+
+            # 如果有hints，重新提取
+            if hints_by_page:
+                tables = self.table_extractor.reextract_with_hints(hints_by_page, tables)
+                # 更新合并前的备份
+                tables_before_merge = copy.deepcopy(tables)
 
         # 跨页表格合并（如果启用）
         if self.enable_cross_page_merge and self.cross_page_merger and tables:
@@ -246,12 +269,18 @@ class PDFContentExtractor:
 
         metadata = self._get_page_metadata()
 
-        return {
+        result = {
             "pdf_file": str(self.pdf_path),
             "total_tables": len(tables),
             "tables": tables,
             "page_metadata": metadata
         }
+
+        # 同时保存合并前的表格（用于调试）
+        if tables_before_merge:
+            result["tables_before_merge"] = tables_before_merge
+
+        return result
 
     def extract_all_paragraphs(self) -> Dict[str, Any]:
         """
@@ -383,6 +412,27 @@ class PDFContentExtractor:
         doc.close()
         self._page_widths = page_widths
         return page_widths
+
+    def _get_page_heights(self):
+        """
+        获取所有页面的高度（用于跨页表格合并）
+
+        Returns:
+            {page_num: height} 字典
+        """
+        if self._page_heights is not None:
+            return self._page_heights
+
+        page_heights = {}
+        doc = fitz.open(self.pdf_path)
+
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            page_heights[page_num + 1] = page.rect.height
+
+        doc.close()
+        self._page_heights = page_heights
+        return page_heights
 
     def _get_page_drawings(self):
         """

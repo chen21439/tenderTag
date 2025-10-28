@@ -1023,6 +1023,198 @@ class CrossPageTableMerger:
 
         return False, "无内容隔断"
 
+    def build_continuation_hints(self,
+                                 tables: List[Dict[str, Any]],
+                                 page_widths: Dict[int, float],
+                                 page_heights: Dict[int, float],
+                                 page_drawings: Dict[int, List] = None) -> Dict[int, Dict]:
+        """
+        分析第一轮提取的表格，为可能的续页生成"列模板hint"
+
+        原理：
+        - 检测页底表格（y1 > page_height * 0.8）
+        - 下一页有表格且贴顶（y0 < page_height * 0.2）
+        - 计算续页评分（基于宽度、右边界对齐）
+        - 返回 hints_by_page
+
+        Args:
+            tables: 第一轮提取的所有表格
+            page_widths: 页面宽度字典
+            page_heights: 页面高度字典
+            page_drawings: 页面绘图数据（可选）
+
+        Returns:
+            hints_by_page: {page_num: {"col_xs": [...], "bbox": [...], "score": ...}}
+        """
+        hints_by_page = {}
+
+        print(f"\n[DEBUG build_continuation_hints] 开始分析，共{len(tables)}个表格")
+
+        # 1. 按页分组表格
+        tables_by_page = {}
+        for table in tables:
+            page = table.get('page', 1)
+            if page not in tables_by_page:
+                tables_by_page[page] = []
+            tables_by_page[page].append(table)
+
+        # 2. 遍历相邻页面，检测续页模式
+        sorted_pages = sorted(tables_by_page.keys())
+
+        for i, current_page in enumerate(sorted_pages):
+            # 跳过最后一页
+            if i >= len(sorted_pages) - 1:
+                continue
+
+            next_page = sorted_pages[i + 1]
+
+            # 只处理相邻页
+            if next_page != current_page + 1:
+                continue
+
+            # 获取当前页的最底部表格
+            current_tables = tables_by_page[current_page]
+            bottom_table = max(current_tables, key=lambda t: t.get('bbox', [0,0,0,0])[3])
+
+            # 获取下一页的最顶部表格
+            next_tables = tables_by_page[next_page]
+            top_table = min(next_tables, key=lambda t: t.get('bbox', [0,0,0,0])[1])
+
+            # 获取页面尺寸
+            page_height = page_heights.get(current_page, 842)  # A4默认高度
+            next_page_height = page_heights.get(next_page, 842)
+
+            bottom_bbox = bottom_table.get('bbox', [0, 0, 0, 0])
+            top_bbox = top_table.get('bbox', [0, 0, 0, 0])
+
+            # 3. 检测是否是续页模式
+            # 条件1：当前页表格贴底（y1 > page_height * 0.8）
+            is_bottom = bottom_bbox[3] > page_height * 0.8
+
+            # 条件2：下一页表格贴顶（y0 < page_height * 0.2）
+            is_top = top_bbox[1] < next_page_height * 0.2
+
+            print(f"[DEBUG] 检测页{current_page}→{next_page}:")
+            print(f"  底表 {bottom_table.get('id')}: bbox={bottom_bbox}")
+            print(f"  顶表 {top_table.get('id')}: bbox={top_bbox}")
+            print(f"  is_bottom={is_bottom} ({bottom_bbox[3]} > {page_height * 0.8:.2f})")
+            print(f"  is_top={is_top} ({top_bbox[1]} < {next_page_height * 0.2:.2f})")
+
+            if not (is_bottom and is_top):
+                print(f"  → 不满足贴底贴顶条件，跳过")
+                continue
+
+            # 4. 计算续页评分
+            score = 0.0
+
+            # 4.1 宽度相似度（40%）
+            bottom_width = bottom_bbox[2] - bottom_bbox[0]
+            top_width = top_bbox[2] - top_bbox[0]
+            if bottom_width > 0:
+                width_ratio = min(bottom_width, top_width) / max(bottom_width, top_width)
+                score += width_ratio * 0.4
+
+            # 4.2 右边界对齐（40%）
+            page_width = page_widths.get(current_page, 595)  # A4默认宽度
+            right_diff = abs(bottom_bbox[2] - top_bbox[2])
+            if right_diff < page_width * 0.03:  # 右边界差异 < 3%
+                score += 0.4
+            elif right_diff < page_width * 0.05:  # 右边界差异 < 5%
+                score += 0.2
+
+            # 4.3 底边/顶边是否封口（20%）
+            if page_drawings:
+                bottom_drawings = page_drawings.get(current_page, [])
+                top_drawings = page_drawings.get(next_page, [])
+
+                # 检测底边是否开口
+                has_bottom_border = self._has_horizontal_border(
+                    bottom_bbox, bottom_drawings, 'bottom'
+                )
+                # 检测顶边是否开口
+                has_top_border = self._has_horizontal_border(
+                    top_bbox, top_drawings, 'top'
+                )
+
+                # 如果都没有封口，说明可能是续页
+                if not has_bottom_border and not has_top_border:
+                    score += 0.2
+
+            # 5. 如果评分达标，生成 hint
+            if score >= 0.6:
+                # 从底部表格提取列边界
+                col_xs = self._extract_column_xs(bottom_table)
+
+                hint = {
+                    "col_xs": col_xs,
+                    "bbox": bottom_bbox,  # 使用上一段的bbox作为参考
+                    "score": score,
+                    "source_table_id": bottom_table.get('id'),
+                    "source_page": current_page
+                }
+
+                hints_by_page[next_page] = hint
+
+                print(f"[续页检测] 页{current_page}表{bottom_table.get('id')} → 页{next_page}表{top_table.get('id')} (score={score:.2f})")
+
+        return hints_by_page
+
+    def _extract_column_xs(self, table: Dict[str, Any]) -> List[float]:
+        """从表格中提取列边界x坐标"""
+        bbox = table.get('bbox', [0, 0, 0, 0])
+        x0, x1 = bbox[0], bbox[2]
+
+        # 从第一行cells提取列边界
+        rows = table.get('rows', [])
+        if not rows:
+            return [x0, x1]
+
+        first_row = rows[0]
+        cells = first_row.get('cells', [])
+
+        x_coords = set([x0])
+        for cell in cells:
+            cell_bbox = cell.get('bbox')
+            if cell_bbox:
+                x_coords.add(cell_bbox[0])
+                x_coords.add(cell_bbox[2])
+        x_coords.add(x1)
+
+        return sorted(x_coords)
+
+    def _has_horizontal_border(self, bbox: List[float], drawings: List, position: str) -> bool:
+        """检测表格顶部或底部是否有完整横线"""
+        if not drawings:
+            return False
+
+        x0, y0, x1, y1 = bbox
+        target_y = y0 if position == 'top' else y1
+        tolerance = 5  # 允许5pt的误差
+
+        # 检查是否有横线覆盖了表格宽度的大部分
+        for drawing in drawings:
+            if drawing.get('type') != 'l':  # line
+                continue
+
+            # 检查y坐标是否匹配
+            line_y = drawing.get('rect', [0, 0, 0, 0])[1]
+            if abs(line_y - target_y) > tolerance:
+                continue
+
+            # 检查x方向覆盖度
+            line_x0 = drawing.get('rect', [0, 0, 0, 0])[0]
+            line_x1 = drawing.get('rect', [0, 0, 0, 0])[2]
+
+            overlap_x0 = max(x0, line_x0)
+            overlap_x1 = min(x1, line_x1)
+            overlap_width = max(0, overlap_x1 - overlap_x0)
+            table_width = x1 - x0
+
+            if table_width > 0 and overlap_width / table_width >= 0.8:
+                return True
+
+        return False
+
     def merge_all_tables(self,
                         tables: List[Dict[str, Any]],
                         page_widths: Dict[int, float],
