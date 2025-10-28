@@ -12,10 +12,12 @@ try:
     from .nested_table_handler import NestedTableHandler
     from .bbox_utils import rect, contains_with_tol
     from .header_analyzer import HeaderAnalyzer
+    from .cell_span_detector import CellSpanDetector
 except ImportError:
     from nested_table_handler import NestedTableHandler
     from bbox_utils import rect, contains_with_tol
     from header_analyzer import HeaderAnalyzer
+    from cell_span_detector import CellSpanDetector
 
 
 def validate_and_fix_bbox(table_bbox: list, cells: List[Dict], page_height: float) -> list:
@@ -112,6 +114,9 @@ class TableExtractor:
 
         # 多层表头分析器
         self.header_analyzer = HeaderAnalyzer()
+
+        # 单元格跨列/跨行检测器
+        self.span_detector = CellSpanDetector(tolerance=2.0)
 
     # ==================== TEXT-FALLBACK 辅助方法 ====================
 
@@ -765,6 +770,12 @@ class TableExtractor:
         if nested_map is None:
             nested_map = {}
 
+        # 检测单元格的跨列/跨行信息
+        span_annotation = self.span_detector.annotate_table_cells(bbox_data, cells_bbox)
+        col_x_edges = span_annotation['col_x_edges']
+        row_y_edges = span_annotation['row_y_edges']
+        cell_spans = span_annotation['cell_spans']
+
         # 尝试进行多层表头分析
         header_model = None
         try:
@@ -813,12 +824,30 @@ class TableExtractor:
                 nested_map=nested_map,
                 header_model=header_model,
                 page_height=page_height,
-                cells_bbox_orig=cells_bbox  # 传递原始pdfplumber cells用于bbox修正
+                cells_bbox_orig=cells_bbox,  # 传递原始pdfplumber cells用于bbox修正
+                col_x_edges=col_x_edges,  # 列边界坐标
+                row_y_edges=row_y_edges,  # 行边界坐标
+                cell_spans=cell_spans  # 单元格跨度信息
             )
 
-            # 检查是否存在列缺失问题（first_col_index > 0）
-            first_col_index = multi_level_result.get("columns", [{}])[0].get("index", 0) if multi_level_result.get("columns") else 0
+            # 检查是否存在列缺失问题（columns为空 或 first_col_index > 0）
+            columns = multi_level_result.get("columns", [])
 
+            # 检查1：columns为空
+            if not columns:
+                print(f"  [WARNING] 多层表头分析导致所有列丢失 (columns为空)，回退到单层表头处理")
+                return self._build_table_with_single_level_headers(
+                    table_data=table_data,
+                    bbox_data=bbox_data,
+                    page_num=page_num,
+                    table_bbox=table_bbox,
+                    nested_map=nested_map,
+                    page_height=page_height,
+                    cells_bbox_orig=cells_bbox  # 传递原始pdfplumber cells用于bbox修正
+                )
+
+            # 检查2：first_col_index > 0（说明丢失了左侧列）
+            first_col_index = columns[0].get("index", 0) if columns else 0
             if first_col_index > 0:
                 print(f"  [WARNING] 多层表头分析导致列缺失 (first_col_index={first_col_index})，回退到单层表头处理")
                 # 回退到单层表头
@@ -854,7 +883,10 @@ class TableExtractor:
         nested_map: Dict[tuple, List[Dict]],
         header_model,
         page_height: float,
-        cells_bbox_orig: list = None
+        cells_bbox_orig: list = None,
+        col_x_edges: List[float] = None,
+        row_y_edges: List[float] = None,
+        cell_spans: List[List[Dict]] = None
     ) -> Dict[str, Any]:
         """
         使用多层表头模型构建表格
@@ -868,6 +900,9 @@ class TableExtractor:
             header_model: HeaderModel对象
             page_height: 页面高度
             cells_bbox_orig: pdfplumber原始cells（用于bbox修正）
+            col_x_edges: 列边界坐标
+            row_y_edges: 行边界坐标
+            cell_spans: 单元格跨度信息
 
         Returns:
             结构化表格字典
@@ -943,6 +978,17 @@ class TableExtractor:
                     "bbox": cell_bbox
                 }
 
+                # 添加span信息（如果可用）
+                if cell_spans and actual_row_idx < len(cell_spans) and actual_col_idx < len(cell_spans[actual_row_idx]):
+                    span_info = cell_spans[actual_row_idx][actual_col_idx]
+                    if span_info:
+                        cell_obj['start_col'] = span_info.get('start_col')
+                        cell_obj['end_col'] = span_info.get('end_col')
+                        cell_obj['colspan'] = span_info.get('colspan', 1)
+                        cell_obj['start_row'] = span_info.get('start_row')
+                        cell_obj['end_row'] = span_info.get('end_row')
+                        cell_obj['rowspan'] = span_info.get('rowspan', 1)
+
                 # 只有识别到嵌套表格时才添加 nested_tables 字段
                 if nested_here:
                     cell_obj["nested_tables"] = nested_here
@@ -966,7 +1012,7 @@ class TableExtractor:
 
         validated_bbox = validate_and_fix_bbox(table_bbox, cells_for_validation, page_height)
 
-        return {
+        result = {
             "type": "table",
             "level": 1,
             "parent_table_id": None,
@@ -981,6 +1027,14 @@ class TableExtractor:
             },
             "method": "hybrid (pdfplumber cells + pymupdf text + multi-level headers)"
         }
+
+        # 添加列边界和行边界（如果可用）
+        if col_x_edges:
+            result['col_x_edges'] = [round(x, 2) for x in col_x_edges]
+        if row_y_edges:
+            result['row_y_edges'] = [round(y, 2) for y in row_y_edges]
+
+        return result
 
     def _build_table_with_single_level_headers(
         self,

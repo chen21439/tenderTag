@@ -610,8 +610,8 @@ def main():
     主测试方法
     """
     # 从taskId构建路径
-    task_id = "国土空间规划实施监测网络建设项目"
-    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目")
+    task_id = "1981173691773419522"
+    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\1981173691773419522")
     pdf_path = base_dir / f"{task_id}.pdf"
 
     print(f"开始测试PDF内容提取...")
@@ -651,9 +651,13 @@ def main():
 
                 # 显示前3行的第一个单元格内容预览
                 for row_idx, row in enumerate(table.get('rows', [])[:3], start=1):
-                    first_cell = row.get('cells', [{}])[0]
-                    content = first_cell.get('content', '')[:50]
-                    print(f"         行{row_idx}: {content}...")
+                    cells = row.get('cells', [])
+                    if cells:
+                        first_cell = cells[0]
+                        content = first_cell.get('content', '')[:50]
+                        print(f"         行{row_idx}: {content}...")
+                    else:
+                        print(f"         行{row_idx}: (无单元格)")
 
                 print()
 
