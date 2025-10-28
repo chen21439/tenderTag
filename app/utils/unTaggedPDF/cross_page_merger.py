@@ -756,8 +756,11 @@ class CrossPageTableMerger:
         if 'nested_tables' in merged:
             del merged['nested_tables']
 
-        # Step 3: 拼接数据行
+        # Step 2.5: 检测并恢复续页被误判为表头的数据行
         print(f"[合并] 链 {table_ids}")
+        self._recover_misidentified_headers(table_segments)
+
+        # Step 3: 拼接数据行
         for i, segment in enumerate(table_segments):
             segment_rows = segment.get('rows', [])
             segment_id = segment.get('id')
@@ -814,6 +817,73 @@ class CrossPageTableMerger:
             del merged['nested_tables']
 
         return merged
+
+    def _recover_misidentified_headers(self, table_segments: List[Dict[str, Any]]) -> None:
+        """
+        检测并恢复续页被误判为表头的数据行
+
+        原理：
+        - 如果续页的 columns 与前页的 columns 不一致
+        - 说明续页的第0行被 HeaderAnalyzer 误判为表头
+        - 此时被误判的数据保存在 columns 中
+        - 需要从 columns 恢复这一行，并用前页的 columns 替换
+
+        Args:
+            table_segments: 要合并的表段列表（会被原地修改）
+        """
+        if len(table_segments) < 2:
+            return
+
+        # 使用第一段的 columns 作为基准
+        base_columns = table_segments[0].get('columns', [])
+        base_col_names = [col.get('name', '') for col in base_columns]
+
+        # 检查每个续页
+        for i in range(1, len(table_segments)):
+            segment = table_segments[i]
+            segment_id = segment.get('id')
+            segment_page = segment.get('page')
+
+            segment_columns = segment.get('columns', [])
+            segment_col_names = [col.get('name', '') for col in segment_columns]
+
+            # 比较 columns 是否一致
+            if base_col_names != segment_col_names:
+                # columns 不一致 → 续页被误判了表头
+                print(f"  [表头恢复] {segment_id}(页{segment_page}): columns 不一致，检测到误判表头")
+                print(f"    基准 columns: {base_col_names[:3]}...")
+                print(f"    续页 columns: {segment_col_names[:3]}...")
+
+                # 1. 从 columns 构建恢复行
+                recovered_row = {
+                    'id': 'r001',  # 固定ID，后续会重新编号
+                    'rowPath': [],
+                    'cells': []
+                }
+
+                for j, col in enumerate(segment_columns):
+                    col_name = col.get('name', '')
+                    col_id = col.get('id', f'c{j+1:03d}')
+
+                    # 创建恢复的 cell
+                    cell = {
+                        'row_id': 'r001',
+                        'col_id': col_id,
+                        'rowPath': [],
+                        'cellPath': col.get('path', [col_name]) if col_name else [],
+                        'content': col_name,  # ← 关键：从 column.name 提取内容
+                        'bbox': col.get('bbox'),
+                        'id': f'{segment_id}-r001-{col_id}'
+                    }
+                    recovered_row['cells'].append(cell)
+
+                # 2. 插入到 rows 开头
+                segment['rows'].insert(0, recovered_row)
+
+                # 3. 用基准 columns 替换续页的 columns
+                segment['columns'] = copy.deepcopy(base_columns)
+
+                print(f"    → 恢复了1行数据，当前行数: {len(segment['rows'])}")
 
     def detect_repeated_header(self,
                               prev_table: Dict[str, Any],
