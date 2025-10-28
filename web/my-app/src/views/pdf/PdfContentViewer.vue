@@ -52,6 +52,15 @@
 
         <a-divider type="vertical" />
 
+        <a-switch
+          :checked="globalWrapEnabled"
+          @change="globalWrapEnabled = $event"
+          checked-children="全局换行"
+          un-checked-children="全局不换行"
+        />
+
+        <a-divider type="vertical" />
+
         <a-statistic
           title="表格数"
           :value="tableData?.total_tables || 0"
@@ -131,9 +140,17 @@
                     <a-tag v-if="table.level" :color="table.level === 1 ? 'green' : 'orange'">
                       {{ table.level === 1 ? '主表格' : '嵌套表格' }}
                     </a-tag>
+                    <a-switch
+                      :checked="tableWrapStates[table.id]"
+                      @change="toggleTableWrap(table.id, $event)"
+                      checked-children="自动换行"
+                      un-checked-children="不换行"
+                      size="small"
+                      style="margin-left: auto;"
+                    />
                   </div>
 
-                <div class="table-wrapper">
+                <div class="table-wrapper" :class="{ 'wrap-content': shouldWrap(table.id) }">
                   <a-table
                     :columns="formatTableColumns(table)"
                     :data-source="formatTableDataSource(table)"
@@ -250,6 +267,8 @@ const searchText = ref('')
 const showNavPanel = ref(true)
 const contentContainer = ref(null)
 const useBboxRendering = ref(false) // BBox渲染模式开关
+const globalWrapEnabled = ref(false) // 全局换行开关
+const tableWrapStates = ref({}) // 各表格的换行状态
 
 // 默认加载的 JSON 文件路径（使用自动获取最新时间戳的API）
 const DEFAULT_TABLE_URL = 'http://localhost:3000/api/content/table'
@@ -560,6 +579,21 @@ const scrollToTop = () => {
   }
 }
 
+// 切换表格换行状态
+const toggleTableWrap = (tableId, checked) => {
+  tableWrapStates.value[tableId] = checked
+}
+
+// 判断表格是否应该换行（局部优先于全局）
+const shouldWrap = (tableId) => {
+  // 如果设置了局部状态，使用局部状态
+  if (tableId in tableWrapStates.value) {
+    return tableWrapStates.value[tableId]
+  }
+  // 否则使用全局状态
+  return globalWrapEnabled.value
+}
+
 // 从 URL 加载 JSON 文件
 const loadJsonFromUrl = async (url, type = 'table') => {
   try {
@@ -718,6 +752,56 @@ onMounted(() => {
   padding: 16px;
 }
 
+/* Ant Design Table 美化样式 */
+.table-wrapper :deep(.ant-table) {
+  border: none;
+}
+
+.table-wrapper :deep(.ant-table-container) {
+  border: none;
+}
+
+.table-wrapper :deep(.ant-table-thead > tr > th) {
+  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+  font-weight: 600;
+  color: #334155;
+  border: 1px solid #5dade2 !important;
+}
+
+.table-wrapper :deep(.ant-table-tbody > tr > td) {
+  border: 1px solid #5dade2 !important;
+  color: #475569;
+  vertical-align: top;
+  background: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 换行模式样式 */
+.table-wrapper.wrap-content :deep(.ant-table-tbody > tr > td) {
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+}
+
+.table-wrapper :deep(.ant-table-tbody > tr:hover > td) {
+  background: #f8fafc !important;
+}
+
+.table-wrapper :deep(.ant-table-cell) {
+  padding: 10px 8px;
+}
+
+/* 合并单元格样式 - 淡紫色主题 */
+.table-wrapper :deep(.ant-table-tbody > tr > td[colspan]) {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
+  font-weight: 500;
+  border: 1px solid #c084fc !important;
+  box-shadow: inset 0 0 0 1px rgba(192, 132, 252, 0.3);
+}
+
+/* 旧的原生table样式（保留以防回退） */
 .content-table {
   width: 100%;
   border-collapse: collapse;
@@ -727,7 +811,7 @@ onMounted(() => {
 .content-table th {
   background: #fafafa;
   padding: 12px 8px;
-  border: 1px solid #e8e8e8;
+  border: 2px solid #d9d9d9;
   font-weight: 600;
   color: #262626;
   text-align: left;
@@ -735,7 +819,7 @@ onMounted(() => {
 
 .content-table td {
   padding: 10px 8px;
-  border: 1px solid #e8e8e8;
+  border: 2px solid #d9d9d9;
   color: #595959;
   vertical-align: top;
 }
@@ -747,7 +831,7 @@ onMounted(() => {
 .content-table td.merged-cell {
   background: #fff7e6;
   font-weight: 500;
-  border: 2px solid #ffa940;
+  border: 2px solid #ff7a45;
 }
 
 .cell-content {
