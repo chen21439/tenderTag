@@ -18,7 +18,7 @@ except ImportError:
     from header_analyzer import HeaderAnalyzer
 
 
-def validate_and_fix_bbox(table_bbox: list, cells: List[Dict], page_height: float) -> list:
+def validate_and_fix_bbox(table_bbox: list, cells: List[Dict], page_height: float, mode: str = "full") -> list:
     """
     验证并修正表格bbox
 
@@ -28,13 +28,25 @@ def validate_and_fix_bbox(table_bbox: list, cells: List[Dict], page_height: floa
         table_bbox: pdfplumber提供的原始bbox [x0, y0, x1, y1]
         cells: 所有单元格列表，每个cell有'bbox'字段
         page_height: 页面高度（用于验证）
+        mode: 修正模式
+            - "full": 完全重算（可能收缩）
+            - "expand_only": 仅允许外扩，不收缩（用于保持结构完整性）
 
     Returns:
         修正后的bbox
     """
     x0, y0, x1, y1 = table_bbox
 
-    # 检查是否有无效坐标
+    # expand_only模式：仅做轻微外扩，不重新计算
+    if mode == "expand_only":
+        return [
+            max(0, x0 - 1.5),  # 左边外扩1.5pt
+            max(0, y0 - 1.0),  # 上边外扩1pt
+            x1 + 1.5,          # 右边外扩1.5pt
+            y1 + 1.0           # 下边外扩1pt
+        ]
+
+    # full模式：检查并重新计算
     is_invalid = False
 
     if y0 < 0 or y1 < 0 or x0 < 0 or x1 < 0:
@@ -125,14 +137,26 @@ class TableExtractor:
                 # 获取PyMuPDF的对应页面
                 pymupdf_page = doc_pymupdf[page_num - 1]
 
-                # 使用pdfplumber找到表格（只使用lines策略，不回退到text）
-                table_settings = {
+                # 使用pdfplumber找到表格
+                # 先尝试lines策略（最准确，如果表格有完整边框）
+                table_settings_lines = {
                     "vertical_strategy": "lines",
                     "horizontal_strategy": "lines",
                     "intersection_x_tolerance": 3,
                     "intersection_y_tolerance": 3
                 }
-                tables = page.find_tables(table_settings=table_settings)
+                tables = page.find_tables(table_settings=table_settings_lines)
+
+                # 如果检测不到表格，尝试text策略（基于文本对齐）
+                if not tables:
+                    table_settings_text = {
+                        "vertical_strategy": "text",
+                        "horizontal_strategy": "lines",
+                        "intersection_y_tolerance": 3
+                    }
+                    tables = page.find_tables(table_settings=table_settings_text)
+                    if tables:
+                        print(f"  [策略回退] 使用text策略检测到 {len(tables)} 个表格")
 
                 print(f"\n[表格提取] 页码 {page_num}: 检测到 {len(tables)} 个表格")
 
@@ -221,15 +245,260 @@ class TableExtractor:
         print(f"\n[表格提取] 完成，共提取 {len(tables_data)} 个表格\n")
         return tables_data
 
+    def _extract_with_template(self,
+                              page,
+                              pymupdf_page,
+                              bbox: List[float],
+                              col_xs: List[float],
+                              page_num: int) -> Dict[str, Any]:
+        """
+        单表强制提取（使用显式列边界模板）
+
+        使用pdfplumber的extract_table而非find_tables，强制在指定bbox内按col_xs切分
+
+        Args:
+            page: pdfplumber页面对象
+            pymupdf_page: PyMuPDF页面对象
+            bbox: 表格bbox [x0, y0, x1, y1]
+            col_xs: 显式列边界
+            page_num: 页码
+
+        Returns:
+            结构化表格dict或None
+        """
+        x0, y0, x1, y1 = bbox
+        page_height = pymupdf_page.rect.height
+
+        # 构造表格提取设置
+        table_settings = {
+            "vertical_strategy": "explicit",
+            "explicit_vertical_lines": col_xs,
+            "horizontal_strategy": "lines_strict",
+            "snap_tolerance": 3,
+            "join_tolerance": 3,
+            "edge_min_length": 3,
+            "min_words_vertical": 3,
+            "min_words_horizontal": 1,
+        }
+
+        # 裁剪页面到bbox区域（关键！这样extract_table只在这个区域内工作）
+        cropped_page = page.within_bbox(bbox)
+
+        # 使用extract_table（单表强制提取）
+        table = cropped_page.extract_table(table_settings=table_settings)
+
+        if not table or len(table) == 0:
+            return None
+
+        # 获取cells信息
+        table_obj = cropped_page.find_tables(table_settings=table_settings)
+        if not table_obj:
+            return None
+
+        cells = table_obj[0].cells
+        table_bbox_extracted = list(table_obj[0].bbox)
+
+        # 构建bbox_data（单元格坐标）
+        y_coords = sorted(set([cell[1] for cell in cells] + [cell[3] for cell in cells]))
+        x_coords = sorted(set([cell[0] for cell in cells] + [cell[2] for cell in cells]))
+
+        # 使用PyMuPDF提取文本
+        table_data = []
+        bbox_data = []
+
+        for row_idx, row in enumerate(table):
+            new_row = []
+            bbox_row = []
+            for col_idx in range(len(row)):
+                cell_text = ""
+                cell_bbox_found = None
+                for cell_bbox in cells:
+                    x0_cell, y0_cell, x1_cell, y1_cell = cell_bbox
+                    cell_row = self._find_index(y0_cell, y_coords)
+                    cell_col = self._find_index(x0_cell, x_coords)
+
+                    if cell_row == row_idx and cell_col == col_idx:
+                        # 坐标转换：cropped坐标 → 页面坐标
+                        abs_cell_bbox = (
+                            cell_bbox[0] + bbox[0],
+                            cell_bbox[1] + bbox[1],
+                            cell_bbox[2] + bbox[0],
+                            cell_bbox[3] + bbox[1]
+                        )
+                        cell_text = self.extract_cell_text(pymupdf_page, abs_cell_bbox)
+                        cell_bbox_found = abs_cell_bbox
+                        break
+
+                new_row.append(cell_text if cell_text else "")
+                bbox_row.append(cell_bbox_found)
+            table_data.append(new_row)
+            bbox_data.append(bbox_row)
+
+        # 检测嵌套表格
+        nested_map = self.nested_handler.detect_and_extract_nested_tables(
+            page, pymupdf_page, table_obj[0], bbox_data
+        )
+
+        # 构建结构化表格（hint_row_levels=0避免把序号列当行表头）
+        if table_data:
+            structured_table = self._build_structured_table(
+                table_data=table_data,
+                bbox_data=bbox_data,
+                cells_bbox=cells,
+                page_num=page_num,
+                table_bbox=bbox,  # 使用hint的bbox
+                nested_map=nested_map,
+                pymupdf_page=pymupdf_page,
+                hint_row_levels=0  # 强制不把第一列识别为行表头
+            )
+            return structured_table
+
+        return None
+
+    def _text_bucket_by_cols(self,
+                            pymupdf_page,
+                            bbox: List[float],
+                            col_xs: List[float],
+                            page_num: int) -> Dict[str, Any]:
+        """
+        纯文本分列兜底（不依赖pdfplumber表格检测）
+
+        原理：
+        1. 用PyMuPDF在bbox内提取words
+        2. 按col_xs将词分桶入列
+        3. 用y方向聚类组成行
+        4. 生成二维cells，调用_build_structured_table构造表格
+
+        Args:
+            pymupdf_page: PyMuPDF页面对象
+            bbox: 表格bbox [x0, y0, x1, y1]
+            col_xs: 列边界
+            page_num: 页码
+
+        Returns:
+            结构化表格dict或None
+        """
+        x0, y0, x1, y1 = bbox
+
+        # 1. 提取bbox内的所有words
+        words = pymupdf_page.get_text("words", clip=(x0, y0, x1, y1))
+        if not words:
+            return None
+
+        # 2. 按列分桶
+        num_cols = len(col_xs) - 1  # col_xs是边界，列数=边界数-1
+        col_buckets = [[] for _ in range(num_cols)]
+
+        for word in words:
+            wx0, wy0, wx1, wy1, text, block_no, line_no, word_no = word
+            word_center_x = (wx0 + wx1) / 2
+
+            # 找到word所属的列
+            for col_idx in range(num_cols):
+                left_edge = col_xs[col_idx]
+                right_edge = col_xs[col_idx + 1]
+                if left_edge <= word_center_x < right_edge:
+                    col_buckets[col_idx].append({
+                        'text': text,
+                        'bbox': (wx0, wy0, wx1, wy1),
+                        'y_center': (wy0 + wy1) / 2,
+                        'y0': wy0,
+                        'y1': wy1
+                    })
+                    break
+
+        # 3. Y方向聚类成行（使用简单的阈值聚类）
+        # 收集所有词的y_center
+        all_y_centers = []
+        for col_bucket in col_buckets:
+            for word in col_bucket:
+                all_y_centers.append(word['y_center'])
+
+        if not all_y_centers:
+            return None
+
+        # 排序并聚类（相邻y_center差<6pt认为同一行）
+        all_y_centers = sorted(set(all_y_centers))
+        row_y_centers = []
+        current_cluster = [all_y_centers[0]]
+
+        for y in all_y_centers[1:]:
+            if y - current_cluster[-1] < 6:  # 6pt阈值
+                current_cluster.append(y)
+            else:
+                row_y_centers.append(sum(current_cluster) / len(current_cluster))
+                current_cluster = [y]
+        if current_cluster:
+            row_y_centers.append(sum(current_cluster) / len(current_cluster))
+
+        # 4. 构造二维cells
+        table_data = []
+        bbox_data = []
+
+        for row_y in row_y_centers:
+            row_cells = []
+            row_bboxes = []
+
+            for col_idx in range(num_cols):
+                # 找该列中y_center接近row_y的词
+                col_words = [w for w in col_buckets[col_idx]
+                            if abs(w['y_center'] - row_y) < 6]
+
+                if col_words:
+                    # 合并该单元格内的所有词
+                    texts = [w['text'] for w in col_words]
+                    cell_text = ' '.join(texts)
+
+                    # 计算cell bbox（所有词的包络）
+                    min_x = min(w['bbox'][0] for w in col_words)
+                    min_y = min(w['bbox'][1] for w in col_words)
+                    max_x = max(w['bbox'][2] for w in col_words)
+                    max_y = max(w['bbox'][3] for w in col_words)
+                    cell_bbox = (min_x, min_y, max_x, max_y)
+                else:
+                    cell_text = ""
+                    # 空单元格bbox：用列边界和行y构造
+                    cell_bbox = (col_xs[col_idx], row_y - 3, col_xs[col_idx + 1], row_y + 3)
+
+                row_cells.append(cell_text)
+                row_bboxes.append(cell_bbox)
+
+            table_data.append(row_cells)
+            bbox_data.append(row_bboxes)
+
+        # 5. 构建结构化表格
+        if table_data:
+            # 构造cells_bbox（pdfplumber格式）
+            cells_bbox = []
+            for row_bboxes in bbox_data:
+                for cell_bbox in row_bboxes:
+                    if cell_bbox:
+                        cells_bbox.append(cell_bbox)
+
+            structured_table = self._build_structured_table(
+                table_data=table_data,
+                bbox_data=bbox_data,
+                cells_bbox=cells_bbox,
+                page_num=page_num,
+                table_bbox=bbox,
+                nested_map={},  # 纯文本分列不支持嵌套表
+                pymupdf_page=pymupdf_page,
+                hint_row_levels=0
+            )
+            return structured_table
+
+        return None
+
     def reextract_with_hints(self,
                             hints_by_page: Dict[int, Dict],
                             original_tables: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        使用续页hint重新提取指定页面的表格（显式列边界）
+        使用续页hint重新提取指定页面的表格（显式列边界 + 两段式回退）
 
-        原理：
-        - 对命中hint的页面，使用上一页的列边界（col_xs）强制切分
-        - 使用 vertical_strategy='explicit' 避免pdfplumber漏检列
+        策略：
+        1. 主路径：使用extract_table单表强制提取
+        2. 兜底A：扩大bbox 8-10pt重试
+        3. 兜底B：纯文本分列（不依赖pdfplumber表格检测）
 
         Args:
             hints_by_page: {page_num: {"col_xs": [...], "bbox": [...], "score": ...}}
@@ -265,111 +534,97 @@ class TableExtractor:
                 page = pdf.pages[page_num - 1]
                 pymupdf_page = doc_pymupdf[page_num - 1]
                 page_height = pymupdf_page.rect.height
+                page_width = pymupdf_page.rect.width
 
-                # 使用显式列边界重新查找表格
                 col_xs = hint['col_xs']
+                hint_bbox = hint['bbox']
 
-                # 使用pdfplumber的显式列策略
-                table_settings = {
-                    "vertical_strategy": "explicit",
-                    "explicit_vertical_lines": col_xs,
-                    "horizontal_strategy": "lines_strict",  # 或 "text"
-                }
+                # 构造表格bbox（hint的bbox是上一页的，需要转换为当前页）
+                x0, _, x1, _ = hint_bbox
+                # 续页表格通常从页顶开始，到页底或某个y位置
+                table_bbox = [x0, 5, x1, page_height - 5]  # 留5pt边距
 
-                print(f"  使用设置: {table_settings}")
+                reextracted_table = None
 
-                # 重新查找表格
-                new_tables = page.find_tables(table_settings=table_settings)
-
-                print(f"  重新检测到 {len(new_tables)} 个表格")
-
-                if not new_tables:
-                    print(f"  警告: 重提取失败，保留原表格")
-                    continue
-
-                # 重新提取表格数据（使用与 extract_tables 相同的逻辑）
-                reextracted_tables = []
-                for table_idx, table in enumerate(new_tables):
-                    table_bbox = list(table.bbox)
-                    pdfplumber_data = table.extract()
-                    cells = table.cells
-
-                    print(f"  [表格 {table_idx + 1}] bbox: {[f'{x:.1f}' for x in table_bbox]}")
-                    print(f"  [表格 {table_idx + 1}] 行数: {len(pdfplumber_data)}")
-
-                    # 构建单元格坐标映射（与extract_tables相同）
-                    y_coords = sorted(set([cell[1] for cell in cells] + [cell[3] for cell in cells]))
-                    x_coords = sorted(set([cell[0] for cell in cells] + [cell[2] for cell in cells]))
-
-                    # 使用PyMuPDF提取文本（与extract_tables相同）
-                    table_data = []
-                    bbox_data = []
-
-                    for row_idx, row in enumerate(pdfplumber_data):
-                        new_row = []
-                        bbox_row = []
-                        for col_idx in range(len(row)):
-                            cell_text = ""
-                            cell_bbox_found = None
-                            for cell_bbox in cells:
-                                x0, y0, x1, y1 = cell_bbox
-                                cell_row = self._find_index(y0, y_coords)
-                                cell_col = self._find_index(x0, x_coords)
-
-                                if cell_row == row_idx and cell_col == col_idx:
-                                    cell_text = self.extract_cell_text(pymupdf_page, cell_bbox)
-                                    cell_bbox_found = cell_bbox
-                                    break
-
-                            new_row.append(cell_text if cell_text else "")
-                            bbox_row.append(cell_bbox_found)
-                        table_data.append(new_row)
-                        bbox_data.append(bbox_row)
-
-                    # 检测嵌套表格
-                    nested_map = self.nested_handler.detect_and_extract_nested_tables(
-                        page, pymupdf_page, table, bbox_data
+                # ========== 主路径：extract_table单表强制提取 ==========
+                print(f"  [主路径] 使用extract_table单表强制提取")
+                try:
+                    reextracted_table = self._extract_with_template(
+                        page, pymupdf_page, table_bbox, col_xs, page_num
                     )
+                    if reextracted_table:
+                        print(f"  [主路径] 成功！提取到{len(reextracted_table.get('rows', []))}行")
+                except Exception as e:
+                    print(f"  [主路径] 失败: {e}")
 
-                    # 构建结构化表格
-                    if table_data:
-                        structured_table = self._build_structured_table(
-                            table_data=table_data,
-                            bbox_data=bbox_data,
-                            cells_bbox=cells,
-                            page_num=page_num,
-                            table_bbox=table_bbox,
-                            nested_map=nested_map,
-                            pymupdf_page=pymupdf_page
+                # ========== 兜底A：扩大bbox 8-10pt重试 ==========
+                if not reextracted_table:
+                    print(f"  [兜底A] 扩大bbox 10pt重试")
+                    expanded_bbox = [
+                        max(0, table_bbox[0] - 10),
+                        max(0, table_bbox[1] - 10),
+                        min(page_width, table_bbox[2] + 10),
+                        min(page_height, table_bbox[3] + 10)
+                    ]
+                    try:
+                        reextracted_table = self._extract_with_template(
+                            page, pymupdf_page, expanded_bbox, col_xs, page_num
                         )
+                        if reextracted_table:
+                            print(f"  [兜底A] 成功！提取到{len(reextracted_table.get('rows', []))}行")
+                    except Exception as e:
+                        print(f"  [兜底A] 失败: {e}")
 
-                        if structured_table:
-                            reextracted_tables.append(structured_table)
-                            print(f"  [表格 {table_idx + 1}] [OK] 重提取成功")
+                # ========== 兜底B：纯文本分列（不依赖pdfplumber） ==========
+                if not reextracted_table:
+                    print(f"  [兜底B] 纯文本分列兜底")
+                    try:
+                        reextracted_table = self._text_bucket_by_cols(
+                            pymupdf_page, table_bbox, col_xs, page_num
+                        )
+                        if reextracted_table:
+                            print(f"  [兜底B] 成功！提取到{len(reextracted_table.get('rows', []))}行")
+                    except Exception as e:
+                        print(f"  [兜底B] 失败: {e}")
 
-                # 替换原表格
-                if reextracted_tables:
-                    # 找到这一页最顶部的表格（min y0）
-                    original_top_table = min(tables_by_page.get(page_num, []),
-                                            key=lambda t: t.get('bbox', [0,0,0,0])[1],
-                                            default=None)
+                # ========== 替换原表格（使用IoU匹配） ==========
+                if reextracted_table:
+                    # 找到IoU最大的原表格
+                    page_tables = tables_by_page.get(page_num, [])
+                    if not page_tables:
+                        print(f"  警告: 页{page_num}没有原表格，跳过替换")
+                        continue
 
-                    if original_top_table and len(reextracted_tables) > 0:
-                        # 用重提取的第一个表格替换原表格
-                        reextracted_table = reextracted_tables[0]
+                    # 计算IoU并找到最匹配的表格
+                    best_match = None
+                    best_iou = 0.0
+                    reextracted_bbox = reextracted_table.get('raw_bbox', reextracted_table.get('bbox'))
 
+                    for orig_table in page_tables:
+                        orig_bbox = orig_table.get('raw_bbox', orig_table.get('bbox', [0,0,0,0]))
+                        iou = self._calculate_iou(reextracted_bbox, orig_bbox)
+
+                        if iou > best_iou:
+                            best_iou = iou
+                            best_match = orig_table
+
+                    if best_match and best_iou > 0.3:  # IoU阈值
                         # 保留原表格的ID（用于合并链）
-                        original_id = original_top_table.get('id')
+                        original_id = best_match.get('id')
                         reextracted_table['id'] = original_id
 
                         # 替换
                         for i, table in enumerate(original_tables):
                             if table.get('id') == original_id:
                                 original_tables[i] = reextracted_table
-                                print(f"  [OK] 替换表格 {original_id}")
-                                print(f"       原行数: {len(original_top_table.get('rows', []))}")
-                                print(f"       新行数: {len(reextracted_table.get('rows', []))}")
+                                print(f"  [OK] 替换表格 {original_id} (IoU={best_iou:.3f})")
+                                print(f"       原行数: {len(best_match.get('rows', []))}行 {len(best_match.get('columns', []))}列")
+                                print(f"       新行数: {len(reextracted_table.get('rows', []))}行 {len(reextracted_table.get('columns', []))}列")
                                 break
+                    else:
+                        print(f"  警告: 未找到匹配的原表格 (最大IoU={best_iou:.3f})")
+                else:
+                    print(f"  警告: 所有重提取策略均失败，保留原表格")
 
         doc_pymupdf.close()
         print(f"\n[表格重提取] 完成\n")
@@ -748,19 +1003,24 @@ class TableExtractor:
                 "cells": cells
             })
 
-        # 3. 验证并修正table bbox（收集所有cell用于验证）
+        # 3. 保存原始bbox和修正bbox
         all_cells = []
         for row in rows:
             all_cells.extend(row['cells'])
 
-        validated_bbox = validate_and_fix_bbox(table_bbox, all_cells, page_height)
+        # 保存原始bbox（未修正）
+        raw_bbox = list(table_bbox)
+
+        # 使用expand_only模式修正（只外扩，不收缩）
+        fixed_bbox = validate_and_fix_bbox(table_bbox, all_cells, page_height, mode="expand_only")
 
         return {
             "type": "table",
             "level": 1,
             "parent_table_id": None,
             "page": page_num,
-            "bbox": validated_bbox,
+            "raw_bbox": raw_bbox,  # 原始未修正的bbox（用于hint生成和续页判定）
+            "bbox": fixed_bbox,     # 修正后的bbox（用于渲染/裁剪）
             "columns": columns,
             "rows": rows,
             "header_info": {
@@ -849,19 +1109,24 @@ class TableExtractor:
                 "cells": cells
             })
 
-        # 4. 验证并修正table bbox（收集所有cell用于验证）
+        # 4. 保存原始bbox和修正bbox
         all_cells = []
         for row in rows:
             all_cells.extend(row['cells'])
 
-        validated_bbox = validate_and_fix_bbox(table_bbox, all_cells, page_height)
+        # 保存原始bbox（未修正）
+        raw_bbox = list(table_bbox)
+
+        # 使用expand_only模式修正（只外扩，不收缩）
+        fixed_bbox = validate_and_fix_bbox(table_bbox, all_cells, page_height, mode="expand_only")
 
         return {
             "type": "table",
             "level": 1,
             "parent_table_id": None,
             "page": page_num,
-            "bbox": validated_bbox,
+            "raw_bbox": raw_bbox,  # 原始未修正的bbox（用于hint生成和续页判定）
+            "bbox": fixed_bbox,     # 修正后的bbox（用于渲染/裁剪）
             "columns": columns,
             "rows": rows,
             "header_info": {
@@ -871,6 +1136,42 @@ class TableExtractor:
             },
             "method": "hybrid (pdfplumber cells + pymupdf text)"
         }
+
+    def _calculate_iou(self, bbox1: List[float], bbox2: List[float]) -> float:
+        """
+        计算两个bbox的IoU (Intersection over Union)
+
+        Args:
+            bbox1: 第一个bbox [x0, y0, x1, y1]
+            bbox2: 第二个bbox [x0, y0, x1, y1]
+
+        Returns:
+            IoU值 [0, 1]
+        """
+        x0_1, y0_1, x1_1, y1_1 = bbox1
+        x0_2, y0_2, x1_2, y1_2 = bbox2
+
+        # 计算交集
+        x0_inter = max(x0_1, x0_2)
+        y0_inter = max(y0_1, y0_2)
+        x1_inter = min(x1_1, x1_2)
+        y1_inter = min(y1_1, y1_2)
+
+        # 如果没有交集
+        if x1_inter <= x0_inter or y1_inter <= y0_inter:
+            return 0.0
+
+        inter_area = (x1_inter - x0_inter) * (y1_inter - y0_inter)
+
+        # 计算并集
+        area1 = (x1_1 - x0_1) * (y1_1 - y0_1)
+        area2 = (x1_2 - x0_2) * (y1_2 - y0_2)
+        union_area = area1 + area2 - inter_area
+
+        if union_area <= 0:
+            return 0.0
+
+        return inter_area / union_area
 
     def _find_index(self, coord: float, coords_list: list) -> int:
         """

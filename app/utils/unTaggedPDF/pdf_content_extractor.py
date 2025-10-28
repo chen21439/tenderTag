@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any
 import fitz  # PyMuPDF
+from datetime import datetime
 
 try:
     from .table_extractor import TableExtractor
@@ -205,9 +206,11 @@ class PDFContentExtractor:
             if 'id' not in table or table['id'] is None:
                 table['id'] = f"temp_{i:03d}"
 
-        # 保存合并前的原始表格（用于调试）
+        # 保存第一轮原始提取结果（用于调试）
         import copy
-        tables_before_merge = copy.deepcopy(tables)
+        tables_first_round = copy.deepcopy(tables)  # 真正的原始表格
+        tables_before_merge = copy.deepcopy(tables)  # 将被更新为重提取后的表格
+        hints_by_page = {}  # 保存hints信息（用于调试）
 
         # 第二轮：使用续页hint重新提取（如果启用跨页合并）
         if self.enable_cross_page_merge and self.cross_page_merger and tables:
@@ -226,7 +229,7 @@ class PDFContentExtractor:
             # 如果有hints，重新提取
             if hints_by_page:
                 tables = self.table_extractor.reextract_with_hints(hints_by_page, tables)
-                # 更新合并前的备份
+                # 更新重提取后、合并前的备份
                 tables_before_merge = copy.deepcopy(tables)
 
         # 跨页表格合并（如果启用）
@@ -276,9 +279,17 @@ class PDFContentExtractor:
             "page_metadata": metadata
         }
 
-        # 同时保存合并前的表格（用于调试）
+        # 保存第一轮原始提取（用于调试）
+        if tables_first_round:
+            result["tables_first_round"] = tables_first_round
+
+        # 保存重提取后、合并前的表格（用于调试）
         if tables_before_merge:
             result["tables_before_merge"] = tables_before_merge
+
+        # 保存hints信息（用于调试）
+        if hints_by_page:
+            result["hints_by_page"] = hints_by_page
 
         return result
 
@@ -345,13 +356,14 @@ class PDFContentExtractor:
         # 确保输出目录存在
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 确定文件名前缀
+        # 确定文件名前缀（带时间戳）
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         if task_id:
-            table_filename = f"{task_id}_table.json"
-            paragraph_filename = f"{task_id}_paragraph.json"
+            table_filename = f"{task_id}_table_{timestamp}.json"
+            paragraph_filename = f"{task_id}_paragraph_{timestamp}.json"
         else:
-            table_filename = "table.json"
-            paragraph_filename = "paragraph.json"
+            table_filename = f"table_{timestamp}.json"
+            paragraph_filename = f"paragraph_{timestamp}.json"
 
         result_paths = {}
 

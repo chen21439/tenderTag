@@ -967,8 +967,9 @@ class CrossPageTableMerger:
         next_page = next_table.get('page')
         prev_id = prev_table.get('id')
         next_id = next_table.get('id')
-        prev_bbox = prev_table.get('bbox', [0, 0, 0, 0])
-        next_bbox = next_table.get('bbox', [0, 0, 0, 0])
+        # 使用raw_bbox进行位置判断（未修正的原始bbox）
+        prev_bbox = prev_table.get('raw_bbox', prev_table.get('bbox', [0, 0, 0, 0]))
+        next_bbox = next_table.get('raw_bbox', next_table.get('bbox', [0, 0, 0, 0]))
 
         # 只检查相邻页
         if next_page - prev_page != 1:
@@ -1072,22 +1073,23 @@ class CrossPageTableMerger:
             if next_page != current_page + 1:
                 continue
 
-            # 获取当前页的最底部表格
+            # 获取当前页的最底部表格（使用raw_bbox判断位置）
             current_tables = tables_by_page[current_page]
-            bottom_table = max(current_tables, key=lambda t: t.get('bbox', [0,0,0,0])[3])
+            bottom_table = max(current_tables, key=lambda t: t.get('raw_bbox', t.get('bbox', [0,0,0,0]))[3])
 
-            # 获取下一页的最顶部表格
+            # 获取下一页的最顶部表格（使用raw_bbox判断位置）
             next_tables = tables_by_page[next_page]
-            top_table = min(next_tables, key=lambda t: t.get('bbox', [0,0,0,0])[1])
+            top_table = min(next_tables, key=lambda t: t.get('raw_bbox', t.get('bbox', [0,0,0,0]))[1])
 
             # 获取页面尺寸
             page_height = page_heights.get(current_page, 842)  # A4默认高度
             next_page_height = page_heights.get(next_page, 842)
 
-            bottom_bbox = bottom_table.get('bbox', [0, 0, 0, 0])
-            top_bbox = top_table.get('bbox', [0, 0, 0, 0])
+            # 使用raw_bbox进行位置判定（未修正的原始bbox）
+            bottom_bbox = bottom_table.get('raw_bbox', bottom_table.get('bbox', [0, 0, 0, 0]))
+            top_bbox = top_table.get('raw_bbox', top_table.get('bbox', [0, 0, 0, 0]))
 
-            # 3. 检测是否是续页模式
+            # 3. 检测是否是续页模式（基于raw_bbox位置）
             # 条件1：当前页表格贴底（y1 > page_height * 0.8）
             is_bottom = bottom_bbox[3] > page_height * 0.8
 
@@ -1160,27 +1162,104 @@ class CrossPageTableMerger:
         return hints_by_page
 
     def _extract_column_xs(self, table: Dict[str, Any]) -> List[float]:
-        """从表格中提取列边界x坐标"""
-        bbox = table.get('bbox', [0, 0, 0, 0])
-        x0, x1 = bbox[0], bbox[2]
+        """
+        从表格中提取列边界x坐标（基于raw_bbox + 全行cells聚合）
 
-        # 从第一行cells提取列边界
+        策略：
+        1. 使用raw_bbox作为强制左右边框
+        2. 聚合所有行的cell边界
+        3. 使用容差去重
+        4. 确保返回至少包含左右边框
+
+        Args:
+            table: 表格对象（必须包含raw_bbox和rows）
+
+        Returns:
+            排序后的列边界x坐标列表
+        """
+        # 1. 强制边框：使用raw_bbox（未修正的原始bbox）
+        raw_bbox = table.get('raw_bbox')
+        if not raw_bbox:
+            # 兜底：如果没有raw_bbox，使用普通bbox
+            raw_bbox = table.get('bbox', [0, 0, 0, 0])
+
+        x0_raw, y0_raw, x1_raw, y1_raw = raw_bbox
+
+        # 初始化候选集：先放入左右边框
+        x_candidates = [x0_raw, x1_raw]
+
+        # 2. 聚合所有行的cell边界
         rows = table.get('rows', [])
-        if not rows:
-            return [x0, x1]
+        for row in rows:
+            cells = row.get('cells', [])
+            for cell in cells:
+                cell_bbox = cell.get('bbox')
+                if not cell_bbox:
+                    continue
 
-        first_row = rows[0]
-        cells = first_row.get('cells', [])
+                cx0, cy0, cx1, cy1 = cell_bbox
 
-        x_coords = set([x0])
-        for cell in cells:
-            cell_bbox = cell.get('bbox')
-            if cell_bbox:
-                x_coords.add(cell_bbox[0])
-                x_coords.add(cell_bbox[2])
-        x_coords.add(x1)
+                # 只收集落在raw_bbox横向范围内的边界
+                if x0_raw <= cx0 <= x1_raw:
+                    x_candidates.append(cx0)
+                if x0_raw <= cx1 <= x1_raw:
+                    x_candidates.append(cx1)
 
-        return sorted(x_coords)
+        # 3. 去重并排序（使用2.5pt容差）
+        col_xs = self._dedup_edges(sorted(x_candidates), tolerance=2.5)
+
+        # 4. 确保左右边框一定在列表中
+        col_xs = self._ensure_frame_edges(col_xs, x0_raw, x1_raw)
+
+        print(f"  [列边界提取] 从raw_bbox [{x0_raw:.1f}, {x1_raw:.1f}] + {len(rows)}行cells")
+        print(f"  [列边界提取] 提取到 {len(col_xs)} 个列边界: {[f'{x:.1f}' for x in col_xs[:8]]}")
+
+        return col_xs
+
+    def _dedup_edges(self, edges: List[float], tolerance: float = 2.5) -> List[float]:
+        """
+        去重相近的边界（容差内的边界合并为一个）
+
+        Args:
+            edges: 排序后的边界坐标列表
+            tolerance: 容差（pt）
+
+        Returns:
+            去重后的边界列表
+        """
+        if not edges:
+            return []
+
+        result = [edges[0]]
+        for edge in edges[1:]:
+            if abs(edge - result[-1]) > tolerance:
+                result.append(edge)
+
+        return result
+
+    def _ensure_frame_edges(self, col_xs: List[float], x0: float, x1: float) -> List[float]:
+        """
+        确保左右边框在列边界列表中
+
+        Args:
+            col_xs: 当前列边界列表
+            x0: 左边框
+            x1: 右边框
+
+        Returns:
+            包含左右边框的列边界列表
+        """
+        result = list(col_xs)
+
+        # 确保左边框
+        if not result or result[0] > x0 + 1.0:
+            result.insert(0, x0)
+
+        # 确保右边框
+        if not result or result[-1] < x1 - 1.0:
+            result.append(x1)
+
+        return result
 
     def _has_horizontal_border(self, bbox: List[float], drawings: List, position: str) -> bool:
         """检测表格顶部或底部是否有完整横线"""
