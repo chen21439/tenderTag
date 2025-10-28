@@ -102,6 +102,125 @@ class TableExtractor:
         # 多层表头分析器
         self.header_analyzer = HeaderAnalyzer()
 
+    # ==================== TEXT-FALLBACK 辅助方法 ====================
+
+    def _min_cell_x0(self, bbox_data: List[List[tuple]]) -> float:
+        """获取表内所有已识别单元格的最小 x0；若无则返回 +inf"""
+        import math
+        m = math.inf
+        for row in bbox_data or []:
+            for bb in row or []:
+                if bb:
+                    m = min(m, bb[0])
+        return m
+
+    def _left_gap_pt(self, bbox_data: List[List[tuple]], table_bbox: list) -> float:
+        """计算表左边界到最靠左单元格之间的缺口宽度（pt）"""
+        if not table_bbox:
+            return 0.0
+        from math import isfinite
+        min_x0 = self._min_cell_x0(bbox_data)
+        if not isfinite(min_x0):
+            return 0.0
+        return max(0.0, min_x0 - table_bbox[0])
+
+    def _iou(self, a: list, b: list) -> float:
+        """两个 bbox 的 IoU（同页同坐标系）"""
+        ax0, ay0, ax1, ay1 = a
+        bx0, by0, bx1, by1 = b
+        ix0, iy0 = max(ax0, bx0), max(ay0, by0)
+        ix1, iy1 = min(ax1, bx1), min(ay1, by1)
+        iw, ih = max(0, ix1 - ix0), max(0, iy1 - iy0)
+        inter = iw * ih
+        area_a = max(0, ax1 - ax0) * max(0, ay1 - ay0)
+        area_b = max(0, bx1 - bx0) * max(0, by1 - by0)
+        union = area_a + area_b - inter if (area_a + area_b - inter) > 0 else 1.0
+        return inter / union
+
+    def _reextract_with_text_strategy(
+        self,
+        pdf_page,           # pdfplumber page
+        pymupdf_page,       # fitz page
+        orig_bbox: list,
+    ) -> Dict[str, Any]:
+        """
+        在同一页用 vertical_strategy='text' 重提取，并选 IoU 最大的表替换。
+        成功则返回 structured_table；失败返回 {}。
+        """
+        # 1) 用 text 策略在整页找表
+        text_settings = {
+            "vertical_strategy": "text",
+            "horizontal_strategy": "lines",   # 优先保留横线对齐
+            "text_x_tolerance": 3,
+            "intersection_x_tolerance": 3,
+            "intersection_y_tolerance": 3,
+        }
+        cand_tables = pdf_page.find_tables(table_settings=text_settings)
+        if not cand_tables:
+            print("  [TEXT-FALLBACK] text 策略未检出任何表，放弃")
+            return {}
+
+        # 2) 选择 IoU 最大且与原 bbox 有明显重叠的那张
+        best = None
+        best_iou = 0.0
+        for t in cand_tables:
+            iou = self._iou(list(t.bbox), orig_bbox)
+            if iou > best_iou:
+                best, best_iou = t, iou
+
+        if not best or best_iou < 0.25:  # IoU 过小，避免误替换
+            print(f"  [TEXT-FALLBACK] 没有找到与原表 IoU 足够高的候选 (best_iou={best_iou:.2f})")
+            return {}
+
+        print(f"  [TEXT-FALLBACK] 命中候选，bbox={best.bbox}，IoU={best_iou:.2f} → 重建结构")
+
+        # 3) 按原逻辑将 best 转成 structured_table（尽量复用你现有流程）
+        pdfplumber_data = best.extract()
+        cells = best.cells
+        if not pdfplumber_data:
+            return {}
+
+        # 3.1 建 index 映射
+        y_coords = sorted(set([c[1] for c in cells] + [c[3] for c in cells]))
+        x_coords = sorted(set([c[0] for c in cells] + [c[2] for c in cells]))
+
+        table_data, bbox_data = [], []
+        for row_idx, row in enumerate(pdfplumber_data):
+            new_row, bbox_row = [], []
+            for col_idx in range(len(row)):
+                cell_text, cell_bbox_found = "", None
+                for cell_bbox in cells:
+                    x0, y0, x1, y1 = cell_bbox
+                    cell_row = self._find_index(y0, y_coords)
+                    cell_col = self._find_index(x0, x_coords)
+                    if cell_row == row_idx and cell_col == col_idx:
+                        cell_text = self.extract_cell_text(pymupdf_page, cell_bbox)
+                        cell_bbox_found = cell_bbox
+                        break
+                new_row.append(cell_text if cell_text else "")
+                bbox_row.append(cell_bbox_found)
+            table_data.append(new_row)
+            bbox_data.append(bbox_row)
+
+        # 3.2 嵌套表处理（与主流程一致）
+        nested_map = self.nested_handler.detect_and_extract_nested_tables(
+            pdf_page, pymupdf_page, best, bbox_data
+        )
+
+        # 3.3 结构化（多/单层表头自适应）
+        structured = self._build_structured_table(
+            table_data=table_data,
+            bbox_data=bbox_data,
+            cells_bbox=cells,
+            page_num=pdf_page.page_number,
+            table_bbox=list(best.bbox),
+            nested_map=nested_map,
+            pymupdf_page=pymupdf_page
+        )
+        return structured or {}
+
+    # ==================== END TEXT-FALLBACK 辅助方法 ====================
+
     def extract_tables(self) -> List[Dict[str, Any]]:
         """
         提取PDF中的所有表格（混合方法）
@@ -211,6 +330,46 @@ class TableExtractor:
                             nested_map=nested_map,
                             pymupdf_page=pymupdf_page
                         )
+
+                        # [TEXT-FALLBACK] 触发条件：左侧缺口很大 或 列索引不从0开始
+                        try:
+                            left_gap = self._left_gap_pt(bbox_data, list(table.bbox))
+                        except Exception:
+                            left_gap = 0.0
+
+                        # 检查第一列的index
+                        first_col_index = structured_table.get("columns", [{}])[0].get("index", 0) if structured_table.get("columns") else 0
+                        row_levels = (structured_table.get("header_info", {}) or {}).get("row_levels", 1)
+
+                        # 触发条件：
+                        # 1. left_gap >= 40pt
+                        # 2. first_col_index > 0 (列缺失)
+                        # 3. row_levels >= 2 且 left_gap >= 25pt
+                        need_fallback = (left_gap >= 40.0) or (first_col_index > 0) or (row_levels >= 2 and left_gap >= 25.0)
+
+                        if need_fallback:
+                            print(f"  [TEXT-FALLBACK] 触发：left_gap={left_gap:.1f}pt, first_col_index={first_col_index}, row_levels={row_levels}")
+                            # 注意：text策略可能检测不到目标表格（尤其是多层表头+空列的情况）
+                            # 所以如果text失败，我们保留原结果
+                            re_struct = self._reextract_with_text_strategy(page, pymupdf_page, list(table.bbox))
+                            if re_struct:
+                                # 如果重提取得到的左侧缺口更小或列更多，则采用重提取结果
+                                try:
+                                    re_bbox_data = [[c.get("bbox") for c in r.get("cells", [])] for r in re_struct.get("rows", [])]
+                                    re_left_gap = self._left_gap_pt(re_bbox_data, re_struct.get("bbox", list(table.bbox)))
+                                except Exception:
+                                    re_left_gap = left_gap
+
+                                orig_cols = len(structured_table.get("columns", []))
+                                new_cols  = len(re_struct.get("columns", []))
+
+                                better = (re_left_gap + 1e-6 < left_gap - 5.0) or (new_cols > orig_cols)
+
+                                print(f"  [TEXT-FALLBACK] 对比：orig_gap={left_gap:.1f}, new_gap={re_left_gap:.1f}, "
+                                      f"orig_cols={orig_cols}, new_cols={new_cols} → 采用{'新结果' if better else '原结果'}")
+
+                                if better:
+                                    structured_table = re_struct
 
                         tables_data.append(structured_table)
                         print(f"  [表格 {table_idx + 1}] [OK] 成功添加到结果列表")
@@ -618,9 +777,19 @@ class TableExtractor:
         # 获取页面高度（用于bbox验证）
         page_height = pymupdf_page.rect.height if pymupdf_page else 842.0
 
+        # TODO: 多层表头分析在某些情况下会导致列缺失问题
+        # 问题场景：前2行有大量跨列合并单元格（如"评审标准"横跨多列），
+        # 导致误认为只有从第N列开始的列（first_col_index > 0），丢失左侧列
+        #
+        # 临时解决方案：先尝试多层表头分析，如果发现first_col_index > 0，
+        # 则回退到单层表头处理，避免列丢失
+        #
+        # 长期方案：改进HeaderAnalyzer，正确处理跨列合并的表头
+        # 参考文件：app/utils/unTaggedPDF/header_analyzer.py
+
         # 如果表头分析成功，使用多层路径
         if header_model:
-            return self._build_table_with_multi_level_headers(
+            multi_level_result = self._build_table_with_multi_level_headers(
                 table_data=table_data,
                 bbox_data=bbox_data,
                 page_num=page_num,
@@ -629,6 +798,23 @@ class TableExtractor:
                 header_model=header_model,
                 page_height=page_height
             )
+
+            # 检查是否存在列缺失问题（first_col_index > 0）
+            first_col_index = multi_level_result.get("columns", [{}])[0].get("index", 0) if multi_level_result.get("columns") else 0
+
+            if first_col_index > 0:
+                print(f"  [WARNING] 多层表头分析导致列缺失 (first_col_index={first_col_index})，回退到单层表头处理")
+                # 回退到单层表头
+                return self._build_table_with_single_level_headers(
+                    table_data=table_data,
+                    bbox_data=bbox_data,
+                    page_num=page_num,
+                    table_bbox=table_bbox,
+                    nested_map=nested_map,
+                    page_height=page_height
+                )
+
+            return multi_level_result
         else:
             # 回退到单层表头逻辑
             return self._build_table_with_single_level_headers(
