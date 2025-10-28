@@ -18,6 +18,70 @@ except ImportError:
     from header_analyzer import HeaderAnalyzer
 
 
+def validate_and_fix_bbox(table_bbox: list, cells: List[Dict], page_height: float) -> list:
+    """
+    验证并修正表格bbox
+
+    当pdfplumber提供的bbox无效时（负坐标、超出页面），从cells重新计算bbox
+
+    Args:
+        table_bbox: pdfplumber提供的原始bbox [x0, y0, x1, y1]
+        cells: 所有单元格列表，每个cell有'bbox'字段
+        page_height: 页面高度（用于验证）
+
+    Returns:
+        修正后的bbox
+    """
+    x0, y0, x1, y1 = table_bbox
+
+    # 检查是否有无效坐标
+    is_invalid = False
+
+    if y0 < 0 or y1 < 0 or x0 < 0 or x1 < 0:
+        is_invalid = True
+        print(f"  [bbox修正] 检测到负坐标: x0={x0:.2f}, y0={y0:.2f}, x1={x1:.2f}, y1={y1:.2f}")
+
+    if (y1 - y0) > page_height * 1.5:  # 高度超过1.5倍页面高度
+        is_invalid = True
+        print(f"  [bbox修正] 检测到异常高度: {y1-y0:.2f} (页面高度: {page_height})")
+
+    if not is_invalid:
+        return table_bbox
+
+    # 从cells重新计算bbox
+    if not cells:
+        print(f"  [bbox修正] 无cells可用，使用原始bbox")
+        return table_bbox
+
+    # 收集所有cell bbox
+    all_x0, all_y0, all_x1, all_y1 = [], [], [], []
+
+    for cell in cells:
+        cell_bbox = cell.get('bbox')
+        if cell_bbox:
+            all_x0.append(cell_bbox[0])
+            all_y0.append(cell_bbox[1])
+            all_x1.append(cell_bbox[2])
+            all_y1.append(cell_bbox[3])
+
+    if not all_x0:
+        print(f"  [bbox修正] cells中无有效bbox，使用原始bbox")
+        return table_bbox
+
+    fixed_bbox = [
+        min(all_x0),
+        min(all_y0),
+        max(all_x1),
+        max(all_y1)
+    ]
+
+    print(f"  [bbox修正] 从{len(cells)}个cells重新计算bbox:")
+    print(f"    原始: [{x0:.2f}, {y0:.2f}, {x1:.2f}, {y1:.2f}]")
+    print(f"    修正: [{fixed_bbox[0]:.2f}, {fixed_bbox[1]:.2f}, {fixed_bbox[2]:.2f}, {fixed_bbox[3]:.2f}]")
+
+    return fixed_bbox
+
+
 class TableExtractor:
     """表格提取器"""
 
@@ -52,7 +116,11 @@ class TableExtractor:
         # 打开PyMuPDF文档
         doc_pymupdf = fitz.open(self.pdf_path)
 
+        print(f"\n[表格提取] 开始提取PDF: {self.pdf_path.name}")
+
         with pdfplumber.open(self.pdf_path) as pdf:
+            print(f"[表格提取] PDF总页数: {len(pdf.pages)}")
+
             for page_num, page in enumerate(pdf.pages, start=1):
                 # 获取PyMuPDF的对应页面
                 pymupdf_page = doc_pymupdf[page_num - 1]
@@ -66,16 +134,23 @@ class TableExtractor:
                 }
                 tables = page.find_tables(table_settings=table_settings)
 
+                print(f"\n[表格提取] 页码 {page_num}: 检测到 {len(tables)} 个表格")
+
                 # 不再回退到默认策略（text不准确）
                 # if not tables:
                 #     tables = page.find_tables()
 
                 for table_idx, table in enumerate(tables):
+                    print(f"  [表格 {table_idx + 1}] bbox: {table.bbox}")
+
                     # 先用pdfplumber提取表格结构（用于获取行列结构）
                     pdfplumber_data = table.extract()
 
                     if not pdfplumber_data:
+                        print(f"  [表格 {table_idx + 1}] 跳过: pdfplumber_data为空")
                         continue
+
+                    print(f"  [表格 {table_idx + 1}] 提取到 {len(pdfplumber_data)} 行数据")
 
                     # 获取单元格边界框
                     cells = table.cells  # cells是(x0, y0, x1, y1)的列表
@@ -138,8 +213,12 @@ class TableExtractor:
                         )
 
                         tables_data.append(structured_table)
+                        print(f"  [表格 {table_idx + 1}] [OK] 成功添加到结果列表")
+                    else:
+                        print(f"  [表格 {table_idx + 1}] 跳过: table_data为空")
 
         doc_pymupdf.close()
+        print(f"\n[表格提取] 完成，共提取 {len(tables_data)} 个表格\n")
         return tables_data
 
     def extract_cell_text(self, pymupdf_page, bbox: tuple, debug: bool = False) -> str:
@@ -382,6 +461,9 @@ class TableExtractor:
             import traceback
             traceback.print_exc()
 
+        # 获取页面高度（用于bbox验证）
+        page_height = pymupdf_page.rect.height if pymupdf_page else 842.0
+
         # 如果表头分析成功，使用多层路径
         if header_model:
             return self._build_table_with_multi_level_headers(
@@ -390,7 +472,8 @@ class TableExtractor:
                 page_num=page_num,
                 table_bbox=table_bbox,
                 nested_map=nested_map,
-                header_model=header_model
+                header_model=header_model,
+                page_height=page_height
             )
         else:
             # 回退到单层表头逻辑
@@ -399,7 +482,8 @@ class TableExtractor:
                 bbox_data=bbox_data,
                 page_num=page_num,
                 table_bbox=table_bbox,
-                nested_map=nested_map
+                nested_map=nested_map,
+                page_height=page_height
             )
 
     def _build_table_with_multi_level_headers(
@@ -409,7 +493,8 @@ class TableExtractor:
         page_num: int,
         table_bbox: list,
         nested_map: Dict[tuple, List[Dict]],
-        header_model
+        header_model,
+        page_height: float
     ) -> Dict[str, Any]:
         """
         使用多层表头模型构建表格
@@ -421,6 +506,7 @@ class TableExtractor:
             table_bbox: 表格bbox
             nested_map: 嵌套表格映射
             header_model: HeaderModel对象
+            page_height: 页面高度
 
         Returns:
             结构化表格字典
@@ -508,12 +594,19 @@ class TableExtractor:
                 "cells": cells
             })
 
+        # 3. 验证并修正table bbox（收集所有cell用于验证）
+        all_cells = []
+        for row in rows:
+            all_cells.extend(row['cells'])
+
+        validated_bbox = validate_and_fix_bbox(table_bbox, all_cells, page_height)
+
         return {
             "type": "table",
             "level": 1,
             "parent_table_id": None,
             "page": page_num,
-            "bbox": table_bbox,
+            "bbox": validated_bbox,
             "columns": columns,
             "rows": rows,
             "header_info": {
@@ -530,7 +623,8 @@ class TableExtractor:
         bbox_data: List[List[tuple]],
         page_num: int,
         table_bbox: list,
-        nested_map: Dict[tuple, List[Dict]]
+        nested_map: Dict[tuple, List[Dict]],
+        page_height: float
     ) -> Dict[str, Any]:
         """
         使用单层表头构建表格（回退逻辑）
@@ -541,6 +635,7 @@ class TableExtractor:
             page_num: 页码
             table_bbox: 表格bbox
             nested_map: 嵌套表格映射
+            page_height: 页面高度
 
         Returns:
             结构化表格字典
@@ -600,12 +695,19 @@ class TableExtractor:
                 "cells": cells
             })
 
+        # 4. 验证并修正table bbox（收集所有cell用于验证）
+        all_cells = []
+        for row in rows:
+            all_cells.extend(row['cells'])
+
+        validated_bbox = validate_and_fix_bbox(table_bbox, all_cells, page_height)
+
         return {
             "type": "table",
             "level": 1,
             "parent_table_id": None,
             "page": page_num,
-            "bbox": table_bbox,
+            "bbox": validated_bbox,
             "columns": columns,
             "rows": rows,
             "header_info": {

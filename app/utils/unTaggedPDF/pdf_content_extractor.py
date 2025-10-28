@@ -1,3 +1,4 @@
+
 """
 PDF内容提取主协调器
 协调表格提取器和段落提取器，统一编号和保存
@@ -7,23 +8,30 @@ from pathlib import Path
 from typing import Dict, Any
 import fitz  # PyMuPDF
 
+
+
+
+
 try:
     from .table_extractor import TableExtractor
     from .paragraph_extractor import ParagraphExtractor
+    from .cross_page_merger import CrossPageTableMerger
 except ImportError:
     from table_extractor import TableExtractor
     from paragraph_extractor import ParagraphExtractor
+    from cross_page_merger import CrossPageTableMerger
 
 
 class PDFContentExtractor:
     """PDF内容提取主协调器"""
 
-    def __init__(self, pdf_path: str):
+    def __init__(self, pdf_path: str, enable_cross_page_merge: bool = True):
         """
         初始化PDF内容提取器
 
         Args:
             pdf_path: PDF文件路径
+            enable_cross_page_merge: 是否启用跨页表格合并（默认True）
         """
         self.pdf_path = Path(pdf_path)
         if not self.pdf_path.exists():
@@ -33,8 +41,25 @@ class PDFContentExtractor:
         self.table_extractor = TableExtractor(pdf_path)
         self.paragraph_extractor = ParagraphExtractor(pdf_path)
 
+        # 初始化跨页表格合并器
+        self.enable_cross_page_merge = enable_cross_page_merge
+        if enable_cross_page_merge:
+            self.cross_page_merger = CrossPageTableMerger(
+                score_threshold=0.70,
+                geometry_weight=0.40,
+                structure_weight=0.35,
+                visual_weight=0.25
+            )
+        else:
+            self.cross_page_merger = None
+
         # 全局块计数器（用于docN编号）
         self.block_counter = 0
+
+        # 页面宽度缓存
+        self._page_widths = None
+        # 页面drawings缓存
+        self._page_drawings = None
 
     def extract_tables(self):
         """
@@ -66,6 +91,22 @@ class PDFContentExtractor:
         """
         # 1. 提取表格
         tables_raw = self.table_extractor.extract_tables()
+
+        # 1.1. 先为表格分配临时id（用于跨页合并）
+        for i, table in enumerate(tables_raw):
+            if 'id' not in table or table['id'] is None:
+                table['id'] = f"temp_{i:03d}"
+
+        # 1.5. 跨页表格合并（如果启用）
+        if self.enable_cross_page_merge and self.cross_page_merger and tables_raw:
+            page_widths = self._get_page_widths()
+            page_drawings = self._get_page_drawings()
+            tables_raw = self.cross_page_merger.merge_all_tables(
+                tables_raw,
+                page_widths,
+                page_drawings=page_drawings,
+                debug=False
+            )
 
         # 2. 获取表格bbox（供段落提取使用）
         table_bboxes_per_page = self._build_table_bboxes_map(tables_raw)
@@ -160,7 +201,29 @@ class PDFContentExtractor:
         """
         tables = self.table_extractor.extract_tables()
 
-        # 添加docN编号
+        # 先为表格分配临时id（用于跨页合并）
+        for i, table in enumerate(tables):
+            if 'id' not in table or table['id'] is None:
+                table['id'] = f"temp_{i:03d}"
+
+        # 跨页表格合并（如果启用）
+        if self.enable_cross_page_merge and self.cross_page_merger and tables:
+            # 构建布局索引（用于检查表格间是否有正文隔断）
+            table_bboxes_per_page = self._build_table_bboxes_map(tables)
+            paragraphs = self.paragraph_extractor.extract_paragraphs(table_bboxes_per_page)
+            layout_index = self._build_layout_index(tables, paragraphs)
+
+            page_widths = self._get_page_widths()
+            page_drawings = self._get_page_drawings()
+            tables = self.cross_page_merger.merge_all_tables(
+                tables,
+                page_widths,
+                page_drawings=page_drawings,
+                layout_index=layout_index,  # 传入布局索引
+                debug=True  # 开启debug模式
+            )
+
+        # 重新分配正式的docN编号
         self.block_counter = 0
         for table in tables:
             self.block_counter += 1
@@ -300,6 +363,50 @@ class PDFContentExtractor:
                 table_bboxes[page].append(tuple(bbox))
         return table_bboxes
 
+    def _get_page_widths(self):
+        """
+        获取所有页面的宽度（用于跨页表格合并）
+
+        Returns:
+            {page_num: width} 字典
+        """
+        if self._page_widths is not None:
+            return self._page_widths
+
+        page_widths = {}
+        doc = fitz.open(self.pdf_path)
+
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            page_widths[page_num + 1] = page.rect.width
+
+        doc.close()
+        self._page_widths = page_widths
+        return page_widths
+
+    def _get_page_drawings(self):
+        """
+        获取所有页面的drawings数据（用于跨页表格合并的边框检测）
+
+        Returns:
+            {page_num: drawings} 字典
+        """
+        if self._page_drawings is not None:
+            return self._page_drawings
+
+        page_drawings = {}
+        doc = fitz.open(self.pdf_path)
+
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            # 使用get_drawings()获取页面的所有矢量图形
+            drawings = page.get_drawings()
+            page_drawings[page_num + 1] = drawings
+
+        doc.close()
+        self._page_drawings = page_drawings
+        return page_drawings
+
     def _get_page_metadata(self):
         """
         获取PDF页面元数据
@@ -324,6 +431,69 @@ class PDFContentExtractor:
 
         doc.close()
         return metadata
+
+    def _build_layout_index(self, tables, paragraphs):
+        """
+        构建页面布局索引（用于跨页合并时检查正文隔断）
+
+        将表格和段落按页码和Y坐标排序，记录每个内容块的位置和类型
+
+        Args:
+            tables: 表格列表
+            paragraphs: 段落列表（原始格式，未编号）
+
+        Returns:
+            {page_num: [block1, block2, ...]} 每页的内容块列表
+            block格式: {type: 'table'|'paragraph', bbox: [...], id: '...'}
+        """
+        layout_index = {}
+
+        # 添加表格
+        for table in tables:
+            page = table.get('page', 1)
+            bbox = table.get('bbox', [0, 0, 0, 0])
+
+            if page not in layout_index:
+                layout_index[page] = []
+
+            layout_index[page].append({
+                'type': 'table',
+                'id': table.get('id'),
+                'bbox': bbox,
+                'y0': bbox[1],
+                'y1': bbox[3]
+            })
+
+        # 添加段落
+        for para in paragraphs:
+            page = para.get('page', 1)
+            bbox = para.get('bbox', [0, 0, 0, 0])
+            content = para.get('content', '')
+
+            if page not in layout_index:
+                layout_index[page] = []
+
+            layout_index[page].append({
+                'type': 'paragraph',
+                'bbox': bbox,
+                'y0': bbox[1],
+                'y1': bbox[3],
+                'content_preview': content[:100] if content else ''
+            })
+
+        # 对每页的内容块按Y坐标排序
+        for page in layout_index:
+            layout_index[page].sort(key=lambda x: x['y0'])
+
+        # Debug: 输出布局索引统计
+        print(f"\n[布局索引] 构建完成:")
+        for page_num in sorted(layout_index.keys()):
+            blocks = layout_index[page_num]
+            tables_count = sum(1 for b in blocks if b['type'] == 'table')
+            paras_count = sum(1 for b in blocks if b['type'] == 'paragraph')
+            print(f"  页{page_num}: {tables_count}个表格, {paras_count}个段落")
+
+        return layout_index
 
 
 # 便捷函数
@@ -373,7 +543,8 @@ def main():
     print(f"PDF文件: {pdf_path}")
 
     try:
-        extractor = PDFContentExtractor(str(pdf_path))
+        # 使用跨页合并（带正文隔断检查）
+        extractor = PDFContentExtractor(str(pdf_path), enable_cross_page_merge=True)
 
         # 保存结果，使用task_id作为文件名前缀
         output_paths = extractor.save_to_json(include_paragraphs=True, task_id=task_id)
@@ -387,10 +558,28 @@ def main():
             with open(output_paths['tables'], 'r', encoding='utf-8') as f:
                 tables_result = json.load(f)
             print(f"    共提取 {tables_result['total_tables']} 个表格")
-            for table in tables_result['tables']:
+            print(f"\n  [表格详情]")
+            for idx, table in enumerate(tables_result['tables'], start=1):
                 rows_count = len(table.get('rows', []))
                 cols_count = len(table.get('columns', []))
-                print(f"      {table['id']}: 页码 {table['page']}, {rows_count}行 × {cols_count}列")
+                bbox = table.get('bbox', [])
+                is_merged = 'merged_from' in table
+
+                print(f"    [{idx}] {table['id']}: 页码 {table['page']}, {rows_count}行 × {cols_count}列")
+                print(f"         bbox: [{bbox[0]:.2f}, {bbox[1]:.2f}, {bbox[2]:.2f}, {bbox[3]:.2f}]")
+
+                if is_merged:
+                    merged_from = table.get('merged_from', [])
+                    page_end = table.get('page_end', table['page'])
+                    print(f"         [跨页合并] 页{table['page']}~{page_end}, 合并自: {merged_from}")
+
+                # 显示前3行的第一个单元格内容预览
+                for row_idx, row in enumerate(table.get('rows', [])[:3], start=1):
+                    first_cell = row.get('cells', [{}])[0]
+                    content = first_cell.get('content', '')[:50]
+                    print(f"         行{row_idx}: {content}...")
+
+                print()
 
                 # 显示嵌套表格信息
                 for row in table.get('rows', []):

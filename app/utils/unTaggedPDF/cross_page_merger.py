@@ -1,0 +1,1134 @@
+"""
+跨页表格合并器
+负责识别和合并跨页分割的同一张表格
+
+## 核心思路
+
+### 问题定义
+PDF表格可能被分页符打断，形成多个表段：
+- 续页通常会重复表头
+- 列结构保持一致
+- 视觉上有延续关系（顶/底边未封口）
+
+### 解决方案（3步法）
+
+**Step 1**: 为每个表段生成合并指纹（Fingerprint）
+  - 几何特征：列边界、表宽、边距
+  - 结构特征：表头层级、列路径
+  - 视觉特征：线条信息（顶/底边是否封口）
+
+**Step 2**: 跨页匹配与打分
+  - 几何对齐得分（列边界、边距）
+  - 结构一致性得分（表头层级、列路径）
+  - 视觉延续得分（底边开口 + 顶边开口）
+  - 综合得分 ≥ 阈值则判定为同一张表
+
+**Step 3**: 合并表段
+  - 表头去重（续页表头识别与跳过）
+  - 数据行拼接
+  - bbox合并
+  - 嵌套表继承
+
+### 特征权重设计
+
+| 特征组 | 权重 | 说明 |
+|--------|------|------|
+| 几何特征 | 0.40 | 列边界一致性最关键 |
+| 结构特征 | 0.35 | 表头层级和列路径 |
+| 视觉特征 | 0.25 | 顶/底边封口状态 |
+
+总分阈值 **T = 0.70**（可调参）
+"""
+from typing import List, Dict, Any, Tuple, Optional
+from dataclasses import dataclass
+import hashlib
+
+
+@dataclass
+class TableFingerprint:
+    """表格指纹（用于跨页匹配）"""
+
+    # 表格ID和位置
+    table_id: str  # 原始表格ID（如 "doc001"）
+    page_num: int  # 页码
+    bbox: List[float]  # 表格bbox [x0, y0, x1, y1]
+
+    # 几何特征（归一化到页面宽度）
+    x_edges_norm: List[float]  # 归一化列边界
+    table_width_norm: float  # 归一化表宽
+    left_margin_norm: float  # 归一化左边距
+    right_margin_norm: float  # 归一化右边距
+
+    # 结构特征
+    col_levels: int  # 列表头层数
+    row_levels: int  # 行表头列数
+    col_paths: List[List[str]]  # 列路径列表
+    col_paths_hash: str  # 列路径的哈希（用于快速比对）
+
+    # 视觉特征（从get_drawings()提取）
+    has_top_border: Optional[bool]  # 是否有完整顶边（None=未知）
+    has_bottom_border: Optional[bool]  # 是否有完整底边（None=未知）
+    border_line_width: float  # 边框线宽（用于识别同一表格）
+
+    # 表头特征（用于去重）
+    first_data_row_texts: List[str]  # 第一行数据的文本（用于判断是否为重复表头）
+    header_rows_texts: List[List[str]]  # 表头行文本（用于匹配续页表头）
+
+    # 原始表格数据引用
+    table_data: Dict[str, Any]  # 原始表格结构化数据
+
+
+@dataclass
+class MergeCandidate:
+    """合并候选（两个表段的匹配结果）"""
+    prev_table: TableFingerprint  # 上一页的表段
+    next_table: TableFingerprint  # 下一页的表段
+    score: float  # 综合匹配得分 [0, 1]
+
+    # 详细得分（用于调试和分析）
+    geometry_score: float  # 几何特征得分
+    structure_score: float  # 结构特征得分
+    visual_score: float  # 视觉特征得分
+
+    # 匹配详情
+    match_details: Dict[str, Any]  # 详细匹配信息
+
+
+class CrossPageTableMerger:
+    """跨页表格合并器"""
+
+    def __init__(self,
+                 score_threshold: float = 0.70,
+                 geometry_weight: float = 0.40,
+                 structure_weight: float = 0.35,
+                 visual_weight: float = 0.25):
+        """
+        初始化合并器
+
+        Args:
+            score_threshold: 匹配阈值（≥此值判定为同一张表）
+            geometry_weight: 几何特征权重
+            structure_weight: 结构特征权重
+            visual_weight: 视觉特征权重
+        """
+        self.score_threshold = score_threshold
+        self.geometry_weight = geometry_weight
+        self.structure_weight = structure_weight
+        self.visual_weight = visual_weight
+
+    def generate_fingerprint(self,
+                            table: Dict[str, Any],
+                            page_width: float,
+                            page_drawings: List = None) -> TableFingerprint:
+        """
+        为单个表格段生成合并指纹
+
+        Args:
+            table: 结构化表格数据（来自TableExtractor）
+            page_width: 页面宽度（用于归一化）
+            page_drawings: PyMuPDF的get_drawings()结果（用于检测边框）
+
+        Returns:
+            TableFingerprint对象
+        """
+        # 1. 提取基本信息
+        table_id = table.get('id', 'unknown')
+        page_num = table.get('page', 1)
+        bbox = table.get('bbox', [0, 0, 0, 0])
+        x0, y0, x1, y1 = bbox
+
+        # 2. 提取几何特征
+        # 从columns中重建x_edges
+        columns = table.get('columns', [])
+        x_edges = []
+
+        # 如果有列信息，从列的bbox推断x_edges
+        if columns and 'rows' in table and table['rows']:
+            # 从第一行cells的bbox提取x边界
+            first_row = table['rows'][0]
+            cells = first_row.get('cells', [])
+
+            # 收集所有cell的x边界
+            x_coords = set([x0])  # 表格左边界
+            for cell in cells:
+                cell_bbox = cell.get('bbox')
+                if cell_bbox:
+                    x_coords.add(cell_bbox[0])
+                    x_coords.add(cell_bbox[2])
+            x_coords.add(x1)  # 表格右边界
+
+            x_edges = sorted(x_coords)
+        else:
+            # 降级：只用表格左右边界
+            x_edges = [x0, x1]
+
+        # 归一化
+        x_edges_norm = [_normalize_to_page_width(x, page_width) for x in x_edges]
+        table_width_norm = _normalize_to_page_width(x1 - x0, page_width)
+        left_margin_norm = _normalize_to_page_width(x0, page_width)
+        right_margin_norm = _normalize_to_page_width(page_width - x1, page_width)
+
+        # 3. 提取结构特征
+        header_info = table.get('header_info', {})
+        col_levels = header_info.get('col_levels', 1)
+        row_levels = header_info.get('row_levels', 0)
+
+        # 从columns中提取col_paths
+        col_paths = []
+        for col in columns:
+            path = col.get('path', [col.get('name', '')])
+            if not path:
+                path = [col.get('name', '')]
+            col_paths.append(path)
+
+        col_paths_hash = _hash_col_paths(col_paths)
+
+        # 4. 提取视觉特征（边框检测）
+        has_top_border, has_bottom_border, border_line_width = self._detect_table_borders(
+            bbox, page_drawings
+        )
+
+        # 5. 提取表头和首行数据
+        header_rows_texts = self._extract_header_rows(table, col_levels)
+        first_data_row_texts = self._extract_first_data_row(table, col_levels)
+
+        return TableFingerprint(
+            table_id=table_id,
+            page_num=page_num,
+            bbox=bbox,
+            x_edges_norm=x_edges_norm,
+            table_width_norm=table_width_norm,
+            left_margin_norm=left_margin_norm,
+            right_margin_norm=right_margin_norm,
+            col_levels=col_levels,
+            row_levels=row_levels,
+            col_paths=col_paths,
+            col_paths_hash=col_paths_hash,
+            has_top_border=has_top_border,
+            has_bottom_border=has_bottom_border,
+            border_line_width=border_line_width,
+            first_data_row_texts=first_data_row_texts,
+            header_rows_texts=header_rows_texts,
+            table_data=table
+        )
+
+    def _extract_header_rows(self, table: Dict[str, Any], col_levels: int) -> List[List[str]]:
+        """提取表头行的文本"""
+        header_texts = []
+        rows = table.get('rows', [])
+
+        # 提取前col_levels行（但这些在rows中已经被过滤掉了）
+        # 所以我们从columns的name中提取
+        if col_levels > 0:
+            columns = table.get('columns', [])
+            header_row = [col.get('name', '') for col in columns]
+            header_texts.append(header_row)
+
+        return header_texts
+
+    def _extract_first_data_row(self, table: Dict[str, Any], col_levels: int) -> List[str]:
+        """提取第一行数据的文本"""
+        rows = table.get('rows', [])
+        if rows:
+            first_row = rows[0]
+            cells = first_row.get('cells', [])
+            return [cell.get('content', '') for cell in cells]
+        return []
+
+    def _detect_table_borders(self,
+                             bbox: List[float],
+                             page_drawings: List = None) -> Tuple[Optional[bool], Optional[bool], float]:
+        """
+        检测表格的顶边和底边是否有完整边框
+
+        Args:
+            bbox: 表格的边界框 [x0, y0, x1, y1]
+            page_drawings: PyMuPDF的get_drawings()结果
+
+        Returns:
+            (has_top_border, has_bottom_border, avg_line_width)
+            边框状态: True=有边框, False=无边框, None=未知
+        """
+        if not page_drawings:
+            # 没有绘图数据，返回未知状态
+            return None, None, 1.0
+
+        x0, y0, x1, y1 = bbox
+        table_width = x1 - x0
+
+        # 容差：线条位置允许的偏移
+        y_tolerance = 2.0  # Y方向容差
+        x_overlap_threshold = 0.7  # 至少70%的宽度有线条才算"完整"
+
+        has_top = False
+        has_bottom = False
+        line_widths = []
+        has_any_lines = False  # 标记是否检测到任何横线
+
+        # 遍历所有绘图元素
+        for drawing in page_drawings:
+            # PyMuPDF的drawing是字典，包含'rect', 'items'等
+            if not isinstance(drawing, dict):
+                continue
+
+            items = drawing.get('items', [])
+            for item in items:
+                # 只关注直线（'l'表示line）
+                if not isinstance(item, tuple) or len(item) < 2:
+                    continue
+
+                item_type = item[0]
+                if item_type != 'l':  # 不是线条
+                    continue
+
+                # 线条格式: ('l', p1, p2)
+                if len(item) < 3:
+                    continue
+
+                p1 = item[1]  # 起点 (x, y)
+                p2 = item[2]  # 终点 (x, y)
+
+                if not isinstance(p1, (tuple, list)) or not isinstance(p2, (tuple, list)):
+                    continue
+                if len(p1) < 2 or len(p2) < 2:
+                    continue
+
+                line_x0 = min(p1[0], p2[0])
+                line_x1 = max(p1[0], p2[0])
+                line_y0 = min(p1[1], p2[1])
+                line_y1 = max(p1[1], p2[1])
+
+                # 判断是否为横线（y坐标变化小）
+                if abs(line_y1 - line_y0) > 2.0:
+                    continue  # 竖线，跳过
+
+                has_any_lines = True  # 至少检测到一条横线
+                line_y = (line_y0 + line_y1) / 2
+                line_width_px = line_x1 - line_x0
+
+                # 计算线条与表格的水平重叠
+                overlap_x0 = max(line_x0, x0)
+                overlap_x1 = min(line_x1, x1)
+                overlap_width = max(0, overlap_x1 - overlap_x0)
+                overlap_ratio = overlap_width / table_width if table_width > 0 else 0
+
+                # 检查是否是顶边
+                if abs(line_y - y0) < y_tolerance and overlap_ratio >= x_overlap_threshold:
+                    has_top = True
+                    line_widths.append(line_width_px)
+
+                # 检查是否是底边
+                if abs(line_y - y1) < y_tolerance and overlap_ratio >= x_overlap_threshold:
+                    has_bottom = True
+                    line_widths.append(line_width_px)
+
+        # 计算平均线宽（如果有的话）
+        avg_line_width = sum(line_widths) / len(line_widths) if line_widths else 1.0
+
+        # 如果没有检测到任何横线，返回未知状态
+        if not has_any_lines:
+            return None, None, avg_line_width
+
+        return has_top, has_bottom, avg_line_width
+
+    def calculate_geometry_score(self,
+                                 fp1: TableFingerprint,
+                                 fp2: TableFingerprint) -> Tuple[float, Dict]:
+        """
+        计算几何特征匹配得分
+
+        评分维度：
+        1. 列边界一致性（Jaccard相似度）
+        2. 左右边距一致性
+        3. 表宽一致性
+
+        Args:
+            fp1: 上一页表格指纹
+            fp2: 下一页表格指纹
+
+        Returns:
+            (得分 [0, 1], 详细信息)
+        """
+        # 1. 列边界相似度（权重0.5）
+        edges_sim = _calculate_jaccard_similarity(
+            fp1.x_edges_norm,
+            fp2.x_edges_norm,
+            tolerance=0.02  # 归一化后允许2%误差
+        )
+
+        # 2. 左右边距一致性（各权重0.2）
+        left_margin_diff = abs(fp1.left_margin_norm - fp2.left_margin_norm)
+        right_margin_diff = abs(fp1.right_margin_norm - fp2.right_margin_norm)
+
+        left_margin_score = max(0, 1.0 - left_margin_diff / 0.05)  # 5%容差
+        right_margin_score = max(0, 1.0 - right_margin_diff / 0.05)
+
+        # 3. 表宽一致性（权重0.1）
+        width_diff = abs(fp1.table_width_norm - fp2.table_width_norm)
+        width_score = max(0, 1.0 - width_diff / 0.03)  # 3%容差
+
+        # 综合得分
+        score = (
+            0.5 * edges_sim +
+            0.2 * left_margin_score +
+            0.2 * right_margin_score +
+            0.1 * width_score
+        )
+
+        details = {
+            'edges_similarity': round(edges_sim, 3),
+            'left_margin_score': round(left_margin_score, 3),
+            'right_margin_score': round(right_margin_score, 3),
+            'width_score': round(width_score, 3)
+        }
+
+        return score, details
+
+    def calculate_structure_score(self,
+                                  fp1: TableFingerprint,
+                                  fp2: TableFingerprint) -> Tuple[float, Dict]:
+        """
+        计算结构特征匹配得分
+
+        注意：只使用纯结构特征，不使用列名文本
+        原因：续页表格可能无表头或表头识别错误，文本不可靠
+
+        评分维度：
+        1. 列数一致性 (最重要)
+        2. 列表头层级数一致性
+        3. 行表头列数一致性
+
+        Args:
+            fp1: 上一页表格指纹
+            fp2: 下一页表格指纹
+
+        Returns:
+            (得分 [0, 1], 详细信息)
+        """
+        # 1. 列数一致性（权重0.5）
+        num_cols_1 = len(fp1.col_paths)
+        num_cols_2 = len(fp2.col_paths)
+        col_count_match = 1.0 if num_cols_1 == num_cols_2 else 0.0
+
+        # 2. 列表头层级数（权重0.3）
+        col_levels_match = 1.0 if fp1.col_levels == fp2.col_levels else 0.0
+
+        # 3. 行表头列数（权重0.2）
+        row_levels_match = 1.0 if fp1.row_levels == fp2.row_levels else 0.0
+
+        score = (
+            0.5 * col_count_match +
+            0.3 * col_levels_match +
+            0.2 * row_levels_match
+        )
+
+        details = {
+            'col_count_match': bool(col_count_match),
+            'num_cols': (num_cols_1, num_cols_2),
+            'col_levels_match': bool(col_levels_match),
+            'row_levels_match': bool(row_levels_match)
+        }
+
+        return score, details
+
+    def calculate_visual_score(self,
+                               fp1: TableFingerprint,
+                               fp2: TableFingerprint) -> Tuple[float, Dict]:
+        """
+        计算视觉特征匹配得分
+
+        评分维度：
+        1. 上一页底边未封口 + 下一页顶边未封口 → 强延续信号
+        2. 线宽一致性
+
+        边框状态处理：
+        - None（未知）→ 中性分 0.5，避免过度合并
+        - True（有边框）/ False（无边框）→ 按规则计算
+
+        Args:
+            fp1: 上一页表格指纹
+            fp2: 下一页表格指纹
+
+        Returns:
+            (得分 [0, 1], 详细信息)
+        """
+        # 1. 延续信号（权重0.7）
+        # 检查边框状态（None = 未知）
+        prev_bottom_unknown = fp1.has_bottom_border is None
+        next_top_unknown = fp2.has_top_border is None
+
+        # 如果有任一边框状态未知，返回中性分
+        if prev_bottom_unknown or next_top_unknown:
+            continuation_score = 0.5  # 中性：未知状态不给高分也不给低分
+            prev_bottom_open = None
+            next_top_open = None
+        else:
+            # 两边状态都已知，按常规逻辑计算
+            prev_bottom_open = not fp1.has_bottom_border  # 底边未封口
+            next_top_open = not fp2.has_top_border        # 顶边未封口
+
+            if prev_bottom_open and next_top_open:
+                # 两边都开口：强烈的延续信号
+                continuation_score = 1.0
+            elif prev_bottom_open or next_top_open:
+                # 只有一边开口：中等延续信号
+                continuation_score = 0.7
+            else:
+                # 两边都封口：弱延续信号（但不完全排除，因为有的PDF边框检测不准）
+                continuation_score = 0.3
+
+        # 2. 线宽一致性（权重0.3）
+        width_diff = abs(fp1.border_line_width - fp2.border_line_width)
+        width_score = max(0, 1.0 - width_diff / fp1.border_line_width) if fp1.border_line_width > 0 else 1.0
+
+        score = (
+            0.7 * continuation_score +
+            0.3 * width_score
+        )
+
+        details = {
+            'prev_bottom_open': prev_bottom_open,
+            'next_top_open': next_top_open,
+            'continuation_score': round(continuation_score, 3),
+            'line_width_similarity': round(width_score, 3),
+            'has_unknown_border': prev_bottom_unknown or next_top_unknown
+        }
+
+        return score, details
+
+    def calculate_match_score(self,
+                             fp1: TableFingerprint,
+                             fp2: TableFingerprint) -> MergeCandidate:
+        """
+        计算两个表段的综合匹配得分
+
+        综合得分 = geometry_weight * geometry_score
+                  + structure_weight * structure_score
+                  + visual_weight * visual_score
+
+        Args:
+            fp1: 上一页表格指纹
+            fp2: 下一页表格指纹
+
+        Returns:
+            MergeCandidate对象（包含综合得分和详细信息）
+        """
+        # 计算各维度得分
+        geometry_score, geo_details = self.calculate_geometry_score(fp1, fp2)
+        structure_score, struct_details = self.calculate_structure_score(fp1, fp2)
+        visual_score, visual_details = self.calculate_visual_score(fp1, fp2)
+
+        # 综合得分
+        total_score = (
+            self.geometry_weight * geometry_score +
+            self.structure_weight * structure_score +
+            self.visual_weight * visual_score
+        )
+
+        return MergeCandidate(
+            prev_table=fp1,
+            next_table=fp2,
+            score=total_score,
+            geometry_score=geometry_score,
+            structure_score=structure_score,
+            visual_score=visual_score,
+            match_details={
+                'geometry': geo_details,
+                'structure': struct_details,
+                'visual': visual_details
+            }
+        )
+
+    def find_merge_chains(self,
+                         tables: List[Dict[str, Any]],
+                         page_widths: Dict[int, float],
+                         page_drawings: Dict[int, List] = None,
+                         layout_index: Dict[int, List] = None) -> List[List[str]]:
+        """
+        识别需要合并的表格链
+
+        流程：
+        1. 为所有表格生成指纹
+        2. 对相邻页的表格进行两两匹配打分
+        3. 检查正文隔断（如果两表之间有段落，拒绝合并）
+        4. 找出得分≥阈值的匹配对
+        5. 构建合并链（避免一对多）
+
+        Args:
+            tables: 所有提取的表格列表（按页码、bbox顺序排序）
+            page_widths: {page_num: width} 页面宽度字典
+            page_drawings: {page_num: drawings} 页面绘图数据
+            layout_index: {page_num: [blocks]} 页面布局索引（用于检查正文隔断）
+
+        Returns:
+            合并链列表，每条链是表格ID列表，如 [["doc001", "doc005"], ["doc003", "doc007", "doc012"]]
+        """
+        if not tables:
+            return []
+
+        # Step 1: 为所有表格生成指纹
+        fingerprints = {}
+        for table in tables:
+            table_id = table.get('id', 'unknown')
+            page_num = table.get('page', 1)
+            page_width = page_widths.get(page_num, 595.0)  # A4默认宽度
+            drawings = page_drawings.get(page_num) if page_drawings else None
+
+            fp = self.generate_fingerprint(table, page_width, drawings)
+            fingerprints[table_id] = fp
+
+        # Step 2: 按页码分组表格
+        tables_by_page = {}
+        for table in tables:
+            page_num = table.get('page', 1)
+            if page_num not in tables_by_page:
+                tables_by_page[page_num] = []
+            tables_by_page[page_num].append(table)
+
+        # Step 3: 对相邻页的表格进行匹配打分
+        # 存储所有匹配候选: {(prev_id, next_id): MergeCandidate}
+        candidates = {}
+
+        page_nums = sorted(tables_by_page.keys())
+        for i in range(len(page_nums) - 1):
+            curr_page = page_nums[i]
+            next_page = page_nums[i + 1]
+
+            # 只考虑相邻页（page_num相差1）
+            if next_page - curr_page != 1:
+                continue
+
+            curr_tables = tables_by_page[curr_page]
+            next_tables = tables_by_page[next_page]
+
+            # 两两匹配
+            for curr_table in curr_tables:
+                curr_id = curr_table.get('id')
+                curr_fp = fingerprints[curr_id]
+
+                for next_table in next_tables:
+                    next_id = next_table.get('id')
+                    next_fp = fingerprints[next_id]
+
+                    # 计算匹配得分
+                    candidate = self.calculate_match_score(curr_fp, next_fp)
+
+                    # Debug输出
+                    print(f"[匹配] {curr_id}(页{curr_page}) vs {next_id}(页{next_page})")
+                    print(f"  几何得分: {candidate.geometry_score:.3f} (权重{self.geometry_weight})")
+                    print(f"  结构得分: {candidate.structure_score:.3f} (权重{self.structure_weight})")
+                    print(f"  视觉得分: {candidate.visual_score:.3f} (权重{self.visual_weight})")
+                    print(f"  综合得分: {candidate.score:.3f} (阈值{self.score_threshold})")
+
+                    # 门槛检查（gating）：防止过度合并
+                    # 注意：不检查列名文本，因为续页可能无表头
+                    gate_passed = True
+                    gate_reason = []
+
+                    # 门槛1: 几何得分必须≥0.60
+                    if candidate.geometry_score < 0.60:
+                        gate_passed = False
+                        gate_reason.append(f"几何得分{candidate.geometry_score:.3f}<0.60")
+
+                    # 门槛2: 结构得分必须≥0.65
+                    if candidate.structure_score < 0.65:
+                        gate_passed = False
+                        gate_reason.append(f"结构得分{candidate.structure_score:.3f}<0.65")
+
+                    # 门槛3: 列数必须一致（硬性要求）
+                    struct_details = candidate.match_details.get('structure', {})
+                    if not struct_details.get('col_count_match', False):
+                        num_cols = struct_details.get('num_cols', (0, 0))
+                        gate_passed = False
+                        gate_reason.append(f"列数不一致({num_cols[0]}列 vs {num_cols[1]}列)")
+
+                    if not gate_passed:
+                        print(f"  X 未通过门槛检查: {', '.join(gate_reason)}")
+                        print()
+                        continue  # 直接跳过，不记录为候选
+
+                    # 正文隔断检查（最关键的否定规则）
+                    if layout_index:
+                        has_para, para_reason = self._has_paragraph_between(curr_table, next_table, layout_index)
+                        print(f"  [正文检查] {para_reason}")
+                        if has_para:
+                            print(f"  X 检测到正文隔断，拒绝合并")
+                            print()
+                            continue  # 有正文隔断，拒绝合并
+                    else:
+                        print(f"  [正文检查] 跳过（无布局索引）")
+
+                    # 综合得分检查
+                    if candidate.score >= self.score_threshold:
+                        print(f"  OK 达到阈值，记录为候选")
+                        candidates[(curr_id, next_id)] = candidate
+                    else:
+                        print(f"  X 未达到阈值")
+                    print()
+
+        # Step 4: 构建合并链（避免一对多）
+        # 策略：每个表段最多有一个后继，选择得分最高的
+        best_next = {}  # {prev_id: next_id}
+
+        # 按得分降序排序
+        sorted_candidates = sorted(
+            candidates.items(),
+            key=lambda x: x[1].score,
+            reverse=True
+        )
+
+        used_prev = set()
+        used_next = set()
+
+        for (prev_id, next_id), candidate in sorted_candidates:
+            # 避免一对多
+            if prev_id not in used_prev and next_id not in used_next:
+                best_next[prev_id] = next_id
+                used_prev.add(prev_id)
+                used_next.add(next_id)
+
+        # Step 5: 从匹配对构建链
+        chains = []
+        visited = set()
+
+        for table in tables:
+            table_id = table.get('id')
+            if table_id in visited:
+                continue
+
+            # 尝试构建从当前表开始的链
+            chain = [table_id]
+            visited.add(table_id)
+
+            # 向后延伸
+            curr = table_id
+            while curr in best_next:
+                next_id = best_next[curr]
+                chain.append(next_id)
+                visited.add(next_id)
+                curr = next_id
+
+            # 只记录长度≥2的链（单表不需要合并）
+            if len(chain) >= 2:
+                chains.append(chain)
+
+        return chains
+
+    def merge_tables(self,
+                    tables: List[Dict[str, Any]],
+                    table_ids: List[str]) -> Dict[str, Any]:
+        """
+        合并一条链中的多个表段
+
+        流程：
+        1. 列对齐：以首段x_edges为基准
+        2. 表头去重：识别并跳过续页重复的表头行
+        3. 数据行拼接：按页面顺序拼接所有段的数据行
+        4. bbox合并：计算包络bbox
+        5. 嵌套表继承：保留各段的nested_tables
+        6. 元数据更新：记录合并来源
+
+        Args:
+            tables: 所有表格列表
+            table_ids: 要合并的表格ID列表（按顺序）
+
+        Returns:
+            合并后的表格对象
+        """
+        if not table_ids:
+            return None
+
+        # Step 1: 提取要合并的表段（按table_ids顺序）
+        table_map = {table.get('id'): table for table in tables}
+        table_segments = [table_map[tid] for tid in table_ids if tid in table_map]
+
+        if not table_segments:
+            return None
+
+        # Step 2: 以第一段为基准，初始化合并结果
+        first_table = table_segments[0]
+        merged = {
+            'id': first_table.get('id'),  # 使用第一段的ID
+            'page': first_table.get('page'),  # 起始页
+            'bbox': list(first_table.get('bbox', [0, 0, 0, 0])),  # 后续会更新
+            'header_info': dict(first_table.get('header_info', {})),
+            'columns': list(first_table.get('columns', [])),  # 保持列结构
+            'rows': [],  # 待拼接
+            'nested_tables': []  # 待拼接
+        }
+
+        # Step 3: 拼接数据行
+        print(f"[合并] 链 {table_ids}")
+        for i, segment in enumerate(table_segments):
+            segment_rows = segment.get('rows', [])
+            segment_id = segment.get('id')
+            segment_page = segment.get('page')
+
+            if i == 0:
+                # 第一段：直接添加所有行
+                print(f"  第{i+1}段 {segment_id}(页{segment_page}): 添加所有 {len(segment_rows)} 行")
+                merged['rows'].extend(segment_rows)
+            else:
+                # 续页段：检测并跳过重复表头
+                prev_segment = table_segments[i - 1]
+                skip_rows = self.detect_repeated_header(prev_segment, segment)
+
+                # 添加去重后的行
+                print(f"  第{i+1}段 {segment_id}(页{segment_page}): 检测到重复表头 {skip_rows} 行，添加剩余 {len(segment_rows) - skip_rows} 行")
+                merged['rows'].extend(segment_rows[skip_rows:])
+
+            # 收集嵌套表
+            nested = segment.get('nested_tables', [])
+            if nested:
+                merged['nested_tables'].extend(nested)
+
+        # Step 4: 合并bbox
+        # 注意：跨页表格的bbox不能简单合并（不同页面Y坐标系不同）
+        # 解决方案：保留第一页的bbox，并在merged_bboxes中记录所有段的bbox
+        if len(table_segments) > 1:
+            # 保留第一段的bbox作为主bbox（用于兼容性）
+            merged['bbox'] = list(first_table.get('bbox', [0, 0, 0, 0]))
+
+            # 记录所有段的bbox（包含页码信息）
+            merged['merged_bboxes'] = [
+                {
+                    'page': seg.get('page'),
+                    'bbox': seg.get('bbox', [0, 0, 0, 0])
+                }
+                for seg in table_segments
+            ]
+
+        # Step 5: 更新元数据
+        # 记录合并来源和结束页
+        last_table = table_segments[-1]
+        merged['merged_from'] = table_ids
+        merged['page_end'] = last_table.get('page')
+        merged['row_count'] = len(merged['rows'])
+
+        print(f"  合并完成: 总共 {len(merged['rows'])} 行")
+        print()
+
+        # 如果没有嵌套表，删除该字段
+        if not merged['nested_tables']:
+            del merged['nested_tables']
+
+        return merged
+
+    def detect_repeated_header(self,
+                              prev_table: Dict[str, Any],
+                              next_table: Dict[str, Any]) -> int:
+        """
+        检测续页表格开头重复的表头行数
+
+        策略：
+        1. 比较next_table前N行与prev_table的header_rows_texts
+        2. 完全匹配或高相似度的行判定为重复表头
+
+        Args:
+            prev_table: 上一段表格
+            next_table: 下一段表格
+
+        Returns:
+            重复表头行数（从0开始）
+        """
+        # 获取上一段的表头文本（从columns提取）
+        prev_columns = prev_table.get('columns', [])
+        if not prev_columns:
+            return 0
+
+        prev_header_row = [col.get('name', '') for col in prev_columns]
+
+        # 获取下一段的数据行
+        next_rows = next_table.get('rows', [])
+        if not next_rows:
+            return 0
+
+        # 检查下一段的第一行是否与上一段的表头匹配
+        first_row = next_rows[0]
+        first_row_cells = first_row.get('cells', [])
+        first_row_texts = [cell.get('content', '') for cell in first_row_cells]
+
+        # 比较文本
+        # 需要考虑列数可能不完全一致（有行表头时）
+        min_len = min(len(prev_header_row), len(first_row_texts))
+        if min_len == 0:
+            return 0
+
+        # 计算匹配度
+        matched = 0
+        for i in range(min_len):
+            prev_text = str(prev_header_row[i]).strip()
+            next_text = str(first_row_texts[i]).strip()
+
+            # 完全匹配或都为空
+            if prev_text == next_text:
+                matched += 1
+            # 处理空值情况（续页表头可能为空）
+            elif not prev_text and not next_text:
+                matched += 1
+
+        # 匹配率 ≥ 80% 认为是重复表头
+        match_ratio = matched / min_len
+        if match_ratio >= 0.8:
+            return 1  # 当前只检测第一行，后续可扩展为多行
+        else:
+            return 0
+
+    def _has_paragraph_between(self,
+                               prev_table: Dict[str, Any],
+                               next_table: Dict[str, Any],
+                               layout_index: Dict[int, List]) -> Tuple[bool, str]:
+        """
+        检查两个表格之间是否有内容隔断（段落或其他表格）
+
+        Args:
+            prev_table: 上一页的表格
+            next_table: 下一页的表格
+            layout_index: 页面布局索引 {page_num: [blocks]}
+
+        Returns:
+            (has_content, reason) 是否有内容隔断及原因说明
+        """
+        if not layout_index:
+            return False, "无布局索引"
+
+        prev_page = prev_table.get('page')
+        next_page = next_table.get('page')
+        prev_id = prev_table.get('id')
+        next_id = next_table.get('id')
+        prev_bbox = prev_table.get('bbox', [0, 0, 0, 0])
+        next_bbox = next_table.get('bbox', [0, 0, 0, 0])
+
+        # 只检查相邻页
+        if next_page - prev_page != 1:
+            return False, "非相邻页"
+
+        # 检查1: prev_table下方到页底是否有内容（段落或其他表格）
+        prev_page_blocks = layout_index.get(prev_page, [])
+        for block in prev_page_blocks:
+            # 跳过自己
+            if block.get('type') == 'table' and block.get('id') == prev_id:
+                continue
+
+            # 检查block是否在prev_table下方
+            if block['y0'] > prev_bbox[3]:
+                # 计算X方向重叠
+                block_x0, block_x1 = block['bbox'][0], block['bbox'][2]
+                table_x0, table_x1 = prev_bbox[0], prev_bbox[2]
+
+                overlap_x0 = max(block_x0, table_x0)
+                overlap_x1 = min(block_x1, table_x1)
+                overlap_width = max(0, overlap_x1 - overlap_x0)
+                table_width = table_x1 - table_x0
+
+                # 如果重叠超过50%，认为是隔断内容
+                if table_width > 0 and overlap_width / table_width >= 0.5:
+                    block_type = block['type']
+                    block_info = block.get('id', '') if block_type == 'table' else '段落'
+                    return True, f"页{prev_page}表{prev_id}下方有{block_info}"
+
+        # 检查2: 下一页页顶到next_table上方是否有内容
+        next_page_blocks = layout_index.get(next_page, [])
+        for block in next_page_blocks:
+            # 跳过自己
+            if block.get('type') == 'table' and block.get('id') == next_id:
+                continue
+
+            # 检查block是否在next_table上方
+            if block['y1'] < next_bbox[1]:
+                # 计算X方向重叠
+                block_x0, block_x1 = block['bbox'][0], block['bbox'][2]
+                table_x0, table_x1 = next_bbox[0], next_bbox[2]
+
+                overlap_x0 = max(block_x0, table_x0)
+                overlap_x1 = min(block_x1, table_x1)
+                overlap_width = max(0, overlap_x1 - overlap_x0)
+                table_width = table_x1 - table_x0
+
+                if table_width > 0 and overlap_width / table_width >= 0.5:
+                    block_type = block['type']
+                    block_info = block.get('id', '') if block_type == 'table' else '段落'
+                    return True, f"页{next_page}表{next_id}上方有{block_info}"
+
+        return False, "无内容隔断"
+
+    def merge_all_tables(self,
+                        tables: List[Dict[str, Any]],
+                        page_widths: Dict[int, float],
+                        page_drawings: Dict[int, List] = None,
+                        layout_index: Dict[int, List] = None,
+                        debug: bool = False) -> List[Dict[str, Any]]:
+        """
+        主入口：识别并合并所有跨页表格
+
+        Args:
+            tables: 从TableExtractor提取的所有表格
+            page_widths: 页面宽度字典
+            page_drawings: 页面绘图数据（可选）
+            layout_index: 页面布局索引（用于检查正文隔断，可选）
+            debug: 是否输出调试信息
+
+        Returns:
+            合并后的表格列表（保持原有结构，未合并的表格不变）
+        """
+        if debug:
+            print(f"\n[CrossPageMerger] 开始跨页表格合并，输入表格数: {len(tables)}")
+
+        # Step 1: 识别合并链
+        merge_chains = self.find_merge_chains(tables, page_widths, page_drawings, layout_index)
+
+        if debug:
+            print(f"[CrossPageMerger] 识别到 {len(merge_chains)} 条合并链:")
+            for i, chain in enumerate(merge_chains):
+                print(f"  链{i+1}: {chain}")
+
+        # Step 2: 执行合并
+        merged_tables = []
+        merged_ids = set()
+
+        for chain in merge_chains:
+            if len(chain) > 1:
+                # 合并这条链
+                merged_table = self.merge_tables(tables, chain)
+                merged_tables.append(merged_table)
+                merged_ids.update(chain)
+                if debug:
+                    print(f"[合并] 链 {chain} -> 合并后表格页码{merged_table.get('page')}")
+
+        # Step 3: 添加未合并的表格
+        if debug:
+            print(f"\n[未合并表格] 共{len(tables)}个输入表格，其中{len(merged_ids)}个已合并")
+
+        for table in tables:
+            table_id = table.get('id')
+            if table_id not in merged_ids:
+                merged_tables.append(table)
+                if debug:
+                    print(f"  保留未合并表格: {table_id} (页{table.get('page')})")
+            else:
+                if debug:
+                    print(f"  跳过已合并表格: {table_id} (页{table.get('page')})")
+
+        if debug:
+            print(f"\n[CrossPageMerger] 合并完成，输出表格数: {len(merged_tables)}")
+            print(f"  输出表格列表:")
+            for i, t in enumerate(merged_tables):
+                print(f"    [{i}] id={t.get('id')}, page={t.get('page')}, rows={len(t.get('rows', []))}")
+
+        return merged_tables
+
+
+def _calculate_jaccard_similarity(list1: List[float],
+                                  list2: List[float],
+                                  tolerance: float = 0.01) -> float:
+    """
+    计算两个浮点数列表的Jaccard相似度（允许容差）
+
+    Args:
+        list1: 第一个列表
+        list2: 第二个列表
+        tolerance: 允许的误差范围
+
+    Returns:
+        Jaccard相似度 [0, 1]
+    """
+    if not list1 and not list2:
+        return 1.0
+    if not list1 or not list2:
+        return 0.0
+
+    # 匹配数量（带容差）
+    matched = 0
+    used_indices = set()
+
+    for val1 in list1:
+        for i, val2 in enumerate(list2):
+            if i not in used_indices and abs(val1 - val2) < tolerance:
+                matched += 1
+                used_indices.add(i)
+                break
+
+    # Jaccard = 交集 / 并集
+    union_size = len(list1) + len(list2) - matched
+    return matched / union_size if union_size > 0 else 0.0
+
+
+def _calculate_col_paths_similarity(paths1: List[List[str]],
+                                    paths2: List[List[str]]) -> float:
+    """
+    计算列路径相似度
+
+    策略：
+    1. 如果长度不同，按较短的计算
+    2. 逐个比较路径，完全匹配计1分，部分匹配按层级比例计分
+
+    Args:
+        paths1: 第一个表的列路径
+        paths2: 第二个表的列路径
+
+    Returns:
+        相似度 [0, 1]
+    """
+    if not paths1 and not paths2:
+        return 1.0
+    if not paths1 or not paths2:
+        return 0.0
+
+    # 长度不同是弱信号（可能列被截断/合并），但不完全排除
+    min_len = min(len(paths1), len(paths2))
+    if min_len == 0:
+        return 0.0
+
+    total_score = 0.0
+    for i in range(min_len):
+        path1 = paths1[i]
+        path2 = paths2[i]
+
+        # 完全匹配
+        if path1 == path2:
+            total_score += 1.0
+        else:
+            # 部分匹配（计算层级重叠）
+            max_layers = max(len(path1), len(path2))
+            if max_layers == 0:
+                continue
+
+            matched_layers = 0
+            for j in range(min(len(path1), len(path2))):
+                if path1[j] == path2[j]:
+                    matched_layers += 1
+                else:
+                    break  # 层级匹配需要连续
+
+            total_score += matched_layers / max_layers
+
+    return total_score / min_len
+
+
+def _hash_col_paths(col_paths: List[List[str]]) -> str:
+    """
+    计算列路径列表的哈希值
+
+    Args:
+        col_paths: 列路径列表
+
+    Returns:
+        MD5哈希字符串
+    """
+    # 将col_paths序列化为字符串后计算哈希
+    path_str = "|".join(["->".join(path) for path in col_paths])
+    return hashlib.md5(path_str.encode()).hexdigest()
+
+
+def _normalize_to_page_width(value: float, page_width: float) -> float:
+    """
+    将坐标值归一化到页面宽度
+
+    Args:
+        value: 原始坐标值
+        page_width: 页面宽度
+
+    Returns:
+        归一化值 [0, 1]
+    """
+    return value / page_width if page_width > 0 else 0
