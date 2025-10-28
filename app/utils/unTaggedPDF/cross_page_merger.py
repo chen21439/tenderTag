@@ -42,6 +42,7 @@ PDF表格可能被分页符打断，形成多个表段：
 from typing import List, Dict, Any, Tuple, Optional
 from dataclasses import dataclass
 import hashlib
+import copy
 
 
 @dataclass
@@ -745,17 +746,15 @@ class CrossPageTableMerger:
         if not table_segments:
             return None
 
-        # Step 2: 以第一段为基准，初始化合并结果
+        # Step 2: 深拷贝第一段的所有字段作为基准（保证字段完整性）
         first_table = table_segments[0]
-        merged = {
-            'id': first_table.get('id'),  # 使用第一段的ID
-            'page': first_table.get('page'),  # 起始页
-            'bbox': list(first_table.get('bbox', [0, 0, 0, 0])),  # 后续会更新
-            'header_info': dict(first_table.get('header_info', {})),
-            'columns': list(first_table.get('columns', [])),  # 保持列结构
-            'rows': [],  # 待拼接
-            'nested_tables': []  # 待拼接
-        }
+        merged = copy.deepcopy(first_table)
+
+        # 然后覆盖需要更新的字段
+        merged['rows'] = []  # 待拼接
+        # 删除 nested_tables 字段（后续根据实际情况重新添加）
+        if 'nested_tables' in merged:
+            del merged['nested_tables']
 
         # Step 3: 拼接数据行
         print(f"[合并] 链 {table_ids}")
@@ -780,6 +779,8 @@ class CrossPageTableMerger:
             # 收集嵌套表
             nested = segment.get('nested_tables', [])
             if nested:
+                if 'nested_tables' not in merged:
+                    merged['nested_tables'] = []
                 merged['nested_tables'].extend(nested)
 
         # Step 4: 合并bbox
@@ -809,7 +810,7 @@ class CrossPageTableMerger:
         print()
 
         # 如果没有嵌套表，删除该字段
-        if not merged['nested_tables']:
+        if 'nested_tables' in merged and not merged['nested_tables']:
             del merged['nested_tables']
 
         return merged
