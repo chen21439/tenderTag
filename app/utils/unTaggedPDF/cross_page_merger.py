@@ -1147,9 +1147,17 @@ class CrossPageTableMerger:
                 # 从底部表格提取列边界
                 col_xs = self._extract_column_xs(bottom_table)
 
+                # 计算期望的列数和横向边界
+                expected_cols = len(col_xs) - 1 if col_xs else 0
+                x0_ref = min(col_xs) if col_xs else bottom_bbox[0]
+                x1_ref = max(col_xs) if col_xs else bottom_bbox[2]
+
                 hint = {
                     "col_xs": col_xs,
-                    "bbox": bottom_bbox,  # 使用上一段的bbox作为参考
+                    "expected_cols": expected_cols,  # 新增：期望列数
+                    "x0_ref": x0_ref,                # 新增：横向左边界
+                    "x1_ref": x1_ref,                # 新增：横向右边界
+                    "bbox": bottom_bbox,  # 保留作为参考
                     "score": score,
                     "source_table_id": bottom_table.get('id'),
                     "source_page": current_page
@@ -1157,7 +1165,7 @@ class CrossPageTableMerger:
 
                 hints_by_page[next_page] = hint
 
-                print(f"[续页检测] 页{current_page}表{bottom_table.get('id')} → 页{next_page}表{top_table.get('id')} (score={score:.2f})")
+                print(f"[续页检测] 页{current_page}表{bottom_table.get('id')} → 页{next_page}表{top_table.get('id')} (score={score:.2f}, expected_cols={expected_cols})")
 
         return hints_by_page
 
