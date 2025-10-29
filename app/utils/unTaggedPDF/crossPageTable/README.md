@@ -10,11 +10,24 @@
 
 ### ✅ 已完成
 
-- [x] **`cell_merger.py`** - 单元格合并器
+- [x] **`cell_merger.py`** - 单元格合并器（基于规则）
   - 功能：检测并合并被分页符截断的单元格内容
   - 行数：~370 行
   - 日期：2025-10-29
   - 向后兼容：保留了模块级函数 `_detect_split_cells()`, `_merge_split_cells()`, `_cell_has_horizontal_line()`
+
+- [x] **`cell_classifier.py`** - 单元格智能分类器（基于AI）
+  - 功能：使用 AI 模型判断跨页单元格/行是否应该合并
+  - 行数：~630 行
+  - 日期：2025-10-29
+  - 特性：
+    - 基于 Qwen3-32B 模型进行智能判断
+    - 低温度推理（temperature=0.1）保证确定性
+    - 支持**单元格级别判断**（td）和**行级别判断**（tr）
+    - 支持单个/批量分类
+    - 智能字符截取（取最后/最前 n 个字符）
+    - 直接分析 raw.json 中的 hint 数据
+    - 返回 JSON 格式（should_merge、confidence、reason）
 
 ### 🔜 待拆分
 
@@ -93,7 +106,8 @@
   - 仍包含：指纹生成、得分计算、合并链识别、表格合并、表头处理、续页提示等
 
 ### 已拆分模块
-- `crossPageTable/cell_merger.py` - 单元格合并器（370行）
+- `crossPageTable/cell_merger.py` - 单元格合并器（370行，基于规则）
+- `crossPageTable/cell_classifier.py` - 单元格智能分类器（400行，基于AI）
 
 ### 导入关系
 ```
@@ -103,6 +117,11 @@ crossPageTable.cell_merger
     - _detect_split_cells()
     - _merge_split_cells()
     - _cell_has_horizontal_line()
+
+pdf_content_extractor.py 或其他模块
+    ↓ 可选导入
+crossPageTable.cell_classifier
+    - CrossPageCellClassifier
 ```
 
 ---
@@ -122,7 +141,8 @@ crossPageTable/
 ├── chain_finder.py          # 合并链识别器
 ├── table_merger.py          # 表格合并器
 ├── header_handler.py        # 表头处理器
-├── cell_merger.py           # 单元格合并器 ✅
+├── cell_merger.py           # 单元格合并器（基于规则） ✅
+├── cell_classifier.py       # 单元格智能分类器（基于AI） ✅
 ├── continuation_hint.py     # 续页提示生成器
 │
 └── merger.py                # 主协调类
@@ -152,19 +172,61 @@ merged_tables = merger.merge_all_tables(
 )
 ```
 
-### 未来使用方式（完全拆分后）
+### 新模块使用方式（已实现）
 
 ```python
-from crossPageTable import CrossPageTableMerger, CellMerger
+from crossPageTable import CellMerger, CrossPageCellClassifier
 
-# 方式1：使用主协调类（推荐）
-merger = CrossPageTableMerger(enable_cell_merge=False)
-merged_tables = merger.merge_all_tables(...)
-
-# 方式2：直接使用单元格合并器（细粒度控制）
+# 方式1：基于规则的单元格合并（适用于明确的几何特征）
 cell_merger = CellMerger(coverage_threshold=0.5)
-split_indices = cell_merger.detect_split_cells(...)
-cell_merger.merge_split_cells(...)
+split_indices = cell_merger.detect_split_cells(
+    prev_last_row, next_first_row,
+    prev_drawings, next_drawings
+)
+cell_merger.merge_split_cells(prev_row, next_row, split_indices)
+
+# 方式2：基于AI的智能判断（适用于语义判断）
+classifier = CrossPageCellClassifier()
+
+# 单个单元格对判断
+result = classifier.classify_cell_pair(
+    prev_cell_content="根据投标人提供的项目技术方案，包括总体架构设计、业务架构设计、数据架构设计、技术架构设",
+    next_cell_content="计、网络架构设计、与现有国土空间规划"一张图"实施监测系统及相关系统对接方案等方面进行综合评审。"
+)
+print(f"应该合并: {result['should_merge']}, 置信度: {result['confidence']}")
+
+# 批量分析 raw.json 中的 hint 数据（单元格级别）
+results = classifier.analyze_raw_json_with_hints(raw_json_data, hints_by_page)
+print(f"分析了 {results['total_cell_pairs']} 个单元格对")
+print(f"应该合并: {results['summary']['should_merge']} 个")
+print(f"不应合并: {results['summary']['should_not_merge']} 个")
+
+# 方式3：行级别判断（推荐用于跨页表格识别）
+# 准备行对数据
+row_pairs = [
+    {
+        "prev_row": {
+            "第0列": "技术方案设计...",
+            "第1列": "5分",
+            "第2列": "优秀"
+        },
+        "next_row": {
+            "第0列": "...后续内容",
+            "第1列": "",
+            "第2列": ""
+        },
+        "context": {
+            "prev_page": 1,
+            "next_page": 2,
+            "hint_score": 0.95
+        }
+    }
+]
+
+# 批量判断（自动截取最后/最前n个字符）
+row_results = classifier.classify_row_pairs_batch(row_pairs)
+for result in row_results:
+    print(f"应该合并: {result['should_merge']}, 置信度: {result['confidence']}")
 ```
 
 ---
@@ -179,11 +241,18 @@ cell_merger.merge_split_cells(...)
 tests/
 └── crossPageTable/
     ├── test_cell_merger.py           # ✅ 已创建模块，待添加测试
+    ├── test_cell_classifier.py       # ✅ 已创建模块，待添加测试
     ├── test_fingerprint.py
     ├── test_scoring.py
     ├── test_chain_finder.py
     └── ...
 ```
+
+**测试说明**：
+- `cell_classifier.py` 包含内置的 `main()` 测试函数，可以直接运行：
+  ```bash
+  python app/utils/unTaggedPDF/crossPageTable/cell_classifier.py
+  ```
 
 ### 集成测试
 
@@ -261,7 +330,22 @@ from cross_page_merger import _detect_split_cells
 
 ## 更新日志
 
-### 2025-10-29
+### 2025-10-29（下午2）
+- ✅ 扩展 `cell_classifier.py` 添加行级别判断功能（630行）
+- ✅ 实现 `classify_row_pairs_batch()` 方法（批量行判断）
+- ✅ 实现 `_truncate_text()` 方法（字符截取：最后/最前n个字符）
+- ✅ 添加行级别 system_prompt
+- ✅ 创建测试脚本 `test_row_classifier.py`
+- ✅ 更新 README.md 文档
+
+### 2025-10-29（下午1）
+- ✅ 创建 `cell_classifier.py` 模块（400行）
+- ✅ 集成 Qwen3-32B 模型用于智能判断
+- ✅ 实现 `analyze_raw_json_with_hints()` 方法
+- ✅ 更新 `__init__.py` 导出 `CrossPageCellClassifier`
+- ✅ 更新 README.md 文档
+
+### 2025-10-29（上午）
 - ✅ 创建 `crossPageTable/` 目录
 - ✅ 拆分 `cell_merger.py` 模块（370行）
 - ✅ 创建 `__init__.py` 导出接口
@@ -271,10 +355,11 @@ from cross_page_merger import _detect_split_cells
 
 ## 下一步计划
 
-1. 添加 `cell_merger.py` 的单元测试
-2. 拆分 `models.py`（数据结构）
-3. 拆分 `utils.py`（工具函数）
-4. 逐步拆分其他模块...
+1. **集成 AI 分类器到主流程**：在 raw.json 生成后调用 `CrossPageCellClassifier`
+2. 添加 `cell_merger.py` 和 `cell_classifier.py` 的单元测试
+3. 拆分 `models.py`（数据结构）
+4. 拆分 `utils.py`（工具函数）
+5. 逐步拆分其他模块...
 
 ---
 
