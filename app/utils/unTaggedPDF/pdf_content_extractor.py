@@ -210,6 +210,7 @@ class PDFContentExtractor:
         import copy
         tables_first_round = copy.deepcopy(tables)  # 真正的原始表格
         tables_before_merge = copy.deepcopy(tables)  # 将被更新为重提取后的表格
+        hints_by_page = {}  # 初始化hints
 
         # 第二轮：使用续页hint重新提取（如果启用跨页合并）
         if self.enable_cross_page_merge and self.cross_page_merger and tables:
@@ -285,6 +286,10 @@ class PDFContentExtractor:
         # 保存重提取后、合并前的表格（用于调试）
         if tables_before_merge:
             result["tables_before_merge"] = tables_before_merge
+
+        # 保存hints信息（用于调试）
+        if hints_by_page:
+            result["hints_by_page"] = hints_by_page
 
         return result
 
@@ -383,6 +388,11 @@ class PDFContentExtractor:
                 "tables": tables_result['tables_first_round'],
                 "page_metadata": tables_result['page_metadata']
             }
+
+            # 添加hints信息（如果有）
+            if 'hints_by_page' in tables_result:
+                raw_result['hints_by_page'] = tables_result['hints_by_page']
+
             table_raw_path = output_dir / table_raw_filename
             with open(table_raw_path, 'w', encoding='utf-8') as f:
                 json.dump(raw_result, f, ensure_ascii=False, indent=2)
