@@ -544,7 +544,8 @@ class CrossPageTableMerger:
                          tables: List[Dict[str, Any]],
                          page_widths: Dict[int, float],
                          page_drawings: Dict[int, List] = None,
-                         layout_index: Dict[int, List] = None) -> List[List[str]]:
+                         layout_index: Dict[int, List] = None,
+                         hints_by_page: Dict[int, Dict] = None) -> List[List[str]]:
         """
         识别需要合并的表格链
 
@@ -637,11 +638,44 @@ class CrossPageTableMerger:
                         gate_reason.append(f"结构得分{candidate.structure_score:.3f}<0.65")
 
                     # 门槛3: 列数必须一致（硬性要求）
+                    # 但在判死刑前，先尝试使用hint补齐列
                     struct_details = candidate.match_details.get('structure', {})
                     if not struct_details.get('col_count_match', False):
                         num_cols = struct_details.get('num_cols', (0, 0))
-                        gate_passed = False
-                        gate_reason.append(f"列数不一致({num_cols[0]}列 vs {num_cols[1]}列)")
+
+                        # ===== 列补齐逻辑 =====
+                        # 如果有hint且满足条件，尝试补齐下一页的列
+                        repaired = False
+                        if hints_by_page and next_page in hints_by_page:
+                            hint = hints_by_page[next_page]
+                            repaired = self._try_repair_missing_columns(
+                                curr_table, next_table, curr_fp, next_fp, hint
+                            )
+
+                            if repaired:
+                                print(f"  [列补齐] 成功补齐 {next_id} 的缺失列")
+                                # 重新生成next_table的指纹
+                                next_fp_new = self.generate_fingerprint(
+                                    next_table,
+                                    page_widths.get(next_page, 595.0),
+                                    page_drawings.get(next_page) if page_drawings else None
+                                )
+                                fingerprints[next_id] = next_fp_new
+
+                                # 重新计算匹配得分
+                                candidate = self.calculate_match_score(curr_fp, next_fp_new)
+                                struct_details = candidate.match_details.get('structure', {})
+
+                                print(f"  [列补齐后] 重新计算得分:")
+                                print(f"    几何得分: {candidate.geometry_score:.3f}")
+                                print(f"    结构得分: {candidate.structure_score:.3f}")
+                                print(f"    视觉得分: {candidate.visual_score:.3f}")
+                                print(f"    综合得分: {candidate.score:.3f}")
+
+                        # 补齐后仍然列数不一致，才判定失败
+                        if not repaired and not struct_details.get('col_count_match', False):
+                            gate_passed = False
+                            gate_reason.append(f"列数不一致({num_cols[0]}列 vs {num_cols[1]}列)")
 
                     if not gate_passed:
                         print(f"  X 未通过门槛检查: {', '.join(gate_reason)}")
@@ -1302,11 +1336,138 @@ class CrossPageTableMerger:
 
         return False
 
+    def _try_repair_missing_columns(self,
+                                   prev_table: Dict[str, Any],
+                                   next_table: Dict[str, Any],
+                                   prev_fp: TableFingerprint,
+                                   next_fp: TableFingerprint,
+                                   hint: Dict) -> bool:
+        """
+        尝试补齐下一页表格的缺失列
+
+        触发条件：
+        1. 有hint（续页检测）
+        2. BBox和上一页几乎相等（容差5pt）
+        3. 下一页列数 < 上一页列数
+        4. hint中的expected_cols > 下一页列数
+
+        Args:
+            prev_table: 上一页表格
+            next_table: 下一页表格（会被原地修改）
+            prev_fp: 上一页指纹
+            next_fp: 下一页指纹
+            hint: 续页hint（包含col_xs、expected_cols等）
+
+        Returns:
+            是否成功补齐
+        """
+        # 检查列数
+        prev_cols = len(prev_fp.col_paths)
+        next_cols = len(next_fp.col_paths)
+
+        if next_cols >= prev_cols:
+            # 下一页列数不少于上一页，无需补齐
+            return False
+
+        expected_cols = hint.get('expected_cols', 0)
+        if next_cols >= expected_cols:
+            # 下一页列数已经达到hint的预期，无需补齐
+            return False
+
+        # 检查BBox是否几乎相等（容差5pt）
+        prev_bbox = prev_table.get('raw_bbox', prev_table.get('bbox', [0, 0, 0, 0]))
+        next_bbox = next_table.get('raw_bbox', next_table.get('bbox', [0, 0, 0, 0]))
+
+        if not self._bbox_almost_equal(prev_bbox, next_bbox, tolerance=5.0):
+            print(f"  [列补齐检查] BBox不相等，跳过")
+            print(f"    prev_bbox: {prev_bbox}")
+            print(f"    next_bbox: {next_bbox}")
+            return False
+
+        # 满足所有条件，开始补齐
+        print(f"  [列补齐] 满足条件:")
+        print(f"    prev_cols={prev_cols}, next_cols={next_cols}, expected_cols={expected_cols}")
+        print(f"    bbox相等（容差5pt）")
+
+        # 计算需要补齐的列数
+        missing_cols = prev_cols - next_cols
+
+        print(f"  [列补齐] 开始补齐 {missing_cols} 个缺失列")
+
+        # TODO: 当前实现为简单插入空列
+        # 未来改进方向：
+        # 1. 从hint的col_xs中找到缺失的列边界
+        # 2. 检查缺失的列宽是否与hint中的某一列宽度匹配
+        # 3. 使用PyMuPDF重新切分单元格（更准确）
+        #
+        # 简单实现：在最左侧插入空列
+        # 假设pdfplumber漏检了左侧列
+
+        # 在columns开头插入空列
+        for i in range(missing_cols):
+            # 创建空列定义
+            empty_col = {
+                "id": f"c{i+1:03d}",
+                "index": i,
+                "name": "",  # 空列
+                "path": [""]
+            }
+            next_table['columns'].insert(0, empty_col)
+
+        # 更新所有行的列索引
+        for col_idx, col in enumerate(next_table['columns']):
+            col['index'] = col_idx
+            col['id'] = f"c{col_idx+1:03d}"
+
+        # 在每一行的cells开头插入空cell
+        for row in next_table.get('rows', []):
+            for i in range(missing_cols):
+                empty_cell = {
+                    "row_id": row.get('id', 'r001'),
+                    "col_id": f"c{i+1:03d}",
+                    "rowPath": row.get('rowPath', []),
+                    "cellPath": [""],
+                    "content": "",
+                    "bbox": None  # 空列没有bbox
+                }
+                row['cells'].insert(0, empty_cell)
+
+            # 更新所有cells的col_id
+            for col_idx, cell in enumerate(row['cells']):
+                cell['col_id'] = f"c{col_idx+1:03d}"
+
+        print(f"  [列补齐] 补齐完成，现在有 {len(next_table['columns'])} 列")
+
+        return True
+
+    def _bbox_almost_equal(self, bbox1: List[float], bbox2: List[float], tolerance: float = 5.0) -> bool:
+        """
+        检查两个bbox是否几乎相等（允许容差）
+
+        Args:
+            bbox1: 第一个bbox [x0, y0, x1, y1]
+            bbox2: 第二个bbox [x0, y0, x1, y1]
+            tolerance: 容差（pt）
+
+        Returns:
+            是否几乎相等
+        """
+        if len(bbox1) != 4 or len(bbox2) != 4:
+            return False
+
+        # 检查每个坐标的差异
+        for i in range(4):
+            if abs(bbox1[i] - bbox2[i]) > tolerance:
+                return False
+
+        return True
+
     def merge_all_tables(self,
                         tables: List[Dict[str, Any]],
                         page_widths: Dict[int, float],
                         page_drawings: Dict[int, List] = None,
                         layout_index: Dict[int, List] = None,
+                        hints_by_page: Dict[int, Dict] = None,
                         debug: bool = False) -> List[Dict[str, Any]]:
         """
         主入口：识别并合并所有跨页表格
@@ -1316,6 +1477,7 @@ class CrossPageTableMerger:
             page_widths: 页面宽度字典
             page_drawings: 页面绘图数据（可选）
             layout_index: 页面布局索引（用于检查正文隔断，可选）
+            hints_by_page: 续页检测hints（用于列补齐，可选）
             debug: 是否输出调试信息
 
         Returns:
@@ -1325,7 +1487,7 @@ class CrossPageTableMerger:
             print(f"\n[CrossPageMerger] 开始跨页表格合并，输入表格数: {len(tables)}")
 
         # Step 1: 识别合并链
-        merge_chains = self.find_merge_chains(tables, page_widths, page_drawings, layout_index)
+        merge_chains = self.find_merge_chains(tables, page_widths, page_drawings, layout_index, hints_by_page)
 
         if debug:
             print(f"[CrossPageMerger] 识别到 {len(merge_chains)} 条合并链:")

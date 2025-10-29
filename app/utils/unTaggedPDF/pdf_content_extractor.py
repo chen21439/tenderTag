@@ -246,6 +246,7 @@ class PDFContentExtractor:
                 page_widths,
                 page_drawings=page_drawings,
                 layout_index=layout_index,  # 传入布局索引
+                hints_by_page=hints_by_page,  # 传入hints（用于列补齐）
                 debug=True  # 开启debug模式
             )
 
