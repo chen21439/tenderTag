@@ -22,13 +22,18 @@ except ImportError:
 class PDFContentExtractor:
     """PDF内容提取主协调器"""
 
-    def __init__(self, pdf_path: str, enable_cross_page_merge: bool = True):
+    def __init__(self,
+                 pdf_path: str,
+                 enable_cross_page_merge: bool = True,
+                 enable_cell_merge: bool = False):
         """
         初始化PDF内容提取器
 
         Args:
             pdf_path: PDF文件路径
             enable_cross_page_merge: 是否启用跨页表格合并（默认True）
+            enable_cell_merge: 是否启用跨页单元格合并（默认False，暂时关闭）
+                              只有在 enable_cross_page_merge=True 时才有效
         """
         self.pdf_path = Path(pdf_path)
         if not self.pdf_path.exists():
@@ -45,7 +50,8 @@ class PDFContentExtractor:
                 score_threshold=0.70,
                 geometry_weight=0.40,
                 structure_weight=0.35,
-                visual_weight=0.25
+                visual_weight=0.25,
+                enable_cell_merge=enable_cell_merge
             )
         else:
             self.cross_page_merger = None
@@ -198,8 +204,8 @@ class PDFContentExtractor:
         Returns:
             包含表格数据和元数据的字典
         """
-        # 第一轮：正常提取
-        tables = self.table_extractor.extract_tables()
+        # 第一轮：正常提取（使用延迟表头识别）
+        tables = self.table_extractor.extract_tables(detect_header=False)
 
         # 先为表格分配临时id（用于跨页合并）
         for i, table in enumerate(tables):
@@ -218,12 +224,18 @@ class PDFContentExtractor:
             page_heights = self._get_page_heights()
             page_drawings = self._get_page_drawings()
 
-            # 生成续页hints
+            # 构建布局索引（用于检查续页hint时的正文隔断）
+            table_bboxes_per_page = self._build_table_bboxes_map(tables)
+            paragraphs = self.paragraph_extractor.extract_paragraphs(table_bboxes_per_page)
+            layout_index_for_hints = self._build_layout_index(tables, paragraphs)
+
+            # 生成续页hints（传入layout_index用于正文隔断检测）
             hints_by_page = self.cross_page_merger.build_continuation_hints(
                 tables,
                 page_widths,
                 page_heights,
-                page_drawings
+                page_drawings,
+                layout_index_for_hints
             )
 
             # 如果有hints，重新提取
@@ -246,6 +258,7 @@ class PDFContentExtractor:
                 page_widths,
                 page_drawings=page_drawings,
                 layout_index=layout_index,  # 传入布局索引
+                hints_by_page=hints_by_page,  # 传入hints（用于列补齐）
                 debug=True  # 开启debug模式
             )
 
@@ -620,8 +633,8 @@ def main():
     主测试方法
     """
     # 从taskId构建路径
-    task_id = "国土空间规划实施监测网络建设项目"
-    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目")
+    task_id = "鄂尔多斯市政府网站群集约化平台升级改造项目"
+    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\鄂尔多斯市政府网站群集约化平台升级改造项目")
     pdf_path = base_dir / f"{task_id}.pdf"
 
     print(f"开始测试PDF内容提取...")

@@ -237,11 +237,15 @@ class TableExtractor:
 
     # ==================== END TEXT-FALLBACK 辅助方法 ====================
 
-    def extract_tables(self) -> List[Dict[str, Any]]:
+    def extract_tables(self, detect_header: bool = True) -> List[Dict[str, Any]]:
         """
         提取PDF中的所有表格（混合方法）
         - pdfplumber: 识别表格结构和单元格位置
         - PyMuPDF: 从单元格坐标提取文本内容（避免字符重复）
+
+        Args:
+            detect_header: 是否检测表头（默认True）。
+                          False时使用延迟表头识别模式，适用于跨页合并场景。
 
         Returns:
             提取的表格列表
@@ -344,7 +348,8 @@ class TableExtractor:
                             page_num=page_num,
                             table_bbox=list(table.bbox),
                             nested_map=nested_map,
-                            pymupdf_page=pymupdf_page
+                            pymupdf_page=pymupdf_page,
+                            detect_header=detect_header
                         )
 
                         # [TEXT-FALLBACK] 触发条件：左侧缺口很大 或 列索引不从0开始 或 bbox异常偏右
@@ -667,10 +672,11 @@ class TableExtractor:
         nested_map: Dict[tuple, List[Dict]] = None,
         pymupdf_page = None,
         hint_col_levels: int = None,
-        hint_row_levels: int = None
+        hint_row_levels: int = None,
+        detect_header: bool = True
     ) -> Dict[str, Any]:
         """
-        构建结构化表格数据（支持多层表头）
+        构建结构化表格数据（支持多层表头 + 延迟表头识别）
 
         ## 多层表头支持
 
@@ -678,19 +684,27 @@ class TableExtractor:
         - table_data: 原始表格文本数据（二维数组）
         - cells_bbox: pdfplumber的cells列表，包含每个单元格的bbox和合并信息
         - hint_col_levels/hint_row_levels: 可选的手动指定表头层数
+        - detect_header: 是否检测表头（默认True）。False时所有行作为数据行，适用于跨页合并场景
 
         ### 处理流程
-        1. **尝试多层表头分析**：调用 HeaderAnalyzer.analyze_table_headers()
-           - 成功：返回 HeaderModel（包含 col_paths/row_paths）
-           - 失败：返回 None，回退到单层表头
+        1. **如果 detect_header=False（延迟表头识别模式）**：
+           - 跳过表头分析，所有行都作为数据行（rows）
+           - columns 为简单占位符（c001, c002, ...）
+           - 保留完整的 bbox 信息
+           - 适用场景：第一轮提取时，延迟到跨页合并后再分析表头
 
-        2. **多层表头模式** (_build_table_with_multi_level_headers)：
+        2. **如果 detect_header=True（立即表头识别模式）**：
+           - 尝试多层表头分析：调用 HeaderAnalyzer.analyze_table_headers()
+             * 成功：返回 HeaderModel（包含 col_paths/row_paths）
+             * 失败：返回 None，回退到单层表头
+
+        3. **多层表头模式** (_build_table_with_multi_level_headers)：
            - 使用 HeaderModel.col_paths 构建每个数据列的路径
            - 使用 HeaderModel.row_paths 构建每个数据行的路径
            - 跳过表头区域（前col_levels行 + 前row_levels列）
            - 数据单元格的 cellPath 和 rowPath 都是多层列表
 
-        3. **单层表头模式** (_build_table_with_single_level_headers)：
+        4. **单层表头模式** (_build_table_with_single_level_headers)：
            - 第一行作为列表头
            - 第一列作为行表头
            - cellPath/rowPath 都是单元素列表（保持向后兼容）
@@ -769,6 +783,21 @@ class TableExtractor:
 
         if nested_map is None:
             nested_map = {}
+
+        # ===== 延迟表头识别模式 =====
+        if not detect_header:
+            # 不进行表头分析，所有行都作为数据行
+            # columns 为简单占位符，保留完整 bbox
+            return self._build_table_without_header_detection(
+                table_data=table_data,
+                bbox_data=bbox_data,
+                page_num=page_num,
+                table_bbox=table_bbox,
+                nested_map=nested_map,
+                pymupdf_page=pymupdf_page
+            )
+
+        # ===== 立即表头识别模式（原逻辑）=====
 
         # 检测单元格的跨列/跨行信息
         span_annotation = self.span_detector.annotate_table_cells(bbox_data, cells_bbox)
@@ -1141,6 +1170,114 @@ class TableExtractor:
                 "multi_level": False
             },
             "method": "hybrid (pdfplumber cells + pymupdf text)"
+        }
+
+    def _build_table_without_header_detection(
+        self,
+        table_data: List[List[str]],
+        bbox_data: List[List[tuple]],
+        page_num: int,
+        table_bbox: list,
+        nested_map: Dict[tuple, List[Dict]],
+        pymupdf_page = None
+    ) -> Dict[str, Any]:
+        """
+        延迟表头识别模式：构建表格但不进行表头分析
+
+        所有行都作为数据行（rows），列定义为简单占位符（c001, c002, ...）。
+        保留完整的bbox信息，延迟到跨页合并后再分析表头。
+
+        Args:
+            table_data: 表格数据
+            bbox_data: bbox数据
+            page_num: 页码
+            table_bbox: 表格bbox
+            nested_map: 嵌套表格映射
+            pymupdf_page: PyMuPDF页面对象（用于获取页面高度）
+
+        Returns:
+            结构化表格字典（所有行都是数据行，无表头分析）
+        """
+        if not table_data:
+            return {}
+
+        # 获取列数（从第一行推断）
+        num_cols = len(table_data[0]) if table_data else 0
+
+        # 1. 构建列定义（简单占位符，无实际表头名称）
+        columns = []
+        for col_idx in range(num_cols):
+            columns.append({
+                "id": f"c{col_idx + 1:03d}",
+                "index": col_idx,
+                "name": ""  # 延迟表头识别，名称留空
+            })
+
+        # 2. 构建行数据（所有行都是数据行，从第1行开始编号）
+        rows = []
+        for row_idx, row_data in enumerate(table_data, start=1):
+            row_id = f"r{row_idx:03d}"
+            row_first_cell = row_data[0] if row_data else ""
+
+            cells = []
+            for col_idx, cell_content in enumerate(row_data):
+                col_id = f"c{col_idx + 1:03d}"
+
+                # 获取单元格的bbox坐标
+                bbox_row_idx = row_idx - 1  # table_data是0-based, row_idx是1-based
+                cell_bbox = None
+                if bbox_row_idx < len(bbox_data) and col_idx < len(bbox_data[bbox_row_idx]):
+                    bbox_tuple = bbox_data[bbox_row_idx][col_idx]
+                    if bbox_tuple:
+                        cell_bbox = list(bbox_tuple)
+
+                # 获取嵌套表格
+                nested_here = nested_map.get((bbox_row_idx, col_idx), [])
+
+                cell_obj = {
+                    "row_id": row_id,
+                    "col_id": col_id,
+                    "rowPath": [row_first_cell] if row_first_cell else [],
+                    "cellPath": [col_id],  # 使用col_id作为占位符
+                    "content": cell_content,
+                    "bbox": cell_bbox
+                }
+
+                # 只有识别到嵌套表格时才添加 nested_tables 字段
+                if nested_here:
+                    cell_obj["nested_tables"] = nested_here
+
+                cells.append(cell_obj)
+
+            rows.append({
+                "id": row_id,
+                "rowPath": [row_first_cell] if row_first_cell else [],
+                "cells": cells
+            })
+
+        # 3. 验证并修正table bbox
+        page_height = pymupdf_page.rect.height if pymupdf_page else 842.0
+        cells_for_validation = []
+        for row in rows:
+            cells_for_validation.extend(row['cells'])
+
+        validated_bbox = validate_and_fix_bbox(table_bbox, cells_for_validation, page_height)
+
+        return {
+            "type": "table",
+            "level": 1,
+            "parent_table_id": None,
+            "page": page_num,
+            "bbox": validated_bbox,
+            "columns": columns,
+            "rows": rows,
+            "header_info": {
+                "col_levels": 0,  # 0表示未识别表头
+                "row_levels": 0,
+                "multi_level": False,
+                "header_detected": False  # 标记表头未识别
+            },
+            "method": "no_header_detection (delayed)"
         }
 
     def _find_index(self, coord: float, coords_list: list) -> int:

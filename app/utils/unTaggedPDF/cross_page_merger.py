@@ -38,11 +38,31 @@ PDF表格可能被分页符打断，形成多个表段：
 | 视觉特征 | 0.25 | 顶/底边封口状态 |
 
 总分阈值 **T = 0.70**（可调参）
+
+## 重构说明
+
+该模块正在逐步拆分到 `crossPageTable/` 目录中。
+已拆分的模块：
+- `crossPageTable.cell_merger` - 单元格合并器
+
+详见：crossPageTable/README.md
 """
 from typing import List, Dict, Any, Tuple, Optional
 from dataclasses import dataclass
 import hashlib
 import copy
+
+# 导入已拆分的单元格合并功能
+try:
+    from .crossPageTable import (
+        _cell_has_horizontal_line,
+        _detect_split_cells,
+        _merge_split_cells
+    )
+except ImportError:
+    # 兼容旧的导入方式（如果 crossPageTable 不存在）
+    # 这些函数会在文件末尾定义（向后兼容）
+    pass
 
 
 @dataclass
@@ -102,7 +122,8 @@ class CrossPageTableMerger:
                  score_threshold: float = 0.70,
                  geometry_weight: float = 0.40,
                  structure_weight: float = 0.35,
-                 visual_weight: float = 0.25):
+                 visual_weight: float = 0.25,
+                 enable_cell_merge: bool = True):
         """
         初始化合并器
 
@@ -111,11 +132,14 @@ class CrossPageTableMerger:
             geometry_weight: 几何特征权重
             structure_weight: 结构特征权重
             visual_weight: 视觉特征权重
+            enable_cell_merge: 是否启用跨页单元格合并（默认True）
+                             当单元格被分页符截断时，自动合并内容
         """
         self.score_threshold = score_threshold
         self.geometry_weight = geometry_weight
         self.structure_weight = structure_weight
         self.visual_weight = visual_weight
+        self.enable_cell_merge = enable_cell_merge
 
     def generate_fingerprint(self,
                             table: Dict[str, Any],
@@ -544,7 +568,8 @@ class CrossPageTableMerger:
                          tables: List[Dict[str, Any]],
                          page_widths: Dict[int, float],
                          page_drawings: Dict[int, List] = None,
-                         layout_index: Dict[int, List] = None) -> List[List[str]]:
+                         layout_index: Dict[int, List] = None,
+                         hints_by_page: Dict[int, Dict] = None) -> List[List[str]]:
         """
         识别需要合并的表格链
 
@@ -637,11 +662,44 @@ class CrossPageTableMerger:
                         gate_reason.append(f"结构得分{candidate.structure_score:.3f}<0.65")
 
                     # 门槛3: 列数必须一致（硬性要求）
+                    # 但在判死刑前，先尝试使用hint补齐列
                     struct_details = candidate.match_details.get('structure', {})
                     if not struct_details.get('col_count_match', False):
                         num_cols = struct_details.get('num_cols', (0, 0))
-                        gate_passed = False
-                        gate_reason.append(f"列数不一致({num_cols[0]}列 vs {num_cols[1]}列)")
+
+                        # ===== 列补齐逻辑 =====
+                        # 如果有hint且满足条件，尝试补齐下一页的列
+                        repaired = False
+                        if hints_by_page and next_page in hints_by_page:
+                            hint = hints_by_page[next_page]
+                            repaired = self._try_repair_missing_columns(
+                                curr_table, next_table, curr_fp, next_fp, hint
+                            )
+
+                            if repaired:
+                                print(f"  [列补齐] 成功补齐 {next_id} 的缺失列")
+                                # 重新生成next_table的指纹
+                                next_fp_new = self.generate_fingerprint(
+                                    next_table,
+                                    page_widths.get(next_page, 595.0),
+                                    page_drawings.get(next_page) if page_drawings else None
+                                )
+                                fingerprints[next_id] = next_fp_new
+
+                                # 重新计算匹配得分
+                                candidate = self.calculate_match_score(curr_fp, next_fp_new)
+                                struct_details = candidate.match_details.get('structure', {})
+
+                                print(f"  [列补齐后] 重新计算得分:")
+                                print(f"    几何得分: {candidate.geometry_score:.3f}")
+                                print(f"    结构得分: {candidate.structure_score:.3f}")
+                                print(f"    视觉得分: {candidate.visual_score:.3f}")
+                                print(f"    综合得分: {candidate.score:.3f}")
+
+                        # 补齐后仍然列数不一致，才判定失败
+                        if not repaired and not struct_details.get('col_count_match', False):
+                            gate_passed = False
+                            gate_reason.append(f"列数不一致({num_cols[0]}列 vs {num_cols[1]}列)")
 
                     if not gate_passed:
                         print(f"  X 未通过门槛检查: {', '.join(gate_reason)}")
@@ -717,7 +775,8 @@ class CrossPageTableMerger:
 
     def merge_tables(self,
                     tables: List[Dict[str, Any]],
-                    table_ids: List[str]) -> Dict[str, Any]:
+                    table_ids: List[str],
+                    page_drawings: Dict[int, List] = None) -> Dict[str, Any]:
         """
         合并一条链中的多个表段
 
@@ -725,13 +784,15 @@ class CrossPageTableMerger:
         1. 列对齐：以首段x_edges为基准
         2. 表头去重：识别并跳过续页重复的表头行
         3. 数据行拼接：按页面顺序拼接所有段的数据行
-        4. bbox合并：计算包络bbox
-        5. 嵌套表继承：保留各段的nested_tables
-        6. 元数据更新：记录合并来源
+        4. 跨页单元格合并：检测并合并被分页符截断的单元格
+        5. bbox合并：计算包络bbox
+        6. 嵌套表继承：保留各段的nested_tables
+        7. 元数据更新：记录合并来源
 
         Args:
             tables: 所有表格列表
             table_ids: 要合并的表格ID列表（按顺序）
+            page_drawings: 页面绘图数据（用于检测单元格边线，可选）
 
         Returns:
             合并后的表格对象
@@ -778,6 +839,35 @@ class CrossPageTableMerger:
                 # 添加去重后的行
                 print(f"  第{i+1}段 {segment_id}(页{segment_page}): 检测到重复表头 {skip_rows} 行，添加剩余 {len(segment_rows) - skip_rows} 行")
                 merged['rows'].extend(segment_rows[skip_rows:])
+
+                # Step 3.5: 检测并合并跨页截断的单元格（可配置）
+                if self.enable_cell_merge and page_drawings and len(merged['rows']) > 0 and len(segment_rows) > skip_rows:
+                    # 获取上页最后一行和下页第一行
+                    prev_last_row = merged['rows'][-1] if len(merged['rows']) >= len(segment_rows) - skip_rows else None
+                    next_first_row = segment_rows[skip_rows] if skip_rows < len(segment_rows) else None
+
+                    if prev_last_row and next_first_row:
+                        # 获取对应页面的绘图数据
+                        prev_page = prev_segment.get('page')
+                        next_page = segment.get('page')
+                        prev_drawings = page_drawings.get(prev_page, [])
+                        next_drawings = page_drawings.get(next_page, [])
+
+                        # 检测截断的单元格
+                        split_indices = _detect_split_cells(
+                            prev_last_row,
+                            next_first_row,
+                            prev_drawings,
+                            next_drawings
+                        )
+
+                        if split_indices:
+                            print(f"  [单元格合并] 检测到 {len(split_indices)} 个跨页截断的单元格")
+                            # 合并截断的单元格
+                            _merge_split_cells(prev_last_row, next_first_row, split_indices)
+                            print(f"  [单元格合并] 完成合并")
+                elif not self.enable_cell_merge and i > 0:
+                    print(f"  [单元格合并] 已禁用（enable_cell_merge=False）")
 
             # 收集嵌套表
             nested = segment.get('nested_tables', [])
@@ -975,6 +1065,24 @@ class CrossPageTableMerger:
         if next_page - prev_page != 1:
             return False, "非相邻页"
 
+        # 辅助函数：判断段落是否是页码
+        def is_page_number(content: str) -> bool:
+            """判断内容是否是页码（过滤页码，不算文本隔断）"""
+            if not content:
+                return False
+            content = content.strip()
+            # 常见页码格式："-第X页-"、"第X页"、"- X -"、纯数字等
+            import re
+            patterns = [
+                r'^-?\s*第?\s*\d+\s*页?\s*-?$',  # -第3页-、第3页、-3-
+                r'^-?\s*Page\s*\d+\s*-?$',       # Page 3、-Page 3-
+                r'^-?\s*\d+\s*-?$',               # 3、-3-
+            ]
+            for pattern in patterns:
+                if re.match(pattern, content, re.IGNORECASE):
+                    return True
+            return False
+
         # 检查1: prev_table下方到页底是否有内容（段落或其他表格）
         prev_page_blocks = layout_index.get(prev_page, [])
         for block in prev_page_blocks:
@@ -984,20 +1092,19 @@ class CrossPageTableMerger:
 
             # 检查block是否在prev_table下方
             if block['y0'] > prev_bbox[3]:
-                # 计算X方向重叠
-                block_x0, block_x1 = block['bbox'][0], block['bbox'][2]
-                table_x0, table_x1 = prev_bbox[0], prev_bbox[2]
+                block_type = block['type']
 
-                overlap_x0 = max(block_x0, table_x0)
-                overlap_x1 = min(block_x1, table_x1)
-                overlap_width = max(0, overlap_x1 - overlap_x0)
-                table_width = table_x1 - table_x0
-
-                # 如果重叠超过50%，认为是隔断内容
-                if table_width > 0 and overlap_width / table_width >= 0.5:
-                    block_type = block['type']
-                    block_info = block.get('id', '') if block_type == 'table' else '段落'
+                # 表格类型：直接算隔断
+                if block_type == 'table':
+                    block_info = block.get('id', '未知表格')
                     return True, f"页{prev_page}表{prev_id}下方有{block_info}"
+
+                # 段落类型：过滤页码
+                if block_type == 'paragraph':
+                    content = block.get('content_preview', '')
+                    if is_page_number(content):
+                        continue  # 跳过页码
+                    return True, f"页{prev_page}表{prev_id}下方有段落"
 
         # 检查2: 下一页页顶到next_table上方是否有内容
         next_page_blocks = layout_index.get(next_page, [])
@@ -1008,27 +1115,87 @@ class CrossPageTableMerger:
 
             # 检查block是否在next_table上方
             if block['y1'] < next_bbox[1]:
-                # 计算X方向重叠
-                block_x0, block_x1 = block['bbox'][0], block['bbox'][2]
-                table_x0, table_x1 = next_bbox[0], next_bbox[2]
+                block_type = block['type']
 
-                overlap_x0 = max(block_x0, table_x0)
-                overlap_x1 = min(block_x1, table_x1)
-                overlap_width = max(0, overlap_x1 - overlap_x0)
-                table_width = table_x1 - table_x0
-
-                if table_width > 0 and overlap_width / table_width >= 0.5:
-                    block_type = block['type']
-                    block_info = block.get('id', '') if block_type == 'table' else '段落'
+                # 表格类型：直接算隔断
+                if block_type == 'table':
+                    block_info = block.get('id', '未知表格')
                     return True, f"页{next_page}表{next_id}上方有{block_info}"
 
+                # 段落类型：过滤页码
+                if block_type == 'paragraph':
+                    content = block.get('content_preview', '')
+                    if is_page_number(content):
+                        continue  # 跳过页码
+                    return True, f"页{next_page}表{next_id}上方有段落"
+
         return False, "无内容隔断"
+
+    def _analyze_and_apply_headers(self, table: Dict[str, Any], debug: bool = False) -> None:
+        """
+        延迟表头识别：分析并应用表头
+
+        简单实现：将第一行作为表头，更新columns定义，并从rows中移除第一行
+
+        Args:
+            table: 待分析的表格（会被原地修改）
+            debug: 是否输出调试信息
+        """
+        rows = table.get('rows', [])
+        if not rows:
+            if debug:
+                print(f"    没有数据行，跳过表头识别")
+            return
+
+        # 简单策略：将第一行作为表头
+        header_row = rows[0]
+        header_cells = header_row.get('cells', [])
+
+        if not header_cells:
+            if debug:
+                print(f"    第一行没有单元格，跳过表头识别")
+            return
+
+        # 更新columns定义
+        new_columns = []
+        for col_idx, cell in enumerate(header_cells):
+            col_id = cell.get('col_id', f'c{col_idx + 1:03d}')
+            col_name = cell.get('content', '')
+
+            new_columns.append({
+                "id": col_id,
+                "index": col_idx,
+                "name": col_name,
+                "path": [col_name] if col_name else []
+            })
+
+        table['columns'] = new_columns
+
+        # 从rows中移除第一行（已经作为表头）
+        table['rows'] = rows[1:]
+
+        # 更新header_info
+        table['header_info'] = {
+            'col_levels': 1,  # 简单单层表头
+            'row_levels': 0,
+            'multi_level': False,
+            'header_detected': True  # 标记表头已识别
+        }
+
+        # 更新method标记
+        table['method'] = f"{table.get('method', 'unknown')} + delayed_header"
+
+        if debug:
+            print(f"    → 识别表头完成：{len(new_columns)}列")
+            print(f"    → 列名: {[col['name'][:20] for col in new_columns[:3]]}...")
+            print(f"    → 剩余数据行: {len(table['rows'])}行")
 
     def build_continuation_hints(self,
                                  tables: List[Dict[str, Any]],
                                  page_widths: Dict[int, float],
                                  page_heights: Dict[int, float],
-                                 page_drawings: Dict[int, List] = None) -> Dict[int, Dict]:
+                                 page_drawings: Dict[int, List] = None,
+                                 layout_index: Dict[int, List] = None) -> Dict[int, Dict]:
         """
         分析第一轮提取的表格，为可能的续页生成"列模板hint"
 
@@ -1036,6 +1203,7 @@ class CrossPageTableMerger:
         - 检测页底表格（y1 > page_height * 0.8）
         - 下一页有表格且贴顶（y0 < page_height * 0.2）
         - 计算续页评分（基于宽度、右边界对齐）
+        - 检查正文隔断（如果有正文则不是续页）
         - 返回 hints_by_page
 
         Args:
@@ -1043,6 +1211,7 @@ class CrossPageTableMerger:
             page_widths: 页面宽度字典
             page_heights: 页面高度字典
             page_drawings: 页面绘图数据（可选）
+            layout_index: 页面布局索引（用于检查正文隔断，可选）
 
         Returns:
             hints_by_page: {page_num: {"col_xs": [...], "bbox": [...], "score": ...}}
@@ -1105,6 +1274,15 @@ class CrossPageTableMerger:
             if not (is_bottom and is_top):
                 print(f"  → 不满足贴底贴顶条件，跳过")
                 continue
+
+            # ===== 新增：检查正文隔断 =====
+            if layout_index:
+                has_para, para_reason = self._has_paragraph_between(bottom_table, top_table, layout_index)
+                print(f"  [正文检查] {para_reason}")
+                if has_para:
+                    print(f"  → 检测到正文隔断，不是续页，跳过")
+                    continue
+            # ===== 新增结束 =====
 
             # 4. 计算续页评分
             score = 0.0
@@ -1302,11 +1480,138 @@ class CrossPageTableMerger:
 
         return False
 
+    def _try_repair_missing_columns(self,
+                                   prev_table: Dict[str, Any],
+                                   next_table: Dict[str, Any],
+                                   prev_fp: TableFingerprint,
+                                   next_fp: TableFingerprint,
+                                   hint: Dict) -> bool:
+        """
+        尝试补齐下一页表格的缺失列
+
+        触发条件：
+        1. 有hint（续页检测）
+        2. BBox和上一页几乎相等（容差5pt）
+        3. 下一页列数 < 上一页列数
+        4. hint中的expected_cols > 下一页列数
+
+        Args:
+            prev_table: 上一页表格
+            next_table: 下一页表格（会被原地修改）
+            prev_fp: 上一页指纹
+            next_fp: 下一页指纹
+            hint: 续页hint（包含col_xs、expected_cols等）
+
+        Returns:
+            是否成功补齐
+        """
+        # 检查列数
+        prev_cols = len(prev_fp.col_paths)
+        next_cols = len(next_fp.col_paths)
+
+        if next_cols >= prev_cols:
+            # 下一页列数不少于上一页，无需补齐
+            return False
+
+        expected_cols = hint.get('expected_cols', 0)
+        if next_cols >= expected_cols:
+            # 下一页列数已经达到hint的预期，无需补齐
+            return False
+
+        # 检查BBox是否几乎相等（容差5pt）
+        prev_bbox = prev_table.get('raw_bbox', prev_table.get('bbox', [0, 0, 0, 0]))
+        next_bbox = next_table.get('raw_bbox', next_table.get('bbox', [0, 0, 0, 0]))
+
+        if not self._bbox_almost_equal(prev_bbox, next_bbox, tolerance=5.0):
+            print(f"  [列补齐检查] BBox不相等，跳过")
+            print(f"    prev_bbox: {prev_bbox}")
+            print(f"    next_bbox: {next_bbox}")
+            return False
+
+        # 满足所有条件，开始补齐
+        print(f"  [列补齐] 满足条件:")
+        print(f"    prev_cols={prev_cols}, next_cols={next_cols}, expected_cols={expected_cols}")
+        print(f"    bbox相等（容差5pt）")
+
+        # 计算需要补齐的列数
+        missing_cols = prev_cols - next_cols
+
+        print(f"  [列补齐] 开始补齐 {missing_cols} 个缺失列")
+
+        # TODO: 当前实现为简单插入空列
+        # 未来改进方向：
+        # 1. 从hint的col_xs中找到缺失的列边界
+        # 2. 检查缺失的列宽是否与hint中的某一列宽度匹配
+        # 3. 使用PyMuPDF重新切分单元格（更准确）
+        #
+        # 简单实现：在最左侧插入空列
+        # 假设pdfplumber漏检了左侧列
+
+        # 在columns开头插入空列
+        for i in range(missing_cols):
+            # 创建空列定义
+            empty_col = {
+                "id": f"c{i+1:03d}",
+                "index": i,
+                "name": "",  # 空列
+                "path": [""]
+            }
+            next_table['columns'].insert(0, empty_col)
+
+        # 更新所有行的列索引
+        for col_idx, col in enumerate(next_table['columns']):
+            col['index'] = col_idx
+            col['id'] = f"c{col_idx+1:03d}"
+
+        # 在每一行的cells开头插入空cell
+        for row in next_table.get('rows', []):
+            for i in range(missing_cols):
+                empty_cell = {
+                    "row_id": row.get('id', 'r001'),
+                    "col_id": f"c{i+1:03d}",
+                    "rowPath": row.get('rowPath', []),
+                    "cellPath": [""],
+                    "content": "",
+                    "bbox": None  # 空列没有bbox
+                }
+                row['cells'].insert(0, empty_cell)
+
+            # 更新所有cells的col_id
+            for col_idx, cell in enumerate(row['cells']):
+                cell['col_id'] = f"c{col_idx+1:03d}"
+
+        print(f"  [列补齐] 补齐完成，现在有 {len(next_table['columns'])} 列")
+
+        return True
+
+    def _bbox_almost_equal(self, bbox1: List[float], bbox2: List[float], tolerance: float = 5.0) -> bool:
+        """
+        检查两个bbox是否几乎相等（允许容差）
+
+        Args:
+            bbox1: 第一个bbox [x0, y0, x1, y1]
+            bbox2: 第二个bbox [x0, y0, x1, y1]
+            tolerance: 容差（pt）
+
+        Returns:
+            是否几乎相等
+        """
+        if len(bbox1) != 4 or len(bbox2) != 4:
+            return False
+
+        # 检查每个坐标的差异
+        for i in range(4):
+            if abs(bbox1[i] - bbox2[i]) > tolerance:
+                return False
+
+        return True
+
     def merge_all_tables(self,
                         tables: List[Dict[str, Any]],
                         page_widths: Dict[int, float],
                         page_drawings: Dict[int, List] = None,
                         layout_index: Dict[int, List] = None,
+                        hints_by_page: Dict[int, Dict] = None,
                         debug: bool = False) -> List[Dict[str, Any]]:
         """
         主入口：识别并合并所有跨页表格
@@ -1316,6 +1621,7 @@ class CrossPageTableMerger:
             page_widths: 页面宽度字典
             page_drawings: 页面绘图数据（可选）
             layout_index: 页面布局索引（用于检查正文隔断，可选）
+            hints_by_page: 续页检测hints（用于列补齐，可选）
             debug: 是否输出调试信息
 
         Returns:
@@ -1325,7 +1631,7 @@ class CrossPageTableMerger:
             print(f"\n[CrossPageMerger] 开始跨页表格合并，输入表格数: {len(tables)}")
 
         # Step 1: 识别合并链
-        merge_chains = self.find_merge_chains(tables, page_widths, page_drawings, layout_index)
+        merge_chains = self.find_merge_chains(tables, page_widths, page_drawings, layout_index, hints_by_page)
 
         if debug:
             print(f"[CrossPageMerger] 识别到 {len(merge_chains)} 条合并链:")
@@ -1339,7 +1645,7 @@ class CrossPageTableMerger:
         for chain in merge_chains:
             if len(chain) > 1:
                 # 合并这条链
-                merged_table = self.merge_tables(tables, chain)
+                merged_table = self.merge_tables(tables, chain, page_drawings)
                 merged_tables.append(merged_table)
                 merged_ids.update(chain)
                 if debug:
@@ -1364,6 +1670,19 @@ class CrossPageTableMerger:
             print(f"  输出表格列表:")
             for i, t in enumerate(merged_tables):
                 print(f"    [{i}] id={t.get('id')}, page={t.get('page')}, rows={len(t.get('rows', []))}")
+
+        # Step 4: 延迟表头识别 - 对未识别表头的表格进行分析
+        if debug:
+            print(f"\n[延迟表头识别] 开始分析未识别表头的表格")
+
+        for table in merged_tables:
+            header_info = table.get('header_info', {})
+            header_detected = header_info.get('header_detected', True)
+
+            if not header_detected:
+                if debug:
+                    print(f"  分析表格 {table.get('id')} (页{table.get('page')}): 未识别表头")
+                self._analyze_and_apply_headers(table, debug=debug)
 
         return merged_tables
 
@@ -1482,3 +1801,8 @@ def _normalize_to_page_width(value: float, page_width: float) -> float:
         归一化值 [0, 1]
     """
     return value / page_width if page_width > 0 else 0
+
+
+# ===== 单元格合并功能已迁移到 crossPageTable.cell_merger =====
+# 以下函数从 crossPageTable 模块导入，保持向后兼容
+# 详见：crossPageTable/README.md
