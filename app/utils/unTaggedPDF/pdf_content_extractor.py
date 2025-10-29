@@ -198,8 +198,8 @@ class PDFContentExtractor:
         Returns:
             包含表格数据和元数据的字典
         """
-        # 第一轮：正常提取
-        tables = self.table_extractor.extract_tables()
+        # 第一轮：正常提取（使用延迟表头识别）
+        tables = self.table_extractor.extract_tables(detect_header=False)
 
         # 先为表格分配临时id（用于跨页合并）
         for i, table in enumerate(tables):

@@ -751,7 +751,8 @@ class CrossPageTableMerger:
 
     def merge_tables(self,
                     tables: List[Dict[str, Any]],
-                    table_ids: List[str]) -> Dict[str, Any]:
+                    table_ids: List[str],
+                    page_drawings: Dict[int, List] = None) -> Dict[str, Any]:
         """
         合并一条链中的多个表段
 
@@ -759,13 +760,15 @@ class CrossPageTableMerger:
         1. 列对齐：以首段x_edges为基准
         2. 表头去重：识别并跳过续页重复的表头行
         3. 数据行拼接：按页面顺序拼接所有段的数据行
-        4. bbox合并：计算包络bbox
-        5. 嵌套表继承：保留各段的nested_tables
-        6. 元数据更新：记录合并来源
+        4. 跨页单元格合并：检测并合并被分页符截断的单元格
+        5. bbox合并：计算包络bbox
+        6. 嵌套表继承：保留各段的nested_tables
+        7. 元数据更新：记录合并来源
 
         Args:
             tables: 所有表格列表
             table_ids: 要合并的表格ID列表（按顺序）
+            page_drawings: 页面绘图数据（用于检测单元格边线，可选）
 
         Returns:
             合并后的表格对象
@@ -812,6 +815,33 @@ class CrossPageTableMerger:
                 # 添加去重后的行
                 print(f"  第{i+1}段 {segment_id}(页{segment_page}): 检测到重复表头 {skip_rows} 行，添加剩余 {len(segment_rows) - skip_rows} 行")
                 merged['rows'].extend(segment_rows[skip_rows:])
+
+                # Step 3.5: 检测并合并跨页截断的单元格
+                if page_drawings and len(merged['rows']) > 0 and len(segment_rows) > skip_rows:
+                    # 获取上页最后一行和下页第一行
+                    prev_last_row = merged['rows'][-1] if len(merged['rows']) >= len(segment_rows) - skip_rows else None
+                    next_first_row = segment_rows[skip_rows] if skip_rows < len(segment_rows) else None
+
+                    if prev_last_row and next_first_row:
+                        # 获取对应页面的绘图数据
+                        prev_page = prev_segment.get('page')
+                        next_page = segment.get('page')
+                        prev_drawings = page_drawings.get(prev_page, [])
+                        next_drawings = page_drawings.get(next_page, [])
+
+                        # 检测截断的单元格
+                        split_indices = _detect_split_cells(
+                            prev_last_row,
+                            next_first_row,
+                            prev_drawings,
+                            next_drawings
+                        )
+
+                        if split_indices:
+                            print(f"  [单元格合并] 检测到 {len(split_indices)} 个跨页截断的单元格")
+                            # 合并截断的单元格
+                            _merge_split_cells(prev_last_row, next_first_row, split_indices)
+                            print(f"  [单元格合并] 完成合并")
 
             # 收集嵌套表
             nested = segment.get('nested_tables', [])
@@ -1074,6 +1104,65 @@ class CrossPageTableMerger:
                     return True, f"页{next_page}表{next_id}上方有段落"
 
         return False, "无内容隔断"
+
+    def _analyze_and_apply_headers(self, table: Dict[str, Any], debug: bool = False) -> None:
+        """
+        延迟表头识别：分析并应用表头
+
+        简单实现：将第一行作为表头，更新columns定义，并从rows中移除第一行
+
+        Args:
+            table: 待分析的表格（会被原地修改）
+            debug: 是否输出调试信息
+        """
+        rows = table.get('rows', [])
+        if not rows:
+            if debug:
+                print(f"    没有数据行，跳过表头识别")
+            return
+
+        # 简单策略：将第一行作为表头
+        header_row = rows[0]
+        header_cells = header_row.get('cells', [])
+
+        if not header_cells:
+            if debug:
+                print(f"    第一行没有单元格，跳过表头识别")
+            return
+
+        # 更新columns定义
+        new_columns = []
+        for col_idx, cell in enumerate(header_cells):
+            col_id = cell.get('col_id', f'c{col_idx + 1:03d}')
+            col_name = cell.get('content', '')
+
+            new_columns.append({
+                "id": col_id,
+                "index": col_idx,
+                "name": col_name,
+                "path": [col_name] if col_name else []
+            })
+
+        table['columns'] = new_columns
+
+        # 从rows中移除第一行（已经作为表头）
+        table['rows'] = rows[1:]
+
+        # 更新header_info
+        table['header_info'] = {
+            'col_levels': 1,  # 简单单层表头
+            'row_levels': 0,
+            'multi_level': False,
+            'header_detected': True  # 标记表头已识别
+        }
+
+        # 更新method标记
+        table['method'] = f"{table.get('method', 'unknown')} + delayed_header"
+
+        if debug:
+            print(f"    → 识别表头完成：{len(new_columns)}列")
+            print(f"    → 列名: {[col['name'][:20] for col in new_columns[:3]]}...")
+            print(f"    → 剩余数据行: {len(table['rows'])}行")
 
     def build_continuation_hints(self,
                                  tables: List[Dict[str, Any]],
@@ -1530,7 +1619,7 @@ class CrossPageTableMerger:
         for chain in merge_chains:
             if len(chain) > 1:
                 # 合并这条链
-                merged_table = self.merge_tables(tables, chain)
+                merged_table = self.merge_tables(tables, chain, page_drawings)
                 merged_tables.append(merged_table)
                 merged_ids.update(chain)
                 if debug:
@@ -1555,6 +1644,19 @@ class CrossPageTableMerger:
             print(f"  输出表格列表:")
             for i, t in enumerate(merged_tables):
                 print(f"    [{i}] id={t.get('id')}, page={t.get('page')}, rows={len(t.get('rows', []))}")
+
+        # Step 4: 延迟表头识别 - 对未识别表头的表格进行分析
+        if debug:
+            print(f"\n[延迟表头识别] 开始分析未识别表头的表格")
+
+        for table in merged_tables:
+            header_info = table.get('header_info', {})
+            header_detected = header_info.get('header_detected', True)
+
+            if not header_detected:
+                if debug:
+                    print(f"  分析表格 {table.get('id')} (页{table.get('page')}): 未识别表头")
+                self._analyze_and_apply_headers(table, debug=debug)
 
         return merged_tables
 
@@ -1673,3 +1775,256 @@ def _normalize_to_page_width(value: float, page_width: float) -> float:
         归一化值 [0, 1]
     """
     return value / page_width if page_width > 0 else 0
+
+
+def _cell_has_horizontal_line(cell_bbox: List[float],
+                               y_position: float,
+                               drawings: List,
+                               coverage_threshold: float = 0.5) -> bool:
+    """
+    检查单元格的某条边（顶边或底边）是否有完整横线
+
+    Args:
+        cell_bbox: 单元格bbox [x0, y0, x1, y1]
+        y_position: 要检查的Y坐标（通常是 bbox[1] 或 bbox[3]）
+        drawings: 页面线条数据
+        coverage_threshold: 覆盖率阈值（默认0.5，即横线覆盖≥50%单元格宽度）
+
+    Returns:
+        True: 有完整横线
+        False: 无横线或横线不完整
+    """
+    if not drawings or not cell_bbox:
+        return False
+
+    x0, y0, x1, y1 = cell_bbox
+    cell_width = x1 - x0
+
+    if cell_width <= 0:
+        return False
+
+    # 容差：线条位置允许的偏移
+    y_tolerance = 2.0
+
+    # 遍历所有绘图元素
+    for drawing in drawings:
+        if not isinstance(drawing, dict):
+            continue
+
+        items = drawing.get('items', [])
+        for item in items:
+            # 只关注直线（'l'表示line）
+            if not isinstance(item, tuple) or len(item) < 3:
+                continue
+
+            item_type = item[0]
+            if item_type != 'l':
+                continue
+
+            p1 = item[1]  # 起点 (x, y)
+            p2 = item[2]  # 终点 (x, y)
+
+            if not isinstance(p1, (tuple, list)) or not isinstance(p2, (tuple, list)):
+                continue
+            if len(p1) < 2 or len(p2) < 2:
+                continue
+
+            line_x0 = min(p1[0], p2[0])
+            line_x1 = max(p1[0], p2[0])
+            line_y0 = min(p1[1], p2[1])
+            line_y1 = max(p1[1], p2[1])
+
+            # 判断是否为横线（y坐标变化小）
+            if abs(line_y1 - line_y0) > 2.0:
+                continue
+
+            line_y = (line_y0 + line_y1) / 2
+
+            # 检查Y坐标是否匹配
+            if abs(line_y - y_position) > y_tolerance:
+                continue
+
+            # 计算线条与单元格的水平重叠
+            overlap_x0 = max(line_x0, x0)
+            overlap_x1 = min(line_x1, x1)
+            overlap_width = max(0, overlap_x1 - overlap_x0)
+            overlap_ratio = overlap_width / cell_width
+
+            # 如果覆盖率达到阈值，认为有完整横线
+            if overlap_ratio >= coverage_threshold:
+                return True
+
+    return False
+
+
+def _detect_split_cells(prev_last_row: Dict,
+                        next_first_row: Dict,
+                        prev_drawings: List,
+                        next_drawings: List) -> List[Tuple[int, int]]:
+    """
+    检测跨页截断的单元格（基于特征的直接判断）
+
+    必须同时满足以下条件：
+    1. 列位置一致：col_id 相同 或 x坐标范围重叠 > 80%
+    2. 上页单元格：底边没有完整横线（覆盖率 < 50%）
+    3. 下页单元格：顶边没有完整横线（覆盖率 < 50%）
+
+    Args:
+        prev_last_row: 上页最后一行（包含cells列表）
+        next_first_row: 下页第一行（包含cells列表）
+        prev_drawings: 上页的线条数据
+        next_drawings: 下页的线条数据
+
+    Returns:
+        [(col_index_prev, col_index_next), ...] 被截断的单元格索引对
+    """
+    if not prev_last_row or not next_first_row:
+        return []
+
+    prev_cells = prev_last_row.get('cells', [])
+    next_cells = next_first_row.get('cells', [])
+
+    if not prev_cells or not next_cells:
+        return []
+
+    split_indices = []
+
+    # 遍历上页最后一行的每个单元格
+    for prev_idx, prev_cell in enumerate(prev_cells):
+        prev_bbox = prev_cell.get('bbox')
+        prev_col_id = prev_cell.get('col_id')
+
+        if not prev_bbox or len(prev_bbox) < 4:
+            continue
+
+        prev_x0, prev_y0, prev_x1, prev_y1 = prev_bbox
+        prev_width = prev_x1 - prev_x0
+
+        if prev_width <= 0:
+            continue
+
+        # 遍历下页第一行的每个单元格，寻找匹配的列
+        for next_idx, next_cell in enumerate(next_cells):
+            next_bbox = next_cell.get('bbox')
+            next_col_id = next_cell.get('col_id')
+
+            if not next_bbox or len(next_bbox) < 4:
+                continue
+
+            next_x0, next_y0, next_x1, next_y1 = next_bbox
+            next_width = next_x1 - next_x0
+
+            if next_width <= 0:
+                continue
+
+            # 条件1：列位置一致（col_id相同 或 x坐标重叠 > 80%）
+            col_match = False
+
+            # 方式1：col_id相同
+            if prev_col_id and next_col_id and prev_col_id == next_col_id:
+                col_match = True
+            else:
+                # 方式2：x坐标重叠 > 80%
+                overlap_x0 = max(prev_x0, next_x0)
+                overlap_x1 = min(prev_x1, next_x1)
+                overlap_width = max(0, overlap_x1 - overlap_x0)
+
+                # 计算重叠率（相对于较小的单元格宽度）
+                min_width = min(prev_width, next_width)
+                overlap_ratio = overlap_width / min_width if min_width > 0 else 0
+
+                if overlap_ratio > 0.8:
+                    col_match = True
+
+            if not col_match:
+                continue
+
+            # 条件2：上页单元格底边没有完整横线
+            prev_has_bottom = _cell_has_horizontal_line(
+                prev_bbox,
+                prev_y1,  # 底边Y坐标
+                prev_drawings,
+                coverage_threshold=0.5
+            )
+
+            if prev_has_bottom:
+                continue
+
+            # 条件3：下页单元格顶边没有完整横线
+            next_has_top = _cell_has_horizontal_line(
+                next_bbox,
+                next_y0,  # 顶边Y坐标
+                next_drawings,
+                coverage_threshold=0.5
+            )
+
+            if next_has_top:
+                continue
+
+            # 所有条件都满足，认为这是一对被截断的单元格
+            split_indices.append((prev_idx, next_idx))
+            break  # 找到匹配的下页单元格后，停止内层循环
+
+    return split_indices
+
+
+def _merge_split_cells(prev_row: Dict,
+                       next_row: Dict,
+                       split_indices: List[Tuple[int, int]]) -> None:
+    """
+    合并截断的单元格（原地修改 prev_row 和 next_row）
+
+    操作：
+    1. 将下页单元格的内容追加到上页单元格
+    2. 标记下页单元格为已合并（设置特殊标记）
+    3. 保留上页单元格的bbox（跨页bbox不能直接合并）
+    4. 在元数据中记录 split_across_pages: True
+
+    Args:
+        prev_row: 上页最后一行（会被原地修改）
+        next_row: 下页第一行（会被原地修改）
+        split_indices: 被截断的单元格索引对列表
+    """
+    if not split_indices:
+        return
+
+    prev_cells = prev_row.get('cells', [])
+    next_cells = next_row.get('cells', [])
+
+    for prev_idx, next_idx in split_indices:
+        if prev_idx >= len(prev_cells) or next_idx >= len(next_cells):
+            continue
+
+        prev_cell = prev_cells[prev_idx]
+        next_cell = next_cells[next_idx]
+
+        # 1. 合并内容
+        prev_content = prev_cell.get('content', '')
+        next_content = next_cell.get('content', '')
+
+        # 智能合并策略：
+        # - 如果上页内容以"、，；：-"等结尾，直接拼接
+        # - 否则可能需要空格或换行分隔
+        if prev_content.rstrip().endswith(('、', '，', '；', '：', '-', '续', '（')):
+            merged_content = prev_content + next_content
+        elif prev_content.strip() and next_content.strip():
+            # 两边都有内容，用空格分隔
+            merged_content = prev_content.rstrip() + ' ' + next_content.lstrip()
+        else:
+            # 有一边为空，直接拼接
+            merged_content = prev_content + next_content
+
+        prev_cell['content'] = merged_content
+
+        # 2. 标记为跨页合并
+        prev_cell['split_across_pages'] = True
+        prev_cell['merged_from_next_page'] = True
+
+        # 3. 标记下页单元格为已合并（内容已移至上页）
+        next_cell['merged_to_prev_page'] = True
+        next_cell['original_content'] = next_content  # 保留原始内容供调试
+        # 清空下页单元格的内容（避免重复显示）
+        next_cell['content'] = ''
+
+        # 4. bbox保留上页的（跨页bbox无法合并）
+        # 不修改 prev_cell['bbox']
