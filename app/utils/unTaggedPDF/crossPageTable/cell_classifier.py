@@ -7,6 +7,7 @@
 from typing import Dict, Any, List, Tuple, Optional
 from openai import OpenAI
 import json
+import re
 
 
 class PromptTemplates:
@@ -22,14 +23,19 @@ class PromptTemplates:
 - 上页最后一行：多个单元格的内容（key-value格式）
 - 下页第一行：多个单元格的内容（key-value格式）
 
-输出格式（JSON）：
+输出格式要求：
+1. 必须使用 ```json 代码块包裹
+2. 格式如下：
+
+```json
 {
-    "should_merge": true/false,
+    "should_merge": true,
     "confidence": 0.95,
     "reason": "第0列内容明显被截断，应该合并"
 }
+```
 
-**重要**：只输出 JSON，不要输出其他内容。
+**重要**：必须使用 ```json 代码块格式，不要输出其他内容。
 """
 
 
@@ -256,30 +262,57 @@ class CrossPageCellClassifier:
             prompt += "\n" + "-" * 60 + "\n\n"
 
         prompt += """
-请对每一对行输出 JSON 格式的判断结果，返回一个 JSON 数组：
-[
-    {"should_merge": true/false, "confidence": 0.95, "reason": "..."},
-    {"should_merge": true/false, "confidence": 0.90, "reason": "..."},
-    ...
-]
+请对每一对行输出 JSON 格式的判断结果，返回一个 JSON 数组。
 
-**重要**：只输出 JSON 数组，不要输出其他内容。
+**输出格式要求**：
+1. 必须使用 ```json 代码块包裹
+2. 格式如下：
+
+```json
+[
+    {"should_merge": true, "confidence": 0.95, "reason": "..."},
+    {"should_merge": false, "confidence": 0.90, "reason": "..."}
+]
+```
+
+**重要**：必须使用 ```json 代码块格式，不要输出其他内容。
 """
         return prompt
 
     def _parse_batch_result(self, result_text: str, expected_count: int) -> List[Dict[str, Any]]:
-        """解析批量结果"""
-        try:
-            # 移除可能的 markdown 代码块标记
-            if result_text.startswith("```json"):
-                result_text = result_text[7:]
-            if result_text.startswith("```"):
-                result_text = result_text[3:]
-            if result_text.endswith("```"):
-                result_text = result_text[:-3]
-            result_text = result_text.strip()
+        """
+        解析批量结果
 
-            results = json.loads(result_text)
+        支持以下格式：
+        1. 纯 JSON（直接解析）
+        2. ```json ... ``` 代码块（正则提取）
+        3. <think>...</think> + JSON（移除think标签后提取）
+        """
+        try:
+            # 方法1：使用正则提取 ```json ... ``` 代码块中的内容
+            json_block_pattern = r'```json\s*([\s\S]*?)\s*```'
+            matches = re.findall(json_block_pattern, result_text)
+
+            if matches:
+                # 找到 ```json``` 代码块，使用第一个匹配
+                json_text = matches[0].strip()
+                print(f"[CellClassifier] 从 ```json``` 代码块中提取JSON")
+            else:
+                # 方法2：移除 <think>...</think> 标签（如果存在）
+                json_text = re.sub(r'<think>.*?</think>', '', result_text, flags=re.DOTALL).strip()
+
+                # 方法3：如果仍有 ``` 标记，手动移除
+                if json_text.startswith("```json"):
+                    json_text = json_text[7:]
+                if json_text.startswith("```"):
+                    json_text = json_text[3:]
+                if json_text.endswith("```"):
+                    json_text = json_text[:-3]
+                json_text = json_text.strip()
+
+                print(f"[CellClassifier] 使用清理后的文本解析JSON")
+
+            results = json.loads(json_text)
 
             # 验证结果格式
             if not isinstance(results, list):
