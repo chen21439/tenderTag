@@ -562,7 +562,7 @@ class TableExtractor:
 
     def extract_cell_text(self, pymupdf_page, bbox: tuple, debug: bool = False) -> str:
         """
-        使用PyMuPDF从指定边界框提取文本
+        使用PyMuPDF从指定边界框提取文本（使用官方裁剪方法）
 
         Args:
             pymupdf_page: PyMuPDF的page对象
@@ -572,12 +572,21 @@ class TableExtractor:
         Returns:
             提取的文本内容（已移除换行符）
         """
-        rect_obj = fitz.Rect(bbox)
-        text = pymupdf_page.get_text("text", clip=rect_obj)
+        # 获取页面有效区域
+        page_rect = pymupdf_page.rect
+
+        # 裁剪cell bbox到页面范围（使用PyMuPDF的官方方法）
+        cell_rect = fitz.Rect(bbox)
+        clipped_rect = cell_rect & page_rect  # 交集运算
+
+        # 用裁剪后的rect提取文本
+        text = pymupdf_page.get_text("text", clip=clipped_rect)
 
         if debug:
             print(f"\n[DEBUG] PyMuPDF提取:")
-            print(f"  Bbox: {bbox}")
+            print(f"  原始Bbox: {bbox}")
+            print(f"  裁剪后Rect: {clipped_rect}")
+            print(f"  页面Rect: {page_rect}")
             print(f"  原始文本长度: {len(text)}")
             print(f"  文本预览: {repr(text[:100])}")
 
@@ -1047,6 +1056,7 @@ class TableExtractor:
             "parent_table_id": None,
             "page": page_num,
             "bbox": validated_bbox,
+            "raw_bbox": table_bbox,  # 保留PDFPlumber原始bbox（用于调试）
             "columns": columns,
             "rows": rows,
             "header_info": {
@@ -1162,6 +1172,7 @@ class TableExtractor:
             "parent_table_id": None,
             "page": page_num,
             "bbox": validated_bbox,
+            "raw_bbox": table_bbox,  # 保留PDFPlumber原始bbox（用于调试）
             "columns": columns,
             "rows": rows,
             "header_info": {
@@ -1269,6 +1280,7 @@ class TableExtractor:
             "parent_table_id": None,
             "page": page_num,
             "bbox": validated_bbox,
+            "raw_bbox": table_bbox,  # 保留PDFPlumber原始bbox（用于调试）
             "columns": columns,
             "rows": rows,
             "header_info": {

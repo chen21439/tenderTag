@@ -13,10 +13,12 @@ try:
     from .table_extractor import TableExtractor
     from .paragraph_extractor import ParagraphExtractor
     from .cross_page_merger import CrossPageTableMerger
+    from .crossPageTable import CrossPageCellClassifier
 except ImportError:
     from table_extractor import TableExtractor
     from paragraph_extractor import ParagraphExtractor
     from cross_page_merger import CrossPageTableMerger
+    from crossPageTable import CrossPageCellClassifier
 
 
 class PDFContentExtractor:
@@ -25,7 +27,8 @@ class PDFContentExtractor:
     def __init__(self,
                  pdf_path: str,
                  enable_cross_page_merge: bool = True,
-                 enable_cell_merge: bool = False):
+                 enable_cell_merge: bool = False,
+                 verbose: bool = False):
         """
         初始化PDF内容提取器
 
@@ -34,10 +37,14 @@ class PDFContentExtractor:
             enable_cross_page_merge: 是否启用跨页表格合并（默认True）
             enable_cell_merge: 是否启用跨页单元格合并（默认False，暂时关闭）
                               只有在 enable_cross_page_merge=True 时才有效
+            verbose: 是否输出详细日志（默认False，只输出关键信息）
         """
         self.pdf_path = Path(pdf_path)
         if not self.pdf_path.exists():
             raise FileNotFoundError(f"PDF文件不存在: {pdf_path}")
+
+        # 保存配置参数
+        self.verbose = verbose
 
         # 初始化各个提取器
         self.table_extractor = TableExtractor(pdf_path)
@@ -244,6 +251,31 @@ class PDFContentExtractor:
                 # 更新合并前的备份
                 tables_before_merge = copy.deepcopy(tables)
 
+        # AI 行级别判断（如果有 hints）
+        ai_row_decisions = []
+        if hints_by_page:
+            print(f"\n[AI判断] hints_by_page 的页码: {sorted(hints_by_page.keys())}")
+            row_pairs = self._collect_hint_row_pairs(tables, hints_by_page)
+            if row_pairs:
+                print(f"\n[AI判断] 检测到 {len(row_pairs)} 个跨页行对，正在批量判断...")
+                try:
+                    classifier = CrossPageCellClassifier(truncate_length=50)
+                    ai_row_decisions = classifier.classify_row_pairs_batch(row_pairs)
+
+                    # 打印判断结果
+                    merge_count = sum(1 for d in ai_row_decisions if d.get('should_merge'))
+                    no_merge_count = len(ai_row_decisions) - merge_count
+                    print(f"[AI判断] 完成判断: {merge_count} 个应合并, {no_merge_count} 个不合并")
+
+                    for i, decision in enumerate(ai_row_decisions):
+                        should_merge = decision.get('should_merge')
+                        confidence = decision.get('confidence', 0)
+                        print(f"  行对 {i+1}: {'✅ 合并' if should_merge else '❌ 不合并'} (置信度: {confidence:.2f})")
+                except Exception as e:
+                    print(f"[AI判断] 错误: {e}")
+                    import traceback
+                    traceback.print_exc()
+
         # 跨页表格合并（如果启用）
         if self.enable_cross_page_merge and self.cross_page_merger and tables:
             # 构建布局索引（用于检查表格间是否有正文隔断）
@@ -259,7 +291,7 @@ class PDFContentExtractor:
                 page_drawings=page_drawings,
                 layout_index=layout_index,  # 传入布局索引
                 hints_by_page=hints_by_page,  # 传入hints（用于列补齐）
-                debug=True  # 开启debug模式
+                debug=False  # 关闭表格合并的调试日志
             )
 
         # 重新分配正式的docN编号
@@ -303,6 +335,10 @@ class PDFContentExtractor:
         # 保存hints信息（用于调试）
         if hints_by_page:
             result["hints_by_page"] = hints_by_page
+
+        # 保存AI行级别判断结果（用于调试）
+        if ai_row_decisions:
+            result["ai_row_decisions"] = ai_row_decisions
 
         return result
 
@@ -531,6 +567,108 @@ class PDFContentExtractor:
         doc.close()
         return metadata
 
+    def _collect_hint_row_pairs(self, tables, hints_by_page):
+        """
+        收集所有有 hint 的跨页表格对的行数据（用于 AI 判断）
+
+        Args:
+            tables: 表格列表（重提取后的）
+            hints_by_page: 续页 hint 信息
+
+        Returns:
+            行对列表，格式：[
+                {
+                    "prev_row": {"第0列": "...", "第1列": "...", ...},
+                    "next_row": {"第0列": "...", "第1列": "...", ...},
+                    "context": {
+                        "prev_table_id": "temp_001",
+                        "next_table_id": "temp_002",
+                        "prev_page": 1,
+                        "next_page": 2,
+                        "hint_score": 0.95
+                    }
+                },
+                ...
+            ]
+        """
+        if not hints_by_page:
+            return []
+
+        row_pairs = []
+
+        # 按页码分组表格
+        tables_by_page = {}
+        for table in tables:
+            page = table.get('page', 1)
+            if page not in tables_by_page:
+                tables_by_page[page] = []
+            tables_by_page[page].append(table)
+
+        print(f"[AI判断] tables_by_page 的页码: {sorted(tables_by_page.keys())}")
+
+        # 遍历有 hint 的页面
+        for next_page, hint in hints_by_page.items():
+            prev_page = next_page - 1
+            print(f"[AI判断] 检查跨页: {prev_page} → {next_page}")
+
+            # 【测试】只处理第15页到第16页的跨页表格
+            if prev_page != 15:
+                print(f"[AI判断] 跳过（prev_page={prev_page} != 15）")
+                continue
+
+            if prev_page not in tables_by_page or next_page not in tables_by_page:
+                continue
+
+            prev_tables = tables_by_page[prev_page]
+            next_tables = tables_by_page[next_page]
+
+            # 获取上页最后一张表和下页第一张表
+            if not prev_tables or not next_tables:
+                continue
+
+            prev_table = prev_tables[-1]  # 最后一张
+            next_table = next_tables[0]   # 第一张
+
+            # 获取上页最后一行和下页第一行
+            prev_rows = prev_table.get('rows', [])
+            next_rows = next_table.get('rows', [])
+
+            if not prev_rows or not next_rows:
+                continue
+
+            prev_last_row = prev_rows[-1]
+            next_first_row = next_rows[0]
+
+            prev_cells = prev_last_row.get('cells', [])
+            next_cells = next_first_row.get('cells', [])
+
+            # 提取行数据（key-value 格式）
+            prev_row_dict = {}
+            next_row_dict = {}
+
+            for i, cell in enumerate(prev_cells):
+                col_name = f"第{i}列"
+                prev_row_dict[col_name] = cell.get('content', '').strip()
+
+            for i, cell in enumerate(next_cells):
+                col_name = f"第{i}列"
+                next_row_dict[col_name] = cell.get('content', '').strip()
+
+            # 构建行对
+            row_pairs.append({
+                "prev_row": prev_row_dict,
+                "next_row": next_row_dict,
+                "context": {
+                    "prev_table_id": prev_table.get('id'),
+                    "next_table_id": next_table.get('id'),
+                    "prev_page": prev_page,
+                    "next_page": next_page,
+                    "hint_score": hint.get('score', 0)
+                }
+            })
+
+        return row_pairs
+
     def _build_layout_index(self, tables, paragraphs):
         """
         构建页面布局索引（用于跨页合并时检查正文隔断）
@@ -584,13 +722,14 @@ class PDFContentExtractor:
         for page in layout_index:
             layout_index[page].sort(key=lambda x: x['y0'])
 
-        # Debug: 输出布局索引统计
-        print(f"\n[布局索引] 构建完成:")
-        for page_num in sorted(layout_index.keys()):
-            blocks = layout_index[page_num]
-            tables_count = sum(1 for b in blocks if b['type'] == 'table')
-            paras_count = sum(1 for b in blocks if b['type'] == 'paragraph')
-            print(f"  页{page_num}: {tables_count}个表格, {paras_count}个段落")
+        # Debug: 输出布局索引统计（仅在 verbose 模式下）
+        if self.verbose:
+            print(f"\n[布局索引] 构建完成:")
+            for page_num in sorted(layout_index.keys()):
+                blocks = layout_index[page_num]
+                tables_count = sum(1 for b in blocks if b['type'] == 'table')
+                paras_count = sum(1 for b in blocks if b['type'] == 'paragraph')
+                print(f"  页{page_num}: {tables_count}个表格, {paras_count}个段落")
 
         return layout_index
 
