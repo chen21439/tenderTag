@@ -1009,6 +1009,24 @@ class CrossPageTableMerger:
         if next_page - prev_page != 1:
             return False, "非相邻页"
 
+        # 辅助函数：判断段落是否是页码
+        def is_page_number(content: str) -> bool:
+            """判断内容是否是页码（过滤页码，不算文本隔断）"""
+            if not content:
+                return False
+            content = content.strip()
+            # 常见页码格式："-第X页-"、"第X页"、"- X -"、纯数字等
+            import re
+            patterns = [
+                r'^-?\s*第?\s*\d+\s*页?\s*-?$',  # -第3页-、第3页、-3-
+                r'^-?\s*Page\s*\d+\s*-?$',       # Page 3、-Page 3-
+                r'^-?\s*\d+\s*-?$',               # 3、-3-
+            ]
+            for pattern in patterns:
+                if re.match(pattern, content, re.IGNORECASE):
+                    return True
+            return False
+
         # 检查1: prev_table下方到页底是否有内容（段落或其他表格）
         prev_page_blocks = layout_index.get(prev_page, [])
         for block in prev_page_blocks:
@@ -1018,20 +1036,19 @@ class CrossPageTableMerger:
 
             # 检查block是否在prev_table下方
             if block['y0'] > prev_bbox[3]:
-                # 计算X方向重叠
-                block_x0, block_x1 = block['bbox'][0], block['bbox'][2]
-                table_x0, table_x1 = prev_bbox[0], prev_bbox[2]
+                block_type = block['type']
 
-                overlap_x0 = max(block_x0, table_x0)
-                overlap_x1 = min(block_x1, table_x1)
-                overlap_width = max(0, overlap_x1 - overlap_x0)
-                table_width = table_x1 - table_x0
-
-                # 如果重叠超过50%，认为是隔断内容
-                if table_width > 0 and overlap_width / table_width >= 0.5:
-                    block_type = block['type']
-                    block_info = block.get('id', '') if block_type == 'table' else '段落'
+                # 表格类型：直接算隔断
+                if block_type == 'table':
+                    block_info = block.get('id', '未知表格')
                     return True, f"页{prev_page}表{prev_id}下方有{block_info}"
+
+                # 段落类型：过滤页码
+                if block_type == 'paragraph':
+                    content = block.get('content_preview', '')
+                    if is_page_number(content):
+                        continue  # 跳过页码
+                    return True, f"页{prev_page}表{prev_id}下方有段落"
 
         # 检查2: 下一页页顶到next_table上方是否有内容
         next_page_blocks = layout_index.get(next_page, [])
@@ -1042,19 +1059,19 @@ class CrossPageTableMerger:
 
             # 检查block是否在next_table上方
             if block['y1'] < next_bbox[1]:
-                # 计算X方向重叠
-                block_x0, block_x1 = block['bbox'][0], block['bbox'][2]
-                table_x0, table_x1 = next_bbox[0], next_bbox[2]
+                block_type = block['type']
 
-                overlap_x0 = max(block_x0, table_x0)
-                overlap_x1 = min(block_x1, table_x1)
-                overlap_width = max(0, overlap_x1 - overlap_x0)
-                table_width = table_x1 - table_x0
-
-                if table_width > 0 and overlap_width / table_width >= 0.5:
-                    block_type = block['type']
-                    block_info = block.get('id', '') if block_type == 'table' else '段落'
+                # 表格类型：直接算隔断
+                if block_type == 'table':
+                    block_info = block.get('id', '未知表格')
                     return True, f"页{next_page}表{next_id}上方有{block_info}"
+
+                # 段落类型：过滤页码
+                if block_type == 'paragraph':
+                    content = block.get('content_preview', '')
+                    if is_page_number(content):
+                        continue  # 跳过页码
+                    return True, f"页{next_page}表{next_id}上方有段落"
 
         return False, "无内容隔断"
 
@@ -1062,7 +1079,8 @@ class CrossPageTableMerger:
                                  tables: List[Dict[str, Any]],
                                  page_widths: Dict[int, float],
                                  page_heights: Dict[int, float],
-                                 page_drawings: Dict[int, List] = None) -> Dict[int, Dict]:
+                                 page_drawings: Dict[int, List] = None,
+                                 layout_index: Dict[int, List] = None) -> Dict[int, Dict]:
         """
         分析第一轮提取的表格，为可能的续页生成"列模板hint"
 
@@ -1070,6 +1088,7 @@ class CrossPageTableMerger:
         - 检测页底表格（y1 > page_height * 0.8）
         - 下一页有表格且贴顶（y0 < page_height * 0.2）
         - 计算续页评分（基于宽度、右边界对齐）
+        - 检查正文隔断（如果有正文则不是续页）
         - 返回 hints_by_page
 
         Args:
@@ -1077,6 +1096,7 @@ class CrossPageTableMerger:
             page_widths: 页面宽度字典
             page_heights: 页面高度字典
             page_drawings: 页面绘图数据（可选）
+            layout_index: 页面布局索引（用于检查正文隔断，可选）
 
         Returns:
             hints_by_page: {page_num: {"col_xs": [...], "bbox": [...], "score": ...}}
@@ -1139,6 +1159,15 @@ class CrossPageTableMerger:
             if not (is_bottom and is_top):
                 print(f"  → 不满足贴底贴顶条件，跳过")
                 continue
+
+            # ===== 新增：检查正文隔断 =====
+            if layout_index:
+                has_para, para_reason = self._has_paragraph_between(bottom_table, top_table, layout_index)
+                print(f"  [正文检查] {para_reason}")
+                if has_para:
+                    print(f"  → 检测到正文隔断，不是续页，跳过")
+                    continue
+            # ===== 新增结束 =====
 
             # 4. 计算续页评分
             score = 0.0
