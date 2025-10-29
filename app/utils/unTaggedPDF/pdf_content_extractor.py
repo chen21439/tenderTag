@@ -22,13 +22,18 @@ except ImportError:
 class PDFContentExtractor:
     """PDF内容提取主协调器"""
 
-    def __init__(self, pdf_path: str, enable_cross_page_merge: bool = True):
+    def __init__(self,
+                 pdf_path: str,
+                 enable_cross_page_merge: bool = True,
+                 enable_cell_merge: bool = True):
         """
         初始化PDF内容提取器
 
         Args:
             pdf_path: PDF文件路径
             enable_cross_page_merge: 是否启用跨页表格合并（默认True）
+            enable_cell_merge: 是否启用跨页单元格合并（默认True）
+                              只有在 enable_cross_page_merge=True 时才有效
         """
         self.pdf_path = Path(pdf_path)
         if not self.pdf_path.exists():
@@ -45,7 +50,8 @@ class PDFContentExtractor:
                 score_threshold=0.70,
                 geometry_weight=0.40,
                 structure_weight=0.35,
-                visual_weight=0.25
+                visual_weight=0.25,
+                enable_cell_merge=enable_cell_merge
             )
         else:
             self.cross_page_merger = None

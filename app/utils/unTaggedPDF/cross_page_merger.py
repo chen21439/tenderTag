@@ -102,7 +102,8 @@ class CrossPageTableMerger:
                  score_threshold: float = 0.70,
                  geometry_weight: float = 0.40,
                  structure_weight: float = 0.35,
-                 visual_weight: float = 0.25):
+                 visual_weight: float = 0.25,
+                 enable_cell_merge: bool = True):
         """
         初始化合并器
 
@@ -111,11 +112,14 @@ class CrossPageTableMerger:
             geometry_weight: 几何特征权重
             structure_weight: 结构特征权重
             visual_weight: 视觉特征权重
+            enable_cell_merge: 是否启用跨页单元格合并（默认True）
+                             当单元格被分页符截断时，自动合并内容
         """
         self.score_threshold = score_threshold
         self.geometry_weight = geometry_weight
         self.structure_weight = structure_weight
         self.visual_weight = visual_weight
+        self.enable_cell_merge = enable_cell_merge
 
     def generate_fingerprint(self,
                             table: Dict[str, Any],
@@ -816,8 +820,8 @@ class CrossPageTableMerger:
                 print(f"  第{i+1}段 {segment_id}(页{segment_page}): 检测到重复表头 {skip_rows} 行，添加剩余 {len(segment_rows) - skip_rows} 行")
                 merged['rows'].extend(segment_rows[skip_rows:])
 
-                # Step 3.5: 检测并合并跨页截断的单元格
-                if page_drawings and len(merged['rows']) > 0 and len(segment_rows) > skip_rows:
+                # Step 3.5: 检测并合并跨页截断的单元格（可配置）
+                if self.enable_cell_merge and page_drawings and len(merged['rows']) > 0 and len(segment_rows) > skip_rows:
                     # 获取上页最后一行和下页第一行
                     prev_last_row = merged['rows'][-1] if len(merged['rows']) >= len(segment_rows) - skip_rows else None
                     next_first_row = segment_rows[skip_rows] if skip_rows < len(segment_rows) else None
@@ -842,6 +846,8 @@ class CrossPageTableMerger:
                             # 合并截断的单元格
                             _merge_split_cells(prev_last_row, next_first_row, split_indices)
                             print(f"  [单元格合并] 完成合并")
+                elif not self.enable_cell_merge and i > 0:
+                    print(f"  [单元格合并] 已禁用（enable_cell_merge=False）")
 
             # 收集嵌套表
             nested = segment.get('nested_tables', [])
