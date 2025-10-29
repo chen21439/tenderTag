@@ -773,7 +773,8 @@ def main():
     """
     # 从taskId构建路径
     task_id = "鄂尔多斯市政府网站群集约化平台升级改造项目"
-    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\鄂尔多斯市政府网站群集约化平台升级改造项目")
+    base_dir = Path(r""
+                    r"E:\programFile\AIProgram\docxServer\pdf\task\鄂尔多斯市政府网站群集约化平台升级改造项目")
     pdf_path = base_dir / f"{task_id}.pdf"
 
     print(f"开始测试PDF内容提取...")

@@ -13,11 +13,13 @@ try:
     from .bbox_utils import rect, contains_with_tol
     from .header_analyzer import HeaderAnalyzer
     from .cell_span_detector import CellSpanDetector
+    from .footer_filter import FooterFilter, FooterConfig
 except ImportError:
     from nested_table_handler import NestedTableHandler
     from bbox_utils import rect, contains_with_tol
     from header_analyzer import HeaderAnalyzer
     from cell_span_detector import CellSpanDetector
+    from footer_filter import FooterFilter, FooterConfig
 
 
 def validate_and_fix_bbox(table_bbox: list, cells: List[Dict], page_height: float) -> list:
@@ -117,6 +119,10 @@ class TableExtractor:
 
         # 单元格跨列/跨行检测器
         self.span_detector = CellSpanDetector(tolerance=2.0)
+
+        # 页脚/页码过滤器
+        # TODO: 页脚安全区固定30pt，后续需支持动态检测（FooterConfig mode="auto"）
+        self.footer_filter = FooterFilter(FooterConfig(mode="fixed", fixed_points=30.0))
 
     # ==================== TEXT-FALLBACK 辅助方法 ====================
 
@@ -562,7 +568,7 @@ class TableExtractor:
 
     def extract_cell_text(self, pymupdf_page, bbox: tuple, debug: bool = False) -> str:
         """
-        使用PyMuPDF从指定边界框提取文本（使用官方裁剪方法）
+        使用PyMuPDF从指定边界框提取文本（带页脚过滤）
 
         Args:
             pymupdf_page: PyMuPDF的page对象
@@ -570,30 +576,16 @@ class TableExtractor:
             debug: 是否输出调试信息
 
         Returns:
-            提取的文本内容（已移除换行符）
+            提取的文本内容（已移除换行符和页码）
         """
-        # 获取页面有效区域
-        page_rect = pymupdf_page.rect
+        # 使用 FooterFilter 提取文本（自动避开页脚区域和页码）
+        text = self.footer_filter.extract_cell_text_safe(
+            fitz_page=pymupdf_page,
+            cell_bbox=bbox,
+            debug=debug
+        )
 
-        # 裁剪cell bbox到页面范围（使用PyMuPDF的官方方法）
-        cell_rect = fitz.Rect(bbox)
-        clipped_rect = cell_rect & page_rect  # 交集运算
-
-        # 用裁剪后的rect提取文本
-        text = pymupdf_page.get_text("text", clip=clipped_rect)
-
-        if debug:
-            print(f"\n[DEBUG] PyMuPDF提取:")
-            print(f"  原始Bbox: {bbox}")
-            print(f"  裁剪后Rect: {clipped_rect}")
-            print(f"  页面Rect: {page_rect}")
-            print(f"  原始文本长度: {len(text)}")
-            print(f"  文本预览: {repr(text[:100])}")
-
-        # 移除所有换行符
-        text = text.replace('\n', '').replace('\r', '')
-
-        return text.strip()
+        return text
 
     def get_table_bboxes_per_page(self) -> Dict[int, List[tuple]]:
         """
