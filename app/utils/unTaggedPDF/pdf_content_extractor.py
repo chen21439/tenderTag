@@ -633,12 +633,16 @@ def main():
     主测试方法
     """
     # 从taskId构建路径
-    task_id = "鄂尔多斯市政府网站群集约化平台升级改造项目"
-    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\鄂尔多斯市政府网站群集约化平台升级改造项目")
+    task_id = "国土空间规划实施监测网络建设项目"
+    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目")
     pdf_path = base_dir / f"{task_id}.pdf"
 
     print(f"开始测试PDF内容提取...")
     print(f"Task ID: {task_id}")
+
+
+
+
     print(f"PDF文件: {pdf_path}")
 
     try:
