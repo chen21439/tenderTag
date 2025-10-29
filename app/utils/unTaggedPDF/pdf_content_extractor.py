@@ -25,14 +25,14 @@ class PDFContentExtractor:
     def __init__(self,
                  pdf_path: str,
                  enable_cross_page_merge: bool = True,
-                 enable_cell_merge: bool = True):
+                 enable_cell_merge: bool = False):
         """
         初始化PDF内容提取器
 
         Args:
             pdf_path: PDF文件路径
             enable_cross_page_merge: 是否启用跨页表格合并（默认True）
-            enable_cell_merge: 是否启用跨页单元格合并（默认True）
+            enable_cell_merge: 是否启用跨页单元格合并（默认False，暂时关闭）
                               只有在 enable_cross_page_merge=True 时才有效
         """
         self.pdf_path = Path(pdf_path)
