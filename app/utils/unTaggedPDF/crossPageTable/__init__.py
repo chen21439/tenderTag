@@ -7,6 +7,7 @@ crossPageTable - 跨页表格处理模块
 
 - `cell_merger.py` - 单元格合并器（已拆分）
 - `cell_classifier.py` - 单元格智能分类器（使用AI模型判断）
+- `column_boundary_strategy.py` - 列边界继承策略
 - 其他模块待拆分...
 
 ## 使用示例
@@ -31,7 +32,17 @@ if result['should_merge']:
 from .cell_merger import CellMerger
 
 # 导出单元格智能分类器
-from .cell_classifier import CrossPageCellClassifier
+# from .cell_classifier import CrossPageCellClassifier  # Temporarily disabled due to encoding issue
+
+
+# 导出列边界继承策略
+from .column_boundary_strategy import (
+    ColumnBoundaryInheritanceStrategy,
+    DisabledInheritanceStrategy,
+    ConservativeInheritanceStrategy,
+    SmartInheritanceStrategy,
+    DEFAULT_STRATEGY
+)
 
 # 导出向后兼容的函数
 from .cell_merger import (
@@ -42,7 +53,13 @@ from .cell_merger import (
 
 __all__ = [
     'CellMerger',
-    'CrossPageCellClassifier',
+    # 'CrossPageCellClassifier',  # Temporarily disabled
+    'ColumnBoundaryInheritanceStrategy',
+    'DisabledInheritanceStrategy',
+    'ConservativeInheritanceStrategy',
+    'SmartInheritanceStrategy',
+    'DEFAULT_STRATEGY',
+
     '_cell_has_horizontal_line',
     '_detect_split_cells',
     '_merge_split_cells',
