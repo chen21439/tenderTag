@@ -44,6 +44,17 @@ from .column_boundary_strategy import (
     DEFAULT_STRATEGY
 )
 
+
+# 导出重提取策略
+from .reextraction_strategy import (
+    ReextractionStrategy,
+    DisabledReextractionStrategy,
+    ConservativeReextractionStrategy,
+    AggressiveReextractionStrategy,
+    SmartReextractionStrategy,
+    DEFAULT_REEXTRACTION_STRATEGY
+)
+
 # 导出向后兼容的函数
 from .cell_merger import (
     _cell_has_horizontal_line,
@@ -59,6 +70,12 @@ __all__ = [
     'ConservativeInheritanceStrategy',
     'SmartInheritanceStrategy',
     'DEFAULT_STRATEGY',
+    'ReextractionStrategy',
+    'DisabledReextractionStrategy',
+    'ConservativeReextractionStrategy',
+    'AggressiveReextractionStrategy',
+    'SmartReextractionStrategy',
+    'DEFAULT_REEXTRACTION_STRATEGY',
 
     '_cell_has_horizontal_line',
     '_detect_split_cells',

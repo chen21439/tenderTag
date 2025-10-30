@@ -14,12 +14,14 @@ try:
     from .header_analyzer import HeaderAnalyzer
     from .cell_span_detector import CellSpanDetector
     from .crossPageTable.column_boundary_strategy import DEFAULT_STRATEGY
+    from .crossPageTable.reextraction_strategy import DEFAULT_REEXTRACTION_STRATEGY
 except ImportError:
     from nested_table_handler import NestedTableHandler
     from bbox_utils import rect, contains_with_tol
     from header_analyzer import HeaderAnalyzer
     from cell_span_detector import CellSpanDetector
     from crossPageTable.column_boundary_strategy import DEFAULT_STRATEGY
+    from crossPageTable.reextraction_strategy import DEFAULT_REEXTRACTION_STRATEGY
 
 
 def validate_and_fix_bbox(table_bbox: list, cells: List[Dict], page_height: float) -> list:
@@ -122,6 +124,9 @@ class TableExtractor:
 
         # 列边界继承策略（默认：禁用）
         self.column_inheritance_strategy = DEFAULT_STRATEGY
+        
+        # 重提取策略（默认：保守，缺口>10pt时重提取）
+        self.reextraction_strategy = DEFAULT_REEXTRACTION_STRATEGY
 
         # 缓存每页的垂直线（用于完整列边界检测）
         self._page_vertical_lines_cache = {}
@@ -711,17 +716,31 @@ class TableExtractor:
                         table_left = table.bbox[0]
                         table_right = table.bbox[2]
 
-                        # 判断是否缺失左侧列
-                        left_gap = table_left - detected_left
-                        if left_gap > 10:
-                            print(f"  [表格 {table_idx + 1}] [列边界诊断] 检测到左侧缺失: detected_left={detected_left:.1f}, table_left={table_left:.1f}, gap={left_gap:.1f}pt")
-                            need_region_reextract = True
-
-                        # 判断是否缺失右侧列
-                        right_gap = detected_right - table_right
-                        if right_gap > 10:
-                            print(f"  [表格 {table_idx + 1}] [列边界诊断] 检测到右侧缺失: detected_right={detected_right:.1f}, table_right={table_right:.1f}, gap={right_gap:.1f}pt")
-                            need_region_reextract = True
+                        # 使用重提取策略判断是否需要重提取
+                        need_region_reextract = self.reextraction_strategy.should_reextract(
+                            detected_left=detected_left,
+                            detected_right=detected_right,
+                            table_left=table_left,
+                            table_right=table_right,
+                            context={
+                                'page_num': page_num,
+                                'table_idx': table_idx
+                            }
+                        )
+                        
+                        if need_region_reextract:
+                            # 计算缺口信息（用于日志）
+                            left_gap = table_left - detected_left
+                            right_gap = detected_right - table_right
+                            
+                            if left_gap > 10:
+                                print(f"  [表格 {table_idx + 1}] [列边界诊断] 检测到左侧缺失: detected_left={detected_left:.1f}, table_left={table_left:.1f}, gap={left_gap:.1f}pt")
+                            if right_gap > 10:
+                                print(f"  [表格 {table_idx + 1}] [列边界诊断] 检测到右侧缺失: detected_right={detected_right:.1f}, table_right={table_right:.1f}, gap={right_gap:.1f}pt")
+                            
+                            print(f"  [表格 {table_idx + 1}] [重提取策略] {type(self.reextraction_strategy).__name__} → 触发重提取")
+                        else:
+                            print(f"  [表格 {table_idx + 1}] [重提取策略] {type(self.reextraction_strategy).__name__} → 不重提取")
 
                         # 如果需要重提取，使用显式垂直线 + 显式水平线策略（纯几何路线）
                         if need_region_reextract:
@@ -745,11 +764,14 @@ class TableExtractor:
                             if crop_h_lines:
                                 print(f"    水平线y坐标: {[f'{y:.1f}' for y in crop_h_lines[:10]]}")
 
+                            # 获取启用的fallback策略列表
+                            enabled_strategies = self.reextraction_strategy.get_fallback_strategies()
+                            
                             # 策略S1：显式垂直线 + 显式水平线（完整网格）
                             reextracted_table = None
                             strategy_used = None
 
-                            if len(crop_h_lines) >= 2:
+                            if 'S1' in enabled_strategies and len(crop_h_lines) >= 2:
                                 # S1: 完整网格策略
                                 print(f"  [表格 {table_idx + 1}] [策略S1] 尝试：显式垂直线 ({len(merged_v_lines)}条) + 显式水平线 ({len(crop_h_lines)}条)")
 
@@ -774,7 +796,7 @@ class TableExtractor:
                                     print(f"  [表格 {table_idx + 1}] [策略S1] 失败: {e}")
 
                             # 策略S2：显式垂直线 + 最小2条水平线（上下边界）
-                            if not reextracted_table and len(crop_h_lines) >= 2:
+                            if 'S2' in enabled_strategies and not reextracted_table and len(crop_h_lines) >= 2:
                                 print(f"  [表格 {table_idx + 1}] [策略S2] 尝试：显式垂直线 + 最小水平线（上下边界）")
 
                                 # 只使用顶部和底部的水平线
@@ -802,7 +824,7 @@ class TableExtractor:
                                     print(f"  [表格 {table_idx + 1}] [策略S2] 失败: {e}")
 
                             # 策略S3：显式垂直线 + text水平策略
-                            if not reextracted_table:
+                            if 'S3' in enabled_strategies and not reextracted_table:
                                 print(f"  [表格 {table_idx + 1}] [策略S3] 尝试：显式垂直线 + text水平策略")
 
                                 try:
