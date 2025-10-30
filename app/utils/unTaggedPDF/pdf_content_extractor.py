@@ -1011,6 +1011,10 @@ def main():
 
     print(f"开始测试PDF内容提取...")
     print(f"Task ID: {task_id}")
+
+
+
+
     print(f"PDF文件: {pdf_path}")
 
     try:
