@@ -132,18 +132,61 @@ class TableExtractor:
         """
         使用 PyMuPDF 的 get_drawings() 检测页面中的所有垂直线（过滤表格区域）
 
-        这个方法可以检测到 PDFPlumber 可能遗漏的列边界（如左侧或右侧的列）
+        ## 核心逻辑
 
-        改进（2025-10-30）：
-        - 按总长度过滤，只保留表格相关的长垂直线（>300pt）
-        - 解决第6页左侧列缺失问题（x=68.7线只有1个交点，被lines策略忽略）
+        ### 1. 收集垂直线段
+        遍历 `get_drawings()` 返回的所有图形对象：
+        - **'l' 类型（线段）**：直接判断 |p1.x - p2.x| < 2
+        - **'re' 类型（矩形）**：判断 width < 2 且 height > 10
+          * PDF可能使用细矩形绘制线条
+          * 添加这个支持解决了部分垂直线检测失败的问题
+
+        ### 2. 按x坐标分组并计算总长度
+        ```python
+        v_lines_segments = {
+            33.6: [(100, 200), (300, 500)],  # 总长度 = 300pt
+            99.0: [(100, 800)],              # 总长度 = 700pt
+        }
+        ```
+
+        ### 3. 过滤条件：总长度 > 300pt
+        **设计思路**：
+        - 表格的列边界通常贯穿整个表格高度（几百pt）
+        - 装饰性短线通常 < 100pt
+        - 300pt 阈值可以有效过滤装饰线，保留列边界
+
+        **已知问题**：
+        ⚠️ 对于有子列的表格（如页面5），会检测到所有子列的垂直线
+        - 页面5：检测到8条线（7列），包含子列
+        - 页面6-8：检测到6条线（5列），仅主列
+        
+        **可能的改进方向**：
+        1. 根据线段的连续性判断（是否跨越多行）
+        2. 根据线段与其他线的交点数量判断（主列 vs 子列）
+        3. 提高阈值到 500pt（更保守，但可能漏检短表格）
+
+        ### 4. 缓存机制
+        使用 `_page_vertical_lines_cache` 避免重复检测
+
+        ## 改进历史
+
+        **2025-10-30**：
+        - 添加矩形('re')类型支持
+        - 简化过滤逻辑：从复杂多条件 → 单一总长度阈值
+        - 解决页面6左侧列缺失问题
 
         Args:
             pymupdf_page: PyMuPDF 页面对象
-            page_num: 页码（用于缓存）
+            page_num: 页码（用于缓存和日志）
 
         Returns:
-            排序后的垂直线x坐标列表（仅包含表格区域的长垂直线）
+            排序后的垂直线x坐标列表（总长度>300pt的线）
+            
+        Example:
+            >>> lines = self._detect_full_vertical_lines_pymupdf(page, 5)
+            >>> print(lines)
+            [33.6, 86.4, 99.0, 231.1, 297.7, 429.1, 495.1, 561.1]
+            # 8条线 = 7列（页面5有子列）
         """
         # 检查缓存
         if page_num in self._page_vertical_lines_cache:
@@ -219,14 +262,47 @@ class TableExtractor:
         """
         使用 PyMuPDF 的 get_drawings() 检测页面中的所有水平线（过滤表格区域）
 
-        这个方法检测行边界,配合垂直线使用 explicit 策略强制形成完整网格
+        ## 核心逻辑
+
+        与垂直线检测类似，但判断条件相反：
+        - **'l' 类型**：|p1.y - p2.y| < 2（水平线）
+        - **'re' 类型**：height < 2 且 width > 10（水平细矩形）
+        
+        **过滤条件**：总长度 > 200pt
+        - 比垂直线阈值低（300pt），因为单行可能较短
+        - 例如：表格最后一行可能只有200pt宽
+
+        ## 用途
+
+        配合垂直线使用 **S1策略（explicit V+H）** 强制形成完整网格：
+        ```python
+        # 页面6重提取示例
+        vertical_lines = [33.6, 99.0, 231.1, 429.1, 495.1, 561.1]  # 6条
+        horizontal_lines = [394.3, 548.5]  # 2条
+        
+        # pdfplumber会在交点处形成单元格网格
+        # 网格 = (6-1) x (2-1) = 5列 x 1行
+        ```
+
+        ## 成功案例
+
+        **页面6-8左侧列修复**：
+        - 原始pdfplumber检测：bbox从99.0开始（缺失左侧列）
+        - PyMuPDF检测：发现完整的6条垂直线 + 2-4条水平线
+        - S1策略重提取：成功从33.6开始（完整5列）
 
         Args:
             pymupdf_page: PyMuPDF 页面对象
             page_num: 页码（用于日志）
 
         Returns:
-            排序后的水平线y坐标列表（仅包含表格区域的长水平线）
+            排序后的水平线y坐标列表（总长度>200pt的线）
+            
+        Example:
+            >>> h_lines = self._detect_full_horizontal_lines_pymupdf(page, 6)
+            >>> print(h_lines)
+            [28.8, 394.3, 548.5, 702.8]
+            # 4条线，crop后使用[394.3, 548.5]（2条）
         """
         # 收集水平线段信息：{y: [(x0, x1), ...]}
         h_lines_segments = {}
@@ -452,12 +528,102 @@ class TableExtractor:
         - pdfplumber: 识别表格结构和单元格位置
         - PyMuPDF: 从单元格坐标提取文本内容（避免字符重复）
 
+        ## 核心流程
+
+        ### 1. 列边界检测（每页独立）
+        - 使用 PyMuPDF.get_drawings() 检测页面中的垂直线
+        - 过滤条件：总长度 > 300pt 的垂直线（过滤装饰线）
+        - 支持线段('l')和矩形('re')两种类型
+
+        ### 2. 列边界继承策略（2025-10-30 重构）
+        **当前策略**: DisabledInheritanceStrategy（完全不继承前页列边界）
+        
+        **背景问题**：
+        - 之前的逻辑：无条件继承前页列边界
+        - 导致问题：页面5的10条线（9列）被继承到页面6-8，但实际只需6条线（5列）
+        - 解决方案：提取为策略模式，默认禁用继承
+
+        **策略模式设计**：
+        - 位置：`crossPageTable/column_boundary_strategy.py`
+        - 可选策略：
+          * DisabledInheritanceStrategy（当前）：完全不继承
+          * ConservativeInheritanceStrategy：只继承列数相似的页面
+          * SmartInheritanceStrategy（待扩展）：基于bbox/内容智能判断
+        
+        **已知问题**：
+        ⚠️ 禁用继承后，页面6-8列数正确（5列），但可能影响真正需要跨页表格的场景
+
+        ### 3. 左侧列缺失检测与重提取（crop + explicit lines）
+        **触发条件**：
+        - detected_left（PyMuPDF检测的最左边界）< table_left（pdfplumber检测的最左边界）
+        - 缺口 > 10pt
+
+        **重提取策略**（三级fallback）：
+        - S1（优先）：explicit vertical lines + explicit horizontal lines（完整网格）
+        - S2（次选）：explicit vertical lines + 最小2条水平线（上下边界）
+        - S3（保底）：explicit vertical lines + text horizontal strategy
+
+        **成功案例**：
+        - 页面6-8：检测到左侧缺失65.4pt，S1策略成功修复
+        - 修复前：bbox从99.0开始（缺失左侧列）
+        - 修复后：bbox从33.6开始（完整5列）
+
+        ### 4. 诊断元数据
+        重提取成功的表格会附加 `_diagnostic` 字段到raw.json：
+        ```json
+        {
+          "reextraction_applied": true,
+          "strategy_used": "S1 (explicit V+H)",
+          "original_bbox": [99.0, 28.8, 561.1, 702.8],
+          "new_bbox": [33.6, 394.3, 561.1, 548.5],
+          "detected_v_lines_range": [33.6, 561.1],
+          "detected_v_lines_count": 6,
+          "detected_h_lines_count": 2,
+          "left_gap_fixed": 65.4
+        }
+        ```
+
+        ## 当前验证结果（2025-10-30）
+
+        ### 测试文件：国土空间规划实施监测网络建设项目.pdf
+        
+        **页面5**：
+        - 检测到8条垂直线（7列）
+        - 原因：页面5本身有子列结构
+        
+        **页面6-8**（关闭继承后）：
+        - 检测到6条垂直线（5列）✓
+        - 不再继承页面5的额外列
+        - S1策略成功修复左侧列缺失
+        - 行数正常：页6=1行，页7=3行，页8=2行
+
+        ## 待讨论问题
+
+        1. **列数不一致**：
+           - 页面5：7列（有子列）
+           - 页面6-8：5列（主列）
+           - 是否需要跨页合并？还是应该各自独立？
+
+        2. **列继承策略选择**：
+           - 当前：完全禁用继承（保守）
+           - 是否需要ConservativeInheritanceStrategy（只继承列数相似的）？
+           - 何时需要继承？判断条件是什么？
+
+        3. **表头识别**：
+           - 延迟表头识别（detect_header=False）配合跨页合并
+           - 合并后统一识别表头
+           - 是否存在表头被误识别为数据行的情况？
+
         Args:
             detect_header: 是否检测表头（默认True）。
                           False时使用延迟表头识别模式，适用于跨页合并场景。
 
         Returns:
-            提取的表格列表
+            提取的表格列表，每个表格包含：
+            - columns: 列定义
+            - rows: 数据行
+            - bbox: 表格边界框
+            - _diagnostic (可选): 重提取诊断信息
         """
         tables_data = []
 
