@@ -253,6 +253,7 @@ class PDFContentExtractor:
 
         # AI 行级别判断（如果有 hints）
         ai_row_decisions = []
+        row_pairs = []  # 初始化为空列表（确保变量在作用域内）
         if hints_by_page:
             print(f"\n[AI判断] hints_by_page 的页码: {sorted(hints_by_page.keys())}")
             row_pairs = self._collect_hint_row_pairs(tables, hints_by_page)
@@ -262,19 +263,41 @@ class PDFContentExtractor:
                     classifier = CrossPageCellClassifier(truncate_length=50)
                     ai_row_decisions = classifier.classify_row_pairs_batch(row_pairs)
 
-                    # 打印判断结果
+                    # 打印判断结果（包含表格位置信息）
                     merge_count = sum(1 for d in ai_row_decisions if d.get('should_merge'))
                     no_merge_count = len(ai_row_decisions) - merge_count
                     print(f"[AI判断] 完成判断: {merge_count} 个应合并, {no_merge_count} 个不合并")
 
-                    for i, decision in enumerate(ai_row_decisions):
+                    for i, (decision, pair) in enumerate(zip(ai_row_decisions, row_pairs)):
                         should_merge = decision.get('should_merge')
                         confidence = decision.get('confidence', 0)
-                        print(f"  行对 {i+1}: {'✅ 合并' if should_merge else '❌ 不合并'} (置信度: {confidence:.2f})")
+                        reason = decision.get('reason', '')
+
+                        # 从 pair 中获取上下文信息
+                        ctx = pair.get('context', {})
+                        prev_page = ctx.get('prev_page', '?')
+                        next_page = ctx.get('next_page', '?')
+                        prev_uuid = ctx.get('prev_table_uuid', 'N/A')[:8]  # 只显示前8位
+                        next_uuid = ctx.get('next_table_uuid', 'N/A')[:8]
+                        prev_row_id = ctx.get('prev_row_id', '?')
+                        next_row_id = ctx.get('next_row_id', '?')
+
+                        status = "✅ 合并" if should_merge else "❌ 不合并"
+                        print(f"  行对 {i+1}: {status} (置信度: {confidence:.2f})")
+                        print(f"    上页: 页{prev_page} UUID:{prev_uuid} 行:{prev_row_id}")
+                        print(f"    下页: 页{next_page} UUID:{next_uuid} 行:{next_row_id}")
+                        if reason:
+                            print(f"    原因: {reason[:80]}")
                 except Exception as e:
                     print(f"[AI判断] 错误: {e}")
                     import traceback
                     traceback.print_exc()
+
+        # TR 级别行合并（根据 AI 判断结果）
+        if ai_row_decisions and row_pairs:
+            print(f"\n[TR级别行合并] 开始根据 AI 判断结果合并跨页行...")
+            tables = self._apply_tr_level_row_merge(tables, ai_row_decisions, row_pairs)
+            print(f"[TR级别行合并] 完成\n")
 
         # 跨页表格合并（如果启用）
         if self.enable_cross_page_merge and self.cross_page_merger and tables:
@@ -583,6 +606,10 @@ class PDFContentExtractor:
                     "context": {
                         "prev_table_id": "temp_001",
                         "next_table_id": "temp_002",
+                        "prev_table_uuid": "xxx-xxx-xxx",  # 表格UUID（用于AI匹配）
+                        "next_table_uuid": "xxx-xxx-xxx",
+                        "prev_row_id": "r007",  # 原始行ID（用于AI匹配）
+                        "next_row_id": "r001",
                         "prev_page": 1,
                         "next_page": 2,
                         "hint_score": 0.95
@@ -649,13 +676,17 @@ class PDFContentExtractor:
                 col_name = f"第{i}列"
                 next_row_dict[col_name] = cell.get('content', '').strip()
 
-            # 构建行对
+            # 构建行对（包含完整的匹配信息）
             row_pairs.append({
                 "prev_row": prev_row_dict,
                 "next_row": next_row_dict,
                 "context": {
                     "prev_table_id": prev_table.get('id'),
                     "next_table_id": next_table.get('id'),
+                    "prev_table_uuid": prev_table.get('raw_uuid'),  # 表格UUID（用于AI匹配）
+                    "next_table_uuid": next_table.get('raw_uuid'),
+                    "prev_row_id": prev_last_row.get('raw_row_id'),  # 原始行ID（用于AI匹配）
+                    "next_row_id": next_first_row.get('raw_row_id'),
                     "prev_page": prev_page,
                     "next_page": next_page,
                     "hint_score": hint.get('score', 0)
@@ -727,6 +758,141 @@ class PDFContentExtractor:
                 print(f"  页{page_num}: {tables_count}个表格, {paras_count}个段落")
 
         return layout_index
+
+    def _apply_tr_level_row_merge(
+        self,
+        tables: list,
+        ai_row_decisions: list,
+        row_pairs: list
+    ) -> list:
+        """
+        根据 AI 判断结果执行 TR 级别的行合并
+
+        逻辑：
+        1. 遍历所有 should_merge=True 的判断
+        2. 根据 UUID 和 row_id 定位到实际的表格和行
+        3. 将上页最后一行和下页第一行的内容合并（拼接）
+        4. 删除下页的第一行
+        5. TODO: 处理 cell bbox（合并后的 bbox 如何计算）
+
+        Args:
+            tables: 表格列表
+            ai_row_decisions: AI 判断结果列表
+            row_pairs: 行对列表（包含 context）
+
+        Returns:
+            更新后的表格列表
+        """
+        # 构建 UUID 到表格的映射（快速查找）
+        uuid_to_table = {}
+        for table in tables:
+            uuid = table.get('raw_uuid')
+            if uuid:
+                uuid_to_table[uuid] = table
+
+        merge_count = 0
+        skipped_count = 0
+
+        # 遍历所有判断结果
+        for decision, pair in zip(ai_row_decisions, row_pairs):
+            should_merge = decision.get('should_merge', False)
+
+            if not should_merge:
+                continue
+
+            # 获取匹配信息
+            ctx = pair.get('context', {})
+            prev_uuid = ctx.get('prev_table_uuid')
+            next_uuid = ctx.get('next_table_uuid')
+            prev_row_id = ctx.get('prev_row_id')
+            next_row_id = ctx.get('next_row_id')
+
+            # 定位表格
+            prev_table = uuid_to_table.get(prev_uuid)
+            next_table = uuid_to_table.get(next_uuid)
+
+            if not prev_table or not next_table:
+                print(f"  [跳过] 无法找到表格 UUID: {prev_uuid[:8]} / {next_uuid[:8]}")
+                skipped_count += 1
+                continue
+
+            # 定位行
+            prev_rows = prev_table.get('rows', [])
+            next_rows = next_table.get('rows', [])
+
+            prev_row = None
+            next_row = None
+
+            for row in prev_rows:
+                if row.get('raw_row_id') == prev_row_id:
+                    prev_row = row
+                    break
+
+            for row in next_rows:
+                if row.get('raw_row_id') == next_row_id:
+                    next_row = row
+                    break
+
+            if not prev_row or not next_row:
+                print(f"  [跳过] 无法找到行 {prev_row_id} / {next_row_id}")
+                skipped_count += 1
+                continue
+
+            # 执行行合并
+            try:
+                self._merge_two_rows(prev_row, next_row)
+
+                # 删除下页的第一行
+                next_rows.remove(next_row)
+
+                merge_count += 1
+                print(f"  [合并] 页{ctx.get('prev_page')} {prev_row_id} + 页{ctx.get('next_page')} {next_row_id}")
+
+            except Exception as e:
+                print(f"  [错误] 合并失败: {e}")
+                skipped_count += 1
+                import traceback
+                traceback.print_exc()
+
+        print(f"[TR级别行合并] 成功合并 {merge_count} 个行对，跳过 {skipped_count} 个")
+
+        return tables
+
+    def _merge_two_rows(self, prev_row: dict, next_row: dict):
+        """
+        合并两行的内容（单元格级别拼接）
+
+        Args:
+            prev_row: 上页最后一行
+            next_row: 下页第一行
+        """
+        prev_cells = prev_row.get('cells', [])
+        next_cells = next_row.get('cells', [])
+
+        # 按列对齐合并
+        for i in range(min(len(prev_cells), len(next_cells))):
+            prev_cell = prev_cells[i]
+            next_cell = next_cells[i]
+
+            # 拼接 content
+            prev_content = prev_cell.get('content', '').strip()
+            next_content = next_cell.get('content', '').strip()
+
+            if prev_content and next_content:
+                # 如果两者都有内容，拼接
+                merged_content = prev_content + next_content
+            elif next_content:
+                # 只有下页有内容
+                merged_content = next_content
+            else:
+                # 只有上页有内容或都为空
+                merged_content = prev_content
+
+            prev_cell['content'] = merged_content
+
+            # TODO: 处理 bbox 合并
+            # 目前保留上页的 bbox，后续需要计算合并后的完整 bbox
+            # 这需要考虑跨页的情况，可能需要记录多个 bbox 片段
 
 
 # 便捷函数

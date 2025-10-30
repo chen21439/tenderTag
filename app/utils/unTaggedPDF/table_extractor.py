@@ -256,6 +256,8 @@ class TableExtractor:
         Returns:
             提取的表格列表
         """
+        import uuid
+
         tables_data = []
 
         # 打开PyMuPDF文档
@@ -286,6 +288,10 @@ class TableExtractor:
                 #     tables = page.find_tables()
 
                 for table_idx, table in enumerate(tables):
+                    # 生成表格元数据
+                    table_count_in_page = table_idx + 1  # 该页的第几个表格（1-indexed）
+                    table_uuid = str(uuid.uuid4())  # 唯一标识符
+
                     print(f"  [表格 {table_idx + 1}] bbox: {table.bbox}")
 
                     # 先用pdfplumber提取表格结构（用于获取行列结构）
@@ -355,7 +361,9 @@ class TableExtractor:
                             table_bbox=list(table.bbox),
                             nested_map=nested_map,
                             pymupdf_page=pymupdf_page,
-                            detect_header=detect_header
+                            detect_header=detect_header,
+                            table_uuid=table_uuid,
+                            table_count_in_page=table_count_in_page
                         )
 
                         # [TEXT-FALLBACK] 触发条件：左侧缺口很大 或 列索引不从0开始 或 bbox异常偏右
@@ -674,7 +682,9 @@ class TableExtractor:
         pymupdf_page = None,
         hint_col_levels: int = None,
         hint_row_levels: int = None,
-        detect_header: bool = True
+        detect_header: bool = True,
+        table_uuid: str = None,
+        table_count_in_page: int = None
     ) -> Dict[str, Any]:
         """
         构建结构化表格数据（支持多层表头 + 延迟表头识别）
@@ -795,7 +805,9 @@ class TableExtractor:
                 page_num=page_num,
                 table_bbox=table_bbox,
                 nested_map=nested_map,
-                pymupdf_page=pymupdf_page
+                pymupdf_page=pymupdf_page,
+                table_uuid=table_uuid,
+                table_count_in_page=table_count_in_page
             )
 
         # ===== 立即表头识别模式（原逻辑）=====
@@ -857,7 +869,9 @@ class TableExtractor:
                 cells_bbox_orig=cells_bbox,  # 传递原始pdfplumber cells用于bbox修正
                 col_x_edges=col_x_edges,  # 列边界坐标
                 row_y_edges=row_y_edges,  # 行边界坐标
-                cell_spans=cell_spans  # 单元格跨度信息
+                cell_spans=cell_spans,  # 单元格跨度信息
+                table_uuid=table_uuid,
+                table_count_in_page=table_count_in_page
             )
 
             # 检查是否存在列缺失问题（columns为空 或 first_col_index > 0）
@@ -916,7 +930,9 @@ class TableExtractor:
         cells_bbox_orig: list = None,
         col_x_edges: List[float] = None,
         row_y_edges: List[float] = None,
-        cell_spans: List[List[Dict]] = None
+        cell_spans: List[List[Dict]] = None,
+        table_uuid: str = None,
+        table_count_in_page: int = None
     ) -> Dict[str, Any]:
         """
         使用多层表头模型构建表格
@@ -1027,6 +1043,7 @@ class TableExtractor:
 
             rows.append({
                 "id": row_id,
+                "raw_row_id": row_id,  # 原始行ID（用于AI匹配）
                 "rowPath": row_path,  # 多层行路径
                 "cells": cells
             })
@@ -1065,6 +1082,12 @@ class TableExtractor:
         if row_y_edges:
             result['row_y_edges'] = [round(y, 2) for y in row_y_edges]
 
+        # 添加元数据字段（如果提供）
+        if table_uuid is not None:
+            result["raw_uuid"] = table_uuid
+        if table_count_in_page is not None:
+            result["tableCountInPage"] = table_count_in_page
+
         return result
 
     def _build_table_with_single_level_headers(
@@ -1075,7 +1098,9 @@ class TableExtractor:
         table_bbox: list,
         nested_map: Dict[tuple, List[Dict]],
         page_height: float,
-        cells_bbox_orig: list = None
+        cells_bbox_orig: list = None,
+        table_uuid: str = None,
+        table_count_in_page: int = None
     ) -> Dict[str, Any]:
         """
         使用单层表头构建表格（回退逻辑）
@@ -1143,6 +1168,7 @@ class TableExtractor:
 
             rows.append({
                 "id": row_id,
+                "raw_row_id": row_id,  # 原始行ID（用于AI匹配）
                 "rowPath": [row_first_cell] if row_first_cell else [],
                 "cells": cells
             })
@@ -1158,7 +1184,7 @@ class TableExtractor:
 
         validated_bbox = validate_and_fix_bbox(table_bbox, cells_for_validation, page_height)
 
-        return {
+        result = {
             "type": "table",
             "level": 1,
             "parent_table_id": None,
@@ -1175,6 +1201,14 @@ class TableExtractor:
             "method": "hybrid (pdfplumber cells + pymupdf text)"
         }
 
+        # 添加元数据字段（如果提供）
+        if table_uuid is not None:
+            result["raw_uuid"] = table_uuid
+        if table_count_in_page is not None:
+            result["tableCountInPage"] = table_count_in_page
+
+        return result
+
     def _build_table_without_header_detection(
         self,
         table_data: List[List[str]],
@@ -1182,7 +1216,9 @@ class TableExtractor:
         page_num: int,
         table_bbox: list,
         nested_map: Dict[tuple, List[Dict]],
-        pymupdf_page = None
+        pymupdf_page = None,
+        table_uuid: str = None,
+        table_count_in_page: int = None
     ) -> Dict[str, Any]:
         """
         延迟表头识别模式：构建表格但不进行表头分析
@@ -1254,6 +1290,7 @@ class TableExtractor:
 
             rows.append({
                 "id": row_id,
+                "raw_row_id": row_id,  # 原始行ID（用于AI匹配）
                 "rowPath": [row_first_cell] if row_first_cell else [],
                 "cells": cells
             })
@@ -1266,7 +1303,7 @@ class TableExtractor:
 
         validated_bbox = validate_and_fix_bbox(table_bbox, cells_for_validation, page_height)
 
-        return {
+        result = {
             "type": "table",
             "level": 1,
             "parent_table_id": None,
@@ -1283,6 +1320,14 @@ class TableExtractor:
             },
             "method": "no_header_detection (delayed)"
         }
+
+        # 添加元数据字段（如果提供）
+        if table_uuid is not None:
+            result["raw_uuid"] = table_uuid
+        if table_count_in_page is not None:
+            result["tableCountInPage"] = table_count_in_page
+
+        return result
 
     def _find_index(self, coord: float, coords_list: list) -> int:
         """
