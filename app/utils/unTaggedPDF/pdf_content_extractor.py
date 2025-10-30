@@ -28,7 +28,7 @@ class PDFContentExtractor:
                  pdf_path: str,
                  enable_cross_page_merge: bool = True,
                  enable_cell_merge: bool = False,
-                 enable_ai_row_classification: bool = True,
+                 enable_ai_row_classification: bool = False,
                  verbose: bool = False):
         """
         初始化PDF内容提取器
