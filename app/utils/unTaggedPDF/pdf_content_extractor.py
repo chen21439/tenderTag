@@ -611,11 +611,6 @@ class PDFContentExtractor:
             prev_page = next_page - 1
             print(f"[AI判断] 检查跨页: {prev_page} → {next_page}")
 
-            # 【测试】只处理第15页到第16页的跨页表格
-            if prev_page != 15:
-                print(f"[AI判断] 跳过（prev_page={prev_page} != 15）")
-                continue
-
             if prev_page not in tables_by_page or next_page not in tables_by_page:
                 continue
 
