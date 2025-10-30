@@ -56,10 +56,10 @@ class CrossPageCellClassifier:
         model_name: str = "qwen3-14b",
         base_url: str = "http://112.111.54.86:10011/v1",
         api_key: str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiIxOTE3MTIzNDc4NDI5ODg4NTEzIiwiZGVwdE5hbWUiOiIiLCJhcmVhQ29kZSI6IiIsInJvbGUiOiJjdXN0b20iLCJhcmVhTmFtZSI6IiIsImNyZWF0ZVRpbWUiOjE3NTg1OTY0ODQsImFwcElkIjoiMTAwMDAwMDAwMDAwMDAwMDAiLCJ0ZWxlcGhvbmUiOiIxODc1MDc5OTAxOSIsInVzZXJUeXBlIjoiaW5zaWRlIiwidXNlcm5hbWUiOiJjaGVueGlhb21pbiJ9.EtvuTHzkSfozetNefVBz4jMjhbHkGi3V-JtWp6_WebU",
-        temperature: float = 0.4,  # 根据API示例调整
+        temperature: float = 0.0,  # 根据API示例调整
         max_tokens: int = 8192,  # 根据API示例调整
-        top_p: float = 0.7,  # 新增参数
-        repetition_penalty: float = 1.05,  # 新增参数
+        top_p: float = 1.0,  # 新增参数
+        repetition_penalty: float = 1.0,  # 新增参数
         truncate_length: int = 50  # 字符截取长度（取最后/最前n个字符）
     ):
         """
