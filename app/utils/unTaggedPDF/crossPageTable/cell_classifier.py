@@ -7,6 +7,45 @@
 from typing import Dict, Any, List, Tuple, Optional
 from openai import OpenAI
 import json
+import re
+
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+    print("[CellClassifier] 警告: tiktoken 未安装，无法精确计算 token 数量")
+    print("[CellClassifier] 将使用简单估算方法（1 token ≈ 1.5 字符）")
+    print("[CellClassifier] 安装方法: pip install tiktoken")
+
+
+class PromptTemplates:
+    """提示词模板类"""
+
+    # 行级别提示词
+    ROW_SYSTEM_PROMPT = """你是一个专业的PDF表格分析专家，擅长判断跨页行内容是否被分页符截断。
+
+你的任务：
+判断两行数据是否是"表格中同一行被分页截断"，只关注行内容本身的连续性。
+
+输入数据格式：
+- 上页最后一行：多个单元格的内容（key-value格式）
+- 下页第一行：多个单元格的内容（key-value格式）
+
+输出格式要求：
+1. 必须使用 ```json 代码块包裹
+2. 格式如下：
+
+```json
+{
+    "should_merge": true,
+    "confidence": 0.95,
+    "reason": "第0列内容明显被截断，应该合并"
+}
+```
+
+**重要**：必须使用 ```json 代码块格式，不要输出其他内容。
+"""
 
 
 class CrossPageCellClassifier:
@@ -14,11 +53,13 @@ class CrossPageCellClassifier:
 
     def __init__(
         self,
-        model_name: str = "qwen3-32b",
-        base_url: str = "http://112.111.20.89:8888/v1",
-        api_key: str = "not-needed",
-        temperature: float = 0.1,  # 低温度，输出更确定
-        max_tokens: int = 100,  # 只需要简单的判断结果
+        model_name: str = "qwen3-14b",
+        base_url: str = "http://112.111.54.86:10011/v1",
+        api_key: str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiIxOTE3MTIzNDc4NDI5ODg4NTEzIiwiZGVwdE5hbWUiOiIiLCJhcmVhQ29kZSI6IiIsInJvbGUiOiJjdXN0b20iLCJhcmVhTmFtZSI6IiIsImNyZWF0ZVRpbWUiOjE3NTg1OTY0ODQsImFwcElkIjoiMTAwMDAwMDAwMDAwMDAwMDAiLCJ0ZWxlcGhvbmUiOiIxODc1MDc5OTAxOSIsInVzZXJUeXBlIjoiaW5zaWRlIiwidXNlcm5hbWUiOiJjaGVueGlhb21pbiJ9.EtvuTHzkSfozetNefVBz4jMjhbHkGi3V-JtWp6_WebU",
+        temperature: float = 0.0,  # 根据API示例调整
+        max_tokens: int = 8192,  # 根据API示例调整
+        top_p: float = 1.0,  # 新增参数
+        repetition_penalty: float = 1.0,  # 新增参数
         truncate_length: int = 50  # 字符截取长度（取最后/最前n个字符）
     ):
         """
@@ -36,6 +77,8 @@ class CrossPageCellClassifier:
         self.base_url = base_url
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.top_p = top_p
+        self.repetition_penalty = repetition_penalty
         self.truncate_length = truncate_length
 
         # 初始化 OpenAI 客户端
@@ -44,72 +87,22 @@ class CrossPageCellClassifier:
             base_url=base_url
         )
 
-        # 系统提示词（单元格级别）
-        self.system_prompt = """你是一个专业的PDF表格分析专家，擅长判断跨页表格中的单元格是否被分页符截断。
+        # 从提示词模板类加载
+        self.row_system_prompt = PromptTemplates.ROW_SYSTEM_PROMPT
 
-你的任务：
-1. 分析两个单元格的内容（上页最后一行的单元格 + 下页第一行的单元格）
-2. 判断它们是否是同一个单元格被分页符截断
+        # Token 限制配置
+        self.max_context_tokens = 32768  # 模型上下文窗口大小
+        self.max_output_tokens = 8192  # 输出最大token（固定值，不随批次大小变化）
+        self.max_input_tokens = self.max_context_tokens - self.max_output_tokens  # 输入最大 token
 
-判断依据：
-- **应该合并（截断）的情况**：
-  - 上页内容以"、，；：-"等结尾，下页是后续内容
-  - 上页内容是不完整的句子，下页是补全部分
-  - 上页内容以"（"、"【"等开始符号结尾，下页以"）"、"】"等结束符号开始
-  - 上页内容突然中断，下页内容明显是延续
-  - 两个内容合并后语义完整，分开则语义不通
-
-- **不应合并（独立）的情况**：
-  - 上页内容是完整的句子或词组
-  - 下页内容是全新的独立内容
-  - 两者之间没有语义连续性
-  - 两者是不同的数据项或配置项
-
-输出格式：
-只需输出一个 JSON 对象：
-{
-    "should_merge": true/false,  # 是否应该合并
-    "confidence": 0.95,          # 置信度 (0-1)
-    "reason": "原因说明"         # 简短说明
-}
-
-**重要**：只输出 JSON，不要输出其他内容。
-"""
-
-        # 系统提示词（行级别）
-        self.row_system_prompt = """你是一个专业的PDF表格分析专家，擅长判断跨页表格中的数据行是否被分页符截断。
-
-你的任务：
-判断两行数据是否是"同一行被分页截断"
-
-输入数据格式：
-- 上页最后一行：多个单元格的内容（key-value格式）
-- 下页第一行：多个单元格的内容（key-value格式）
-
-判断依据：
-- **应该合并（同一行被截断）**：
-  1. 某个单元格内容明显被截断（上页以"、，；：-"等结尾，下页是后续内容）
-  2. 上页某列是不完整的句子，下页是补全部分
-  3. 下页某些列为空，但上页对应列有内容且被截断
-  4. 整体看，下页第一行像是上页最后一行的"延续"
-  5. 上页某列以"（"、"【"等开始符号结尾，下页以"）"、"】"等结束符号开始
-
-- **不应合并（两行独立）**：
-  1. 两行都有完整的独立内容
-  2. 下页第一行是新的数据项
-  3. 没有明显的内容截断痕迹
-  4. 两行的数据结构不同（如上页是表头，下页是数据）
-  5. 所有列的内容都是完整的
-
-输出格式（JSON）：
-{
-    "should_merge": true/false,
-    "confidence": 0.95,
-    "reason": "第0列内容明显被截断，应该合并"
-}
-
-**重要**：只输出 JSON，不要输出其他内容。
-"""
+        # 初始化 tiktoken encoder（如果可用）
+        self._encoder = None
+        if TIKTOKEN_AVAILABLE:
+            try:
+                # 对于大部分模型，使用 cl100k_base 编码
+                self._encoder = tiktoken.get_encoding("cl100k_base")
+            except Exception as e:
+                print(f"[CellClassifier] 警告: tiktoken 初始化失败: {e}")
 
         # 验证 API 是否可用
         self._check_api()
@@ -122,134 +115,6 @@ class CrossPageCellClassifier:
         except Exception as e:
             print(f"[CellClassifier] 警告: API 连接测试失败: {e}")
             print(f"[CellClassifier] 将在实际调用时验证连接")
-
-    def classify_cell_pair(
-        self,
-        prev_cell_content: str,
-        next_cell_content: str,
-        context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """
-        判断两个跨页单元格是否应该合并
-
-        Args:
-            prev_cell_content: 上页单元格的内容
-            next_cell_content: 下页单元格的内容
-            context: 可选的上下文信息（如列名、相邻单元格内容等）
-
-        Returns:
-            判断结果字典：
-            {
-                "should_merge": bool,      # 是否应该合并
-                "confidence": float,       # 置信度 (0-1)
-                "reason": str,             # 原因说明
-                "error": str (optional)    # 如果出错，返回错误信息
-            }
-        """
-        # 构建用户输入
-        user_content = f"""请分析以下跨页单元格是否应该合并：
-
-**上页单元格内容**：
-```
-{prev_cell_content}
-```
-
-**下页单元格内容**：
-```
-{next_cell_content}
-```
-"""
-
-        # 如果有上下文信息，添加到输入中
-        if context:
-            user_content += f"\n**上下文信息**：\n```json\n{json.dumps(context, ensure_ascii=False, indent=2)}\n```\n"
-
-        user_content += "\n请输出 JSON 格式的判断结果。"
-
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": user_content}
-                ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                top_p=0.9,
-                extra_body={
-                    "repetition_penalty": 1.05
-                },
-                timeout=30.0  # 30秒超时
-            )
-
-            result_text = response.choices[0].message.content.strip()
-
-            # 尝试解析 JSON
-            # 移除可能的 markdown 代码块标记
-            if result_text.startswith("```json"):
-                result_text = result_text[7:]
-            if result_text.startswith("```"):
-                result_text = result_text[3:]
-            if result_text.endswith("```"):
-                result_text = result_text[:-3]
-            result_text = result_text.strip()
-
-            result = json.loads(result_text)
-
-            # 验证结果格式
-            if "should_merge" not in result:
-                return {
-                    "should_merge": False,
-                    "confidence": 0.0,
-                    "reason": "模型输出格式错误",
-                    "error": "Missing 'should_merge' field"
-                }
-
-            return result
-
-        except json.JSONDecodeError as e:
-            return {
-                "should_merge": False,
-                "confidence": 0.0,
-                "reason": f"JSON 解析失败: {str(e)}",
-                "error": f"JSON decode error: {str(e)}",
-                "raw_response": result_text if 'result_text' in locals() else None
-            }
-
-        except Exception as e:
-            return {
-                "should_merge": False,
-                "confidence": 0.0,
-                "reason": f"API 请求失败: {str(e)}",
-                "error": str(e)
-            }
-
-    def classify_cell_pairs_batch(
-        self,
-        cell_pairs: List[Tuple[str, str]],
-        contexts: Optional[List[Dict[str, Any]]] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        批量判断多个单元格对是否应该合并
-
-        Args:
-            cell_pairs: 单元格对列表，每个元素是 (prev_content, next_content)
-            contexts: 可选的上下文信息列表
-
-        Returns:
-            判断结果列表
-        """
-        results = []
-
-        if contexts is None:
-            contexts = [None] * len(cell_pairs)
-
-        for i, (prev_content, next_content) in enumerate(cell_pairs):
-            context = contexts[i] if i < len(contexts) else None
-            result = self.classify_cell_pair(prev_content, next_content, context)
-            results.append(result)
-
-        return results
 
     def _truncate_text(self, text: str, from_end: bool = True) -> str:
         """
@@ -275,12 +140,148 @@ class CrossPageCellClassifier:
             # 取最前 n 个字符
             return text[:self.truncate_length] + "..."
 
+    def _count_tokens(self, text: str) -> int:
+        """
+        计算文本的 token 数量
+
+        Args:
+            text: 要计算的文本
+
+        Returns:
+            token 数量
+        """
+        if self._encoder:
+            # 使用 tiktoken 精确计算
+            return len(self._encoder.encode(text))
+        else:
+            # 简单估算：1 token ≈ 1.5 字符（中文约1个字=1.5token，英文约4字母=1token）
+            return int(len(text) / 1.5)
+
+    def _split_row_pairs_by_tokens(
+        self,
+        row_pairs: List[Dict[str, Any]],
+        max_tokens: int
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        根据 token 限制将 row_pairs 分批
+
+        Args:
+            row_pairs: 行对列表
+            max_tokens: 每批最大 token 数
+
+        Returns:
+            分批后的行对列表
+        """
+        if not row_pairs:
+            return []
+
+        # 计算 system prompt 的 token 数
+        system_tokens = self._count_tokens(self.row_system_prompt)
+
+        # 计算批量 prompt 的 header 和 footer token（固定部分）
+        prompt_header = "请分析以下跨页表格的行对，判断每一对是否应该合并：\n\n"
+        prompt_footer = """
+请对每一对行输出 JSON 格式的判断结果，返回一个 JSON 数组。
+
+**输出格式要求**：
+1. 必须使用 ```json 代码块包裹
+2. 格式如下：
+
+```json
+[
+    {"should_merge": true, "confidence": 0.95, "reason": "..."},
+    {"should_merge": false, "confidence": 0.90, "reason": "..."}
+]
+```
+
+**重要**：必须使用 ```json 代码块格式，不要输出其他内容。
+"""
+        header_tokens = self._count_tokens(prompt_header)
+        footer_tokens = self._count_tokens(prompt_footer)
+
+        # 固定开销：system prompt + user prompt header/footer
+        base_tokens = system_tokens + header_tokens + footer_tokens
+
+        # 安全阈值：预留10%的空间，避免边界情况
+        safety_margin = int(max_tokens * 0.1)
+        effective_max_tokens = max_tokens - safety_margin
+
+        batches = []
+        current_batch = []
+        current_tokens = base_tokens
+
+        for pair in row_pairs:
+            # 计算这个 pair 的净内容 token（只计算数据部分）
+            pair_content = self._build_single_pair_content(pair)
+            pair_tokens = self._count_tokens(pair_content)
+
+            # 如果加上这个 pair 超过限制，先保存当前批次
+            if current_batch and (current_tokens + pair_tokens > effective_max_tokens):
+                batches.append(current_batch)
+                current_batch = [pair]
+                current_tokens = base_tokens + pair_tokens
+            else:
+                current_batch.append(pair)
+                current_tokens += pair_tokens
+
+        # 添加最后一批
+        if current_batch:
+            batches.append(current_batch)
+
+        return batches
+
+    def _build_single_pair_content(self, pair: Dict) -> str:
+        """
+        构建单个 pair 的内容（不包含 header/footer）
+
+        Args:
+            pair: 行对数据
+
+        Returns:
+            pair 的文本内容
+        """
+        content = f"## 行对\n\n"
+
+        # 上页最后一行
+        content += f"**上页最后一行**：\n"
+        prev_row = pair.get('prev_row', {})
+        for col, text in prev_row.items():
+            truncated = self._truncate_text(text, from_end=True)
+            content += f"  - {col}: {truncated}\n"
+
+        # 下页第一行
+        content += f"\n**下页第一行**：\n"
+        next_row = pair.get('next_row', {})
+        for col, text in next_row.items():
+            truncated = self._truncate_text(text, from_end=False)
+            content += f"  - {col}: {truncated}\n"
+
+        # 上下文信息（包含匹配用的UUID和行ID）
+        if 'context' in pair:
+            ctx = pair['context']
+            content += f"\n**上下文信息**：\n"
+            content += f"  - 页码：{ctx.get('prev_page')} → {ctx.get('next_page')}\n"
+            content += f"  - Hint得分：{ctx.get('hint_score', 0):.2f}\n"
+            content += f"  - 上页表格UUID: {ctx.get('prev_table_uuid')}\n"
+            content += f"  - 下页表格UUID: {ctx.get('next_table_uuid')}\n"
+            content += f"  - 上页行ID: {ctx.get('prev_row_id')}\n"
+            content += f"  - 下页行ID: {ctx.get('next_row_id')}\n"
+
+        content += "\n" + "-" * 60 + "\n\n"
+
+        return content
+
     def classify_row_pairs_batch(
         self,
-        row_pairs: List[Dict[str, Any]]
+        row_pairs: List[Dict[str, Any]],
+        max_retries: int = 3,
+        retry_delay: float = 2.0,
+        auto_split: bool = True
     ) -> List[Dict[str, Any]]:
         """
         批量判断多个行对是否应该合并（行级别）
+
+        支持自动分批：当输入超过 token 限制时，自动拆分为多个批次
 
         Args:
             row_pairs: 行对列表，每个元素格式：
@@ -295,52 +296,136 @@ class CrossPageCellClassifier:
                         "hint_score": 0.95
                     }
                 }
+            max_retries: 最大重试次数（默认3次）
+            retry_delay: 重试延迟（秒，默认2秒）
+            auto_split: 是否自动分批（默认True），超过token限制时拆分为多个批次
 
         Returns:
-            判断结果列表
+            判断结果列表（按原始顺序）
         """
         if not row_pairs:
             return []
 
         print(f"[CellClassifier] 批量判断 {len(row_pairs)} 个跨页行对...")
 
+        # 自动分批（如果启用）
+        if auto_split:
+            batches = self._split_row_pairs_by_tokens(row_pairs, self.max_input_tokens)
+
+            if len(batches) > 1:
+                print(f"[CellClassifier] Token 限制 ({self.max_input_tokens})，自动拆分为 {len(batches)} 个批次")
+
+                # 分批处理
+                all_results = []
+                for batch_idx, batch in enumerate(batches, start=1):
+                    print(f"\n[CellClassifier] 处理批次 {batch_idx}/{len(batches)} ({len(batch)} 个行对)...")
+                    batch_results = self._process_single_batch(batch, max_retries, retry_delay)
+                    all_results.extend(batch_results)
+
+                print(f"\n[CellClassifier] 所有批次处理完成，共 {len(all_results)} 个结果")
+                return all_results
+
+        # 单批次处理
+        return self._process_single_batch(row_pairs, max_retries, retry_delay)
+
+    def _process_single_batch(
+        self,
+        row_pairs: List[Dict[str, Any]],
+        max_retries: int = 3,
+        retry_delay: float = 2.0
+    ) -> List[Dict[str, Any]]:
+        """
+        处理单个批次的行对判断
+
+        Args:
+            row_pairs: 行对列表
+            max_retries: 最大重试次数
+            retry_delay: 重试延迟（秒）
+
+        Returns:
+            判断结果列表
+        """
+
         # 构建批量请求
         user_content = self._build_batch_row_prompt(row_pairs)
 
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": self.row_system_prompt},
-                    {"role": "user", "content": user_content}
-                ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens * len(row_pairs),  # 批量需要更多 tokens
-                top_p=0.9,
-                extra_body={
-                    "repetition_penalty": 1.05
-                },
-                timeout=60.0  # 60秒超时
-            )
+        # 打印发送的数据
+        print("\n" + "="*80)
+        print("[CellClassifier] [发送] 发送给AI的数据:")
+        print("="*80)
+        print(f"System Prompt:\n{self.row_system_prompt}\n")
+        print(f"User Content:\n{user_content}")
+        print("="*80 + "\n")
 
-            result_text = response.choices[0].message.content.strip()
+        # 重试逻辑
+        import time
+        last_error = None
 
-            # 解析批量结果
-            results = self._parse_batch_result(result_text, len(row_pairs))
-            return results
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    print(f"[CellClassifier] 重试 {attempt}/{max_retries-1}...")
+                    time.sleep(retry_delay)
 
-        except Exception as e:
-            print(f"[CellClassifier] 批量判断失败: {e}")
-            # 返回默认结果（全部不合并）
-            return [
-                {
-                    "should_merge": False,
-                    "confidence": 0.0,
-                    "reason": f"API 请求失败: {str(e)}",
-                    "error": str(e)
-                }
-                for _ in range(len(row_pairs))
-            ]
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": self.row_system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    temperature=self.temperature,
+                    max_tokens=self.max_output_tokens,  # 使用固定输出token（8192）
+                    top_p=self.top_p,
+                    extra_body={
+                        "repetition_penalty": self.repetition_penalty
+                    },
+                    timeout=60.0  # 60秒超时
+                )
+
+                result_text = response.choices[0].message.content.strip()
+
+                # 打印AI返回的数据
+                print("\n" + "="*80)
+                print("[CellClassifier] [接收] AI返回的数据:")
+                print("="*80)
+                print(result_text)
+                print("="*80 + "\n")
+
+                # 解析批量结果
+                results = self._parse_batch_result(result_text, len(row_pairs))
+
+                # 打印解析后的结果
+                print("\n" + "="*80)
+                print("[CellClassifier] [解析] 解析后的结果:")
+                print("="*80)
+                for i, result in enumerate(results):
+                    should_merge = result.get('should_merge', False)
+                    confidence = result.get('confidence', 0)
+                    reason = result.get('reason', 'N/A')
+                    status = "[YES]合并" if should_merge else "[NO]不合并"
+                    print(f"行对 {i+1}: {status} (置信度: {confidence:.2f}) - {reason}")
+                print("="*80 + "\n")
+
+                print(f"[CellClassifier] [OK] 判断成功")
+                return results
+
+            except Exception as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    print(f"[CellClassifier] [WARN] 请求失败: {e}，将在 {retry_delay} 秒后重试...")
+                else:
+                    print(f"[CellClassifier] [ERROR] 批量判断失败（已重试 {max_retries} 次）: {e}")
+
+        # 所有重试都失败，返回默认结果
+        return [
+            {
+                "should_merge": False,
+                "confidence": 0.0,
+                "reason": f"API 请求失败: {str(last_error)}",
+                "error": str(last_error)
+            }
+            for _ in range(len(row_pairs))
+        ]
 
     def _build_batch_row_prompt(self, row_pairs: List[Dict]) -> str:
         """构建批量行对判断的提示词"""
@@ -363,40 +448,90 @@ class CrossPageCellClassifier:
                 truncated = self._truncate_text(content, from_end=False)  # 取最前n个字符
                 prompt += f"  - {col}: {truncated}\n"
 
-            # 上下文信息
+            # 上下文信息（包含匹配用的UUID和行ID）
             if 'context' in pair:
                 ctx = pair['context']
                 prompt += f"\n**上下文信息**：\n"
                 prompt += f"  - 页码：{ctx.get('prev_page')} → {ctx.get('next_page')}\n"
                 prompt += f"  - Hint得分：{ctx.get('hint_score', 0):.2f}\n"
+                prompt += f"  - 上页表格UUID: {ctx.get('prev_table_uuid')}\n"
+                prompt += f"  - 下页表格UUID: {ctx.get('next_table_uuid')}\n"
+                prompt += f"  - 上页行ID: {ctx.get('prev_row_id')}\n"
+                prompt += f"  - 下页行ID: {ctx.get('next_row_id')}\n"
 
             prompt += "\n" + "-" * 60 + "\n\n"
 
         prompt += """
-请对每一对行输出 JSON 格式的判断结果，返回一个 JSON 数组：
-[
-    {"should_merge": true/false, "confidence": 0.95, "reason": "..."},
-    {"should_merge": true/false, "confidence": 0.90, "reason": "..."},
-    ...
-]
+请对每一对行输出 JSON 格式的判断结果，返回一个 JSON 数组。
 
-**重要**：只输出 JSON 数组，不要输出其他内容。
+**输出格式要求**：
+1. 必须使用 ```json 代码块包裹
+2. **必须在输出中包含 prev_table_uuid, next_table_uuid, prev_row_id, next_row_id 用于匹配**
+3. 格式如下：
+
+```json
+[
+    {
+        "should_merge": true,
+        "confidence": 0.95,
+        "reason": "...",
+        "prev_table_uuid": "xxx-xxx-xxx",
+        "next_table_uuid": "xxx-xxx-xxx",
+        "prev_row_id": "r007",
+        "next_row_id": "r001"
+    },
+    {
+        "should_merge": false,
+        "confidence": 0.90,
+        "reason": "...",
+        "prev_table_uuid": "xxx-xxx-xxx",
+        "next_table_uuid": "xxx-xxx-xxx",
+        "prev_row_id": "r008",
+        "next_row_id": "r001"
+    }
+]
+```
+
+**重要**：
+1. 必须使用 ```json 代码块格式，不要输出其他内容
+2. 每个结果中必须包含 prev_table_uuid, next_table_uuid, prev_row_id, next_row_id（从上下文信息中复制）
 """
         return prompt
 
     def _parse_batch_result(self, result_text: str, expected_count: int) -> List[Dict[str, Any]]:
-        """解析批量结果"""
-        try:
-            # 移除可能的 markdown 代码块标记
-            if result_text.startswith("```json"):
-                result_text = result_text[7:]
-            if result_text.startswith("```"):
-                result_text = result_text[3:]
-            if result_text.endswith("```"):
-                result_text = result_text[:-3]
-            result_text = result_text.strip()
+        """
+        解析批量结果
 
-            results = json.loads(result_text)
+        支持以下格式：
+        1. 纯 JSON（直接解析）
+        2. ```json ... ``` 代码块（正则提取）
+        3. <think>...</think> + JSON（移除think标签后提取）
+        """
+        try:
+            # 方法1：使用正则提取 ```json ... ``` 代码块中的内容
+            json_block_pattern = r'```json\s*([\s\S]*?)\s*```'
+            matches = re.findall(json_block_pattern, result_text)
+
+            if matches:
+                # 找到 ```json``` 代码块，使用第一个匹配
+                json_text = matches[0].strip()
+                print(f"[CellClassifier] 从 ```json``` 代码块中提取JSON")
+            else:
+                # 方法2：移除 <think>...</think> 标签（如果存在）
+                json_text = re.sub(r'<think>.*?</think>', '', result_text, flags=re.DOTALL).strip()
+
+                # 方法3：如果仍有 ``` 标记，手动移除
+                if json_text.startswith("```json"):
+                    json_text = json_text[7:]
+                if json_text.startswith("```"):
+                    json_text = json_text[3:]
+                if json_text.endswith("```"):
+                    json_text = json_text[:-3]
+                json_text = json_text.strip()
+
+                print(f"[CellClassifier] 使用清理后的文本解析JSON")
+
+            results = json.loads(json_text)
 
             # 验证结果格式
             if not isinstance(results, list):
@@ -439,188 +574,7 @@ class CrossPageCellClassifier:
                 for _ in range(expected_count)
             ]
 
-    def analyze_raw_json_with_hints(
-        self,
-        raw_json_data: Dict[str, Any],
-        hints_by_page: Dict[int, Dict]
-    ) -> Dict[str, Any]:
-        """
-        分析 raw.json 数据，使用 AI 判断有 hint 的单元格是否应该合并
-
-        Args:
-            raw_json_data: raw.json 的数据（包含所有表格）
-            hints_by_page: 续页 hint 信息
-
-        Returns:
-            分析结果，包含每个单元格对的判断
-        """
-        results = {
-            "total_cell_pairs": 0,
-            "classified_pairs": [],
-            "summary": {
-                "should_merge": 0,
-                "should_not_merge": 0,
-                "errors": 0
-            }
-        }
-
-        tables = raw_json_data.get('tables', [])
-        if not tables:
-            return results
-
-        # 按页码分组表格
-        tables_by_page = {}
-        for table in tables:
-            page = table.get('page', 1)
-            if page not in tables_by_page:
-                tables_by_page[page] = []
-            tables_by_page[page].append(table)
-
-        # 遍历有 hint 的页面
-        for next_page, hint in hints_by_page.items():
-            if next_page not in tables_by_page:
-                continue
-
-            prev_page = next_page - 1
-            if prev_page not in tables_by_page:
-                continue
-
-            prev_tables = tables_by_page[prev_page]
-            next_tables = tables_by_page[next_page]
-
-            # 获取上页最后一张表和下一页第一张表
-            if not prev_tables or not next_tables:
-                continue
-
-            prev_table = prev_tables[-1]  # 最后一张
-            next_table = next_tables[0]   # 第一张
-
-            # 获取上页最后一行和下页第一行
-            prev_rows = prev_table.get('rows', [])
-            next_rows = next_table.get('rows', [])
-
-            if not prev_rows or not next_rows:
-                continue
-
-            prev_last_row = prev_rows[-1]
-            next_first_row = next_rows[0]
-
-            prev_cells = prev_last_row.get('cells', [])
-            next_cells = next_first_row.get('cells', [])
-
-            # 遍历所有列，判断每个单元格对
-            min_cols = min(len(prev_cells), len(next_cells))
-            for col_idx in range(min_cols):
-                prev_cell = prev_cells[col_idx]
-                next_cell = next_cells[col_idx]
-
-                prev_content = prev_cell.get('content', '').strip()
-                next_content = next_cell.get('content', '').strip()
-
-                # 跳过两边都是空的情况
-                if not prev_content and not next_content:
-                    continue
-
-                # 准备上下文信息
-                context = {
-                    "prev_table_id": prev_table.get('id'),
-                    "next_table_id": next_table.get('id'),
-                    "prev_page": prev_page,
-                    "next_page": next_page,
-                    "col_index": col_idx,
-                    "hint_score": hint.get('score', 0),
-                    "column_name": prev_table.get('columns', [{}])[col_idx].get('name', '') if col_idx < len(prev_table.get('columns', [])) else ''
-                }
-
-                # 调用 AI 模型判断
-                print(f"[CellClassifier] 分析单元格对: 页{prev_page}→{next_page}, 列{col_idx}")
-                classification = self.classify_cell_pair(prev_content, next_content, context)
-
-                # 记录结果
-                cell_pair_result = {
-                    "prev_page": prev_page,
-                    "next_page": next_page,
-                    "col_index": col_idx,
-                    "prev_content": prev_content,
-                    "next_content": next_content,
-                    "context": context,
-                    "classification": classification
-                }
-
-                results["classified_pairs"].append(cell_pair_result)
-                results["total_cell_pairs"] += 1
-
-                # 更新统计
-                if classification.get("error"):
-                    results["summary"]["errors"] += 1
-                elif classification.get("should_merge"):
-                    results["summary"]["should_merge"] += 1
-                else:
-                    results["summary"]["should_not_merge"] += 1
-
-        return results
-
-
-def main():
-    """测试函数"""
-    print("=" * 60)
-    print("跨页单元格智能分类器 - 测试")
-    print("=" * 60)
-
-    # 初始化分类器
-    try:
-        classifier = CrossPageCellClassifier()
-    except Exception as e:
-        print(f"初始化失败: {e}")
-        return
-
-    # 测试用例1：应该合并的情况（句子被截断）
-    test_cases = [
-        {
-            "name": "测试1: 句子被截断",
-            "prev": "根据投标人提供的项目技术方案，包括总体架构设计、业务架构设计、数据架构设计、技术架构设",
-            "next": "计、网络架构设计、与现有国土空间规划\"一张图\"实施监测系统及相关系统对接方案等方面进行综合评审。",
-            "expected": True
-        },
-        {
-            "name": "测试2: 完整句子，不应合并",
-            "prev": "技术方案设计科学、合理、实际可实施、操作性强",
-            "next": "整体技术方案设计合理可行但内容通用",
-            "expected": False
-        },
-        {
-            "name": "测试3: 逗号结尾被截断",
-            "prev": "针对本期项目综合服务要求响应完善，与现有国土空间规划\"一张图\"实施监测系统及相关系统进行充分对接，",
-            "next": "对项目整体技术需求范围覆盖程度高，完全满足招标相关需求",
-            "expected": True
-        },
-        {
-            "name": "测试4: 括号被截断",
-            "prev": "整体技术方案设计科学、合理、实际可实施、操作性强，针对本期项目综合服务要求响应完善（",
-            "next": "包括但不限于以下内容）",
-            "expected": True
-        }
-    ]
-
-    # 执行测试
-    for test_case in test_cases:
-        print(f"\n{test_case['name']}")
-        print(f"上页内容: {test_case['prev'][:50]}...")
-        print(f"下页内容: {test_case['next'][:50]}...")
-        print(f"预期结果: {'应该合并' if test_case['expected'] else '不应合并'}")
-
-        result = classifier.classify_cell_pair(test_case['prev'], test_case['next'])
-
-        print(f"\n判断结果:")
-        print(f"  should_merge: {result.get('should_merge')}")
-        print(f"  confidence: {result.get('confidence', 0):.2f}")
-        print(f"  reason: {result.get('reason', 'N/A')}")
-
-        # 判断是否符合预期
-        is_correct = result.get('should_merge') == test_case['expected']
-        print(f"  ✅ 正确" if is_correct else f"  ❌ 错误")
-        print("-" * 60)
-
 
 if __name__ == '__main__':
-    main()
+    # 简单测试（如需测试，使用 test_row_classifier.py）
+    print("跨页行级别分类器 - 使用 test_row_classifier.py 进行测试")

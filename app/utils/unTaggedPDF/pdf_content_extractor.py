@@ -13,10 +13,12 @@ try:
     from .table_extractor import TableExtractor
     from .paragraph_extractor import ParagraphExtractor
     from .cross_page_merger import CrossPageTableMerger
+    from .crossPageTable import CrossPageCellClassifier
 except ImportError:
     from table_extractor import TableExtractor
     from paragraph_extractor import ParagraphExtractor
     from cross_page_merger import CrossPageTableMerger
+    from crossPageTable import CrossPageCellClassifier
 
 
 class PDFContentExtractor:
@@ -25,7 +27,8 @@ class PDFContentExtractor:
     def __init__(self,
                  pdf_path: str,
                  enable_cross_page_merge: bool = True,
-                 enable_cell_merge: bool = False):
+                 enable_cell_merge: bool = False,
+                 verbose: bool = False):
         """
         初始化PDF内容提取器
 
@@ -34,10 +37,14 @@ class PDFContentExtractor:
             enable_cross_page_merge: 是否启用跨页表格合并（默认True）
             enable_cell_merge: 是否启用跨页单元格合并（默认False，暂时关闭）
                               只有在 enable_cross_page_merge=True 时才有效
+            verbose: 是否输出详细日志（默认False，只输出关键信息）
         """
         self.pdf_path = Path(pdf_path)
         if not self.pdf_path.exists():
             raise FileNotFoundError(f"PDF文件不存在: {pdf_path}")
+
+        # 保存配置参数
+        self.verbose = verbose
 
         # 初始化各个提取器
         self.table_extractor = TableExtractor(pdf_path)
@@ -244,6 +251,60 @@ class PDFContentExtractor:
                 # 更新合并前的备份
                 tables_before_merge = copy.deepcopy(tables)
 
+        # AI 行级别判断（如果有 hints）
+        ai_row_decisions = []
+        row_pairs = []  # 初始化为空列表（确保变量在作用域内）
+        if hints_by_page:
+            print(f"\n[AI判断] hints_by_page 的页码: {sorted(hints_by_page.keys())}")
+            row_pairs = self._collect_hint_row_pairs(tables, hints_by_page)
+            if row_pairs:
+                print(f"\n[AI判断] 检测到 {len(row_pairs)} 个跨页行对，正在批量判断...")
+                try:
+                    import time
+                    ai_start_time = time.time()
+
+                    classifier = CrossPageCellClassifier(truncate_length=50)
+                    ai_row_decisions = classifier.classify_row_pairs_batch(row_pairs)
+
+                    ai_elapsed = time.time() - ai_start_time
+
+                    # 打印判断结果（包含表格位置信息和耗时）
+                    merge_count = sum(1 for d in ai_row_decisions if d.get('should_merge'))
+                    no_merge_count = len(ai_row_decisions) - merge_count
+                    print(f"[AI判断] 完成判断: {merge_count} 个应合并, {no_merge_count} 个不合并")
+                    print(f"[AI判断] 耗时: {ai_elapsed:.2f}秒 (平均 {ai_elapsed/len(row_pairs):.2f}秒/行对)")
+
+                    for i, (decision, pair) in enumerate(zip(ai_row_decisions, row_pairs)):
+                        should_merge = decision.get('should_merge')
+                        confidence = decision.get('confidence', 0)
+                        reason = decision.get('reason', '')
+
+                        # 从 pair 中获取上下文信息
+                        ctx = pair.get('context', {})
+                        prev_page = ctx.get('prev_page', '?')
+                        next_page = ctx.get('next_page', '?')
+                        prev_uuid = ctx.get('prev_table_uuid', 'N/A')[:8]  # 只显示前8位
+                        next_uuid = ctx.get('next_table_uuid', 'N/A')[:8]
+                        prev_row_id = ctx.get('prev_row_id', '?')
+                        next_row_id = ctx.get('next_row_id', '?')
+
+                        status = "✅ 合并" if should_merge else "❌ 不合并"
+                        print(f"  行对 {i+1}: {status} (置信度: {confidence:.2f})")
+                        print(f"    上页: 页{prev_page} UUID:{prev_uuid} 行:{prev_row_id}")
+                        print(f"    下页: 页{next_page} UUID:{next_uuid} 行:{next_row_id}")
+                        if reason:
+                            print(f"    原因: {reason[:80]}")
+                except Exception as e:
+                    print(f"[AI判断] 错误: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+        # TR 级别行合并（根据 AI 判断结果）
+        if ai_row_decisions and row_pairs:
+            print(f"\n[TR级别行合并] 开始根据 AI 判断结果合并跨页行...")
+            tables = self._apply_tr_level_row_merge(tables, ai_row_decisions, row_pairs)
+            print(f"[TR级别行合并] 完成\n")
+
         # 跨页表格合并（如果启用）
         if self.enable_cross_page_merge and self.cross_page_merger and tables:
             # 构建布局索引（用于检查表格间是否有正文隔断）
@@ -259,7 +320,7 @@ class PDFContentExtractor:
                 page_drawings=page_drawings,
                 layout_index=layout_index,  # 传入布局索引
                 hints_by_page=hints_by_page,  # 传入hints（用于列补齐）
-                debug=True  # 开启debug模式
+                debug=False  # 关闭表格合并的调试日志
             )
 
         # 重新分配正式的docN编号
@@ -303,6 +364,10 @@ class PDFContentExtractor:
         # 保存hints信息（用于调试）
         if hints_by_page:
             result["hints_by_page"] = hints_by_page
+
+        # 保存AI行级别判断结果（用于调试）
+        if ai_row_decisions:
+            result["ai_row_decisions"] = ai_row_decisions
 
         return result
 
@@ -531,6 +596,111 @@ class PDFContentExtractor:
         doc.close()
         return metadata
 
+    def _collect_hint_row_pairs(self, tables, hints_by_page):
+        """
+        收集所有有 hint 的跨页表格对的行数据（用于 AI 判断）
+
+        Args:
+            tables: 表格列表（重提取后的）
+            hints_by_page: 续页 hint 信息
+
+        Returns:
+            行对列表，格式：[
+                {
+                    "prev_row": {"第0列": "...", "第1列": "...", ...},
+                    "next_row": {"第0列": "...", "第1列": "...", ...},
+                    "context": {
+                        "prev_table_id": "temp_001",
+                        "next_table_id": "temp_002",
+                        "prev_table_uuid": "xxx-xxx-xxx",  # 表格UUID（用于AI匹配）
+                        "next_table_uuid": "xxx-xxx-xxx",
+                        "prev_row_id": "r007",  # 原始行ID（用于AI匹配）
+                        "next_row_id": "r001",
+                        "prev_page": 1,
+                        "next_page": 2,
+                        "hint_score": 0.95
+                    }
+                },
+                ...
+            ]
+        """
+        if not hints_by_page:
+            return []
+
+        row_pairs = []
+
+        # 按页码分组表格
+        tables_by_page = {}
+        for table in tables:
+            page = table.get('page', 1)
+            if page not in tables_by_page:
+                tables_by_page[page] = []
+            tables_by_page[page].append(table)
+
+        print(f"[AI判断] tables_by_page 的页码: {sorted(tables_by_page.keys())}")
+
+        # 遍历有 hint 的页面
+        for next_page, hint in hints_by_page.items():
+            prev_page = next_page - 1
+            print(f"[AI判断] 检查跨页: {prev_page} → {next_page}")
+
+            if prev_page not in tables_by_page or next_page not in tables_by_page:
+                continue
+
+            prev_tables = tables_by_page[prev_page]
+            next_tables = tables_by_page[next_page]
+
+            # 获取上页最后一张表和下页第一张表
+            if not prev_tables or not next_tables:
+                continue
+
+            prev_table = prev_tables[-1]  # 最后一张
+            next_table = next_tables[0]   # 第一张
+
+            # 获取上页最后一行和下页第一行
+            prev_rows = prev_table.get('rows', [])
+            next_rows = next_table.get('rows', [])
+
+            if not prev_rows or not next_rows:
+                continue
+
+            prev_last_row = prev_rows[-1]
+            next_first_row = next_rows[0]
+
+            prev_cells = prev_last_row.get('cells', [])
+            next_cells = next_first_row.get('cells', [])
+
+            # 提取行数据（key-value 格式）
+            prev_row_dict = {}
+            next_row_dict = {}
+
+            for i, cell in enumerate(prev_cells):
+                col_name = f"第{i}列"
+                prev_row_dict[col_name] = cell.get('content', '').strip()
+
+            for i, cell in enumerate(next_cells):
+                col_name = f"第{i}列"
+                next_row_dict[col_name] = cell.get('content', '').strip()
+
+            # 构建行对（包含完整的匹配信息）
+            row_pairs.append({
+                "prev_row": prev_row_dict,
+                "next_row": next_row_dict,
+                "context": {
+                    "prev_table_id": prev_table.get('id'),
+                    "next_table_id": next_table.get('id'),
+                    "prev_table_uuid": prev_table.get('raw_uuid'),  # 表格UUID（用于AI匹配）
+                    "next_table_uuid": next_table.get('raw_uuid'),
+                    "prev_row_id": prev_last_row.get('raw_row_id'),  # 原始行ID（用于AI匹配）
+                    "next_row_id": next_first_row.get('raw_row_id'),
+                    "prev_page": prev_page,
+                    "next_page": next_page,
+                    "hint_score": hint.get('score', 0)
+                }
+            })
+
+        return row_pairs
+
     def _build_layout_index(self, tables, paragraphs):
         """
         构建页面布局索引（用于跨页合并时检查正文隔断）
@@ -584,15 +754,215 @@ class PDFContentExtractor:
         for page in layout_index:
             layout_index[page].sort(key=lambda x: x['y0'])
 
-        # Debug: 输出布局索引统计
-        print(f"\n[布局索引] 构建完成:")
-        for page_num in sorted(layout_index.keys()):
-            blocks = layout_index[page_num]
-            tables_count = sum(1 for b in blocks if b['type'] == 'table')
-            paras_count = sum(1 for b in blocks if b['type'] == 'paragraph')
-            print(f"  页{page_num}: {tables_count}个表格, {paras_count}个段落")
+        # Debug: 输出布局索引统计（仅在 verbose 模式下）
+        if self.verbose:
+            print(f"\n[布局索引] 构建完成:")
+            for page_num in sorted(layout_index.keys()):
+                blocks = layout_index[page_num]
+                tables_count = sum(1 for b in blocks if b['type'] == 'table')
+                paras_count = sum(1 for b in blocks if b['type'] == 'paragraph')
+                print(f"  页{page_num}: {tables_count}个表格, {paras_count}个段落")
 
         return layout_index
+
+    def _apply_tr_level_row_merge(
+        self,
+        tables: list,
+        ai_row_decisions: list,
+        row_pairs: list
+    ) -> list:
+        """
+        根据 AI 判断结果执行 TR 级别的行合并（支持链式合并）
+
+        逻辑：
+        1. 构建合并关系图，识别连续的合并链
+        2. 对每条链，将所有行合并到链头
+        3. 标记链中其他行为待删除
+        4. 最后统一删除所有待删除的行
+
+        示例：
+        - AI判断：(页4,r002)→(页5,r001)→(页6,r001)→(页7,r001) 都应合并
+        - 识别为一条链：[(页4,r002), (页5,r001), (页6,r001), (页7,r001)]
+        - 合并：将 页5,r001、页6,r001、页7,r001 的内容依次拼接到 页4,r002
+        - 删除：页5,r001、页6,r001、页7,r001
+
+        Args:
+            tables: 表格列表
+            ai_row_decisions: AI 判断结果列表
+            row_pairs: 行对列表（包含 context）
+
+        Returns:
+            更新后的表格列表
+        """
+        # 构建 UUID 到表格的映射（快速查找）
+        uuid_to_table = {}
+        for table in tables:
+            uuid = table.get('raw_uuid')
+            if uuid:
+                uuid_to_table[uuid] = table
+
+        # 1. 构建合并关系图（只包含 should_merge=True 的边）
+        merge_graph = {}  # {(uuid, row_id): (uuid, row_id)}
+        row_to_context = {}  # 保存每个节点的上下文信息（用于日志）
+
+        for decision, pair in zip(ai_row_decisions, row_pairs):
+            if not decision.get('should_merge', False):
+                continue
+
+            ctx = pair.get('context', {})
+            prev_key = (ctx.get('prev_table_uuid'), ctx.get('prev_row_id'))
+            next_key = (ctx.get('next_table_uuid'), ctx.get('next_row_id'))
+
+            merge_graph[prev_key] = next_key
+
+            # 保存上下文信息
+            if prev_key not in row_to_context:
+                row_to_context[prev_key] = ctx
+            if next_key not in row_to_context:
+                row_to_context[next_key] = ctx
+
+        # 2. 识别所有合并链
+        chains = []
+        visited = set()
+
+        for start_key in merge_graph:
+            if start_key in visited:
+                continue
+
+            # 从当前节点开始构建链
+            chain = [start_key]
+            visited.add(start_key)
+
+            current = start_key
+            while current in merge_graph:
+                next_key = merge_graph[current]
+                chain.append(next_key)
+                visited.add(next_key)
+                current = next_key
+
+            # 只保留长度 >= 2 的链（至少有2个节点才需要合并）
+            if len(chain) >= 2:
+                chains.append(chain)
+
+        print(f"  识别到 {len(chains)} 条合并链")
+
+        # 3. 对每条链执行合并
+        merge_count = 0
+        skipped_count = 0
+        rows_to_delete = []  # 记录待删除的行: [(table, row), ...]
+
+        for chain_idx, chain in enumerate(chains, start=1):
+            # 链头（合并目标）
+            head_uuid, head_row_id = chain[0]
+            head_table = uuid_to_table.get(head_uuid)
+
+            if not head_table:
+                print(f"  [链{chain_idx}] 跳过: 找不到表格 {head_uuid[:8]}")
+                skipped_count += len(chain) - 1
+                continue
+
+            head_row = None
+            for row in head_table.get('rows', []):
+                if row.get('raw_row_id') == head_row_id:
+                    head_row = row
+                    break
+
+            if not head_row:
+                print(f"  [链{chain_idx}] 跳过: 找不到行 {head_row_id}")
+                skipped_count += len(chain) - 1
+                continue
+
+            # 获取链头上下文（用于日志）
+            head_ctx = row_to_context.get(chain[0], {})
+            chain_pages = [head_ctx.get('prev_page', '?')]
+
+            # 依次合并链中的后续行
+            success_merges = 0
+            for i in range(1, len(chain)):
+                tail_uuid, tail_row_id = chain[i]
+                tail_table = uuid_to_table.get(tail_uuid)
+
+                if not tail_table:
+                    print(f"  [链{chain_idx}] 跳过节点{i}: 找不到表格 {tail_uuid[:8]}")
+                    skipped_count += 1
+                    continue
+
+                tail_row = None
+                for row in tail_table.get('rows', []):
+                    if row.get('raw_row_id') == tail_row_id:
+                        tail_row = row
+                        break
+
+                if not tail_row:
+                    print(f"  [链{chain_idx}] 跳过节点{i}: 找不到行 {tail_row_id}")
+                    skipped_count += 1
+                    continue
+
+                # 执行合并
+                try:
+                    self._merge_two_rows(head_row, tail_row)
+                    rows_to_delete.append((tail_table, tail_row))
+                    success_merges += 1
+
+                    # 记录页码
+                    tail_ctx = row_to_context.get(chain[i], {})
+                    chain_pages.append(tail_ctx.get('next_page', '?'))
+
+                except Exception as e:
+                    print(f"  [链{chain_idx}] 合并节点{i}失败: {e}")
+                    skipped_count += 1
+
+            if success_merges > 0:
+                merge_count += success_merges
+                pages_str = '→'.join(str(p) for p in chain_pages)
+                print(f"  [链{chain_idx}] 成功: {len(chain)}个节点合并为1行 (页{pages_str})")
+
+        # 4. 统一删除所有待删除的行
+        for table, row in rows_to_delete:
+            rows_list = table.get('rows', [])
+            if row in rows_list:
+                rows_list.remove(row)
+
+        print(f"[TR级别行合并] 成功合并 {merge_count} 个行，跳过 {skipped_count} 个")
+        print(f"[TR级别行合并] 删除了 {len(rows_to_delete)} 个行")
+
+        return tables
+
+    def _merge_two_rows(self, prev_row: dict, next_row: dict):
+        """
+        合并两行的内容（单元格级别拼接）
+
+        Args:
+            prev_row: 上页最后一行
+            next_row: 下页第一行
+        """
+        prev_cells = prev_row.get('cells', [])
+        next_cells = next_row.get('cells', [])
+
+        # 按列对齐合并
+        for i in range(min(len(prev_cells), len(next_cells))):
+            prev_cell = prev_cells[i]
+            next_cell = next_cells[i]
+
+            # 拼接 content
+            prev_content = prev_cell.get('content', '').strip()
+            next_content = next_cell.get('content', '').strip()
+
+            if prev_content and next_content:
+                # 如果两者都有内容，拼接
+                merged_content = prev_content + next_content
+            elif next_content:
+                # 只有下页有内容
+                merged_content = next_content
+            else:
+                # 只有上页有内容或都为空
+                merged_content = prev_content
+
+            prev_cell['content'] = merged_content
+
+            # TODO: 处理 bbox 合并
+            # 目前保留上页的 bbox，后续需要计算合并后的完整 bbox
+            # 这需要考虑跨页的情况，可能需要记录多个 bbox 片段
 
 
 # 便捷函数
@@ -630,11 +1000,13 @@ def extract_pdf_tables(pdf_path: str, output_path: str = None) -> Dict[str, str]
 # 主测试函数
 def main():
     """
+
     主测试方法
     """
     # 从taskId构建路径
-    task_id = "国土空间规划实施监测网络建设项目"
-    base_dir = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目")
+    task_id = "鄂尔多斯市政府网站群集约化平台升级改造项目"
+    base_dir = Path(r""
+                    r"E:\programFile\AIProgram\docxServer\pdf\task\鄂尔多斯市政府网站群集约化平台升级改造项目")
     pdf_path = base_dir / f"{task_id}.pdf"
 
     print(f"开始测试PDF内容提取...")

@@ -1,5 +1,5 @@
 """
-表格提取器123
+表格提取器
 专门负责PDF中表格的提取（包括嵌套表格）
 """
 from pathlib import Path
@@ -13,15 +13,13 @@ try:
     from .bbox_utils import rect, contains_with_tol
     from .header_analyzer import HeaderAnalyzer
     from .cell_span_detector import CellSpanDetector
-    from .crossPageTable.column_boundary_strategy import DEFAULT_STRATEGY
-    from .crossPageTable.reextraction_strategy import DEFAULT_REEXTRACTION_STRATEGY
+    from .footer_filter import FooterFilter, FooterConfig
 except ImportError:
     from nested_table_handler import NestedTableHandler
     from bbox_utils import rect, contains_with_tol
     from header_analyzer import HeaderAnalyzer
     from cell_span_detector import CellSpanDetector
-    from crossPageTable.column_boundary_strategy import DEFAULT_STRATEGY
-    from crossPageTable.reextraction_strategy import DEFAULT_REEXTRACTION_STRATEGY
+    from footer_filter import FooterFilter, FooterConfig
 
 
 def validate_and_fix_bbox(table_bbox: list, cells: List[Dict], page_height: float) -> list:
@@ -122,291 +120,9 @@ class TableExtractor:
         # 单元格跨列/跨行检测器
         self.span_detector = CellSpanDetector(tolerance=2.0)
 
-        # 列边界继承策略（默认：禁用）
-        self.column_inheritance_strategy = DEFAULT_STRATEGY
-        
-        # 重提取策略（默认：保守，缺口>10pt时重提取）
-        self.reextraction_strategy = DEFAULT_REEXTRACTION_STRATEGY
-
-        # 缓存每页的垂直线（用于完整列边界检测）
-        self._page_vertical_lines_cache = {}
-
-    # ==================== PyMuPDF + PDFPlumber 协同列边界检测 ====================
-
-    def _detect_full_vertical_lines_pymupdf(self, pymupdf_page, page_num: int) -> List[float]:
-        """
-        使用 PyMuPDF 的 get_drawings() 检测页面中的所有垂直线（过滤表格区域）
-
-        ## 核心逻辑
-
-        ### 1. 收集垂直线段
-        遍历 `get_drawings()` 返回的所有图形对象：
-        - **'l' 类型（线段）**：直接判断 |p1.x - p2.x| < 2
-        - **'re' 类型（矩形）**：判断 width < 2 且 height > 10
-          * PDF可能使用细矩形绘制线条
-          * 添加这个支持解决了部分垂直线检测失败的问题
-
-        ### 2. 按x坐标分组并计算总长度
-        ```python
-        v_lines_segments = {
-            33.6: [(100, 200), (300, 500)],  # 总长度 = 300pt
-            99.0: [(100, 800)],              # 总长度 = 700pt
-        }
-        ```
-
-        ### 3. 过滤条件：总长度 > 300pt
-        **设计思路**：
-        - 表格的列边界通常贯穿整个表格高度（几百pt）
-        - 装饰性短线通常 < 100pt
-        - 300pt 阈值可以有效过滤装饰线，保留列边界
-
-        **已知问题**：
-        ⚠️ 对于有子列的表格（如页面5），会检测到所有子列的垂直线
-        - 页面5：检测到8条线（7列），包含子列
-        - 页面6-8：检测到6条线（5列），仅主列
-        
-        **可能的改进方向**：
-        1. 根据线段的连续性判断（是否跨越多行）
-        2. 根据线段与其他线的交点数量判断（主列 vs 子列）
-        3. 提高阈值到 500pt（更保守，但可能漏检短表格）
-
-        ### 4. 缓存机制
-        使用 `_page_vertical_lines_cache` 避免重复检测
-
-        ## 改进历史
-
-        **2025-10-30**：
-        - 添加矩形('re')类型支持
-        - 简化过滤逻辑：从复杂多条件 → 单一总长度阈值
-        - 解决页面6左侧列缺失问题
-
-        Args:
-            pymupdf_page: PyMuPDF 页面对象
-            page_num: 页码（用于缓存和日志）
-
-        Returns:
-            排序后的垂直线x坐标列表（总长度>300pt的线）
-            
-        Example:
-            >>> lines = self._detect_full_vertical_lines_pymupdf(page, 5)
-            >>> print(lines)
-            [33.6, 86.4, 99.0, 231.1, 297.7, 429.1, 495.1, 561.1]
-            # 8条线 = 7列（页面5有子列）
-        """
-        # 检查缓存
-        if page_num in self._page_vertical_lines_cache:
-            return self._page_vertical_lines_cache[page_num]
-
-        # 收集垂直线段信息：{x: [(y0, y1), ...]}
-        v_lines_segments = {}
-
-        try:
-            # 获取所有绘图对象
-            drawings = pymupdf_page.get_drawings()
-
-            for drawing in drawings:
-                for item in drawing['items']:
-                    # 'l' 表示线段
-                    if item[0] == 'l':
-                        p1, p2 = item[1], item[2]
-
-                        # 判断是否为垂直线（允许2个单位的误差）
-                        if abs(p1.x - p2.x) < 2:
-                            x = round(p1.x, 1)  # 四舍五入到0.1
-                            y0, y1 = min(p1.y, p2.y), max(p1.y, p2.y)
-
-                            if x not in v_lines_segments:
-                                v_lines_segments[x] = []
-                            v_lines_segments[x].append((y0, y1))
-
-                    # 're' 表示矩形（PDF可能使用细矩形绘制线条）
-                    elif item[0] == 're':
-                        rect = item[1]  # fitz.Rect对象
-
-                        # 判断是否为垂直线（宽度很小的细矩形）
-                        width = abs(rect.x1 - rect.x0)
-                        height = abs(rect.y1 - rect.y0)
-
-                        # 如果宽度 < 2pt 且高度 > 10pt，认为是垂直线
-                        if width < 2 and height > 10:
-                            x = round((rect.x0 + rect.x1) / 2, 1)  # 取中点
-                            y0, y1 = min(rect.y0, rect.y1), max(rect.y0, rect.y1)
-
-                            if x not in v_lines_segments:
-                                v_lines_segments[x] = []
-                            v_lines_segments[x].append((y0, y1))
-
-            # 过滤：只保留总长度 > 300pt 的垂直线（表格相关的长线）
-            # 这样可以过滤掉短装饰线条，同时保留有效的列边界
-            table_v_lines = []
-
-            for x, segments in v_lines_segments.items():
-                # 计算总长度
-                total_length = sum(y1 - y0 for y0, y1 in segments)
-
-                # 保留条件：总长度 > 300pt
-                # 这个阈值可以过滤掉大部分非表格线条，同时保留所有有效的列边界
-                if total_length > 300:
-                    table_v_lines.append(x)
-
-            # 排序并缓存
-            result = sorted(table_v_lines)
-            self._page_vertical_lines_cache[page_num] = result
-
-            if result:
-                print(f"  [PyMuPDF列检测] 页{page_num+1}: 检测到 {len(result)} 条表格垂直线")
-                print(f"    前10条: {[f'{x:.1f}' for x in result[:10]]}")
-
-            return result
-
-        except Exception as e:
-            print(f"  [PyMuPDF列检测] 页{page_num+1}: 检测失败: {e}")
-            return []
-
-    def _detect_full_horizontal_lines_pymupdf(self, pymupdf_page, page_num: int) -> List[float]:
-        """
-        使用 PyMuPDF 的 get_drawings() 检测页面中的所有水平线（过滤表格区域）
-
-        ## 核心逻辑
-
-        与垂直线检测类似，但判断条件相反：
-        - **'l' 类型**：|p1.y - p2.y| < 2（水平线）
-        - **'re' 类型**：height < 2 且 width > 10（水平细矩形）
-        
-        **过滤条件**：总长度 > 200pt
-        - 比垂直线阈值低（300pt），因为单行可能较短
-        - 例如：表格最后一行可能只有200pt宽
-
-        ## 用途
-
-        配合垂直线使用 **S1策略（explicit V+H）** 强制形成完整网格：
-        ```python
-        # 页面6重提取示例
-        vertical_lines = [33.6, 99.0, 231.1, 429.1, 495.1, 561.1]  # 6条
-        horizontal_lines = [394.3, 548.5]  # 2条
-        
-        # pdfplumber会在交点处形成单元格网格
-        # 网格 = (6-1) x (2-1) = 5列 x 1行
-        ```
-
-        ## 成功案例
-
-        **页面6-8左侧列修复**：
-        - 原始pdfplumber检测：bbox从99.0开始（缺失左侧列）
-        - PyMuPDF检测：发现完整的6条垂直线 + 2-4条水平线
-        - S1策略重提取：成功从33.6开始（完整5列）
-
-        Args:
-            pymupdf_page: PyMuPDF 页面对象
-            page_num: 页码（用于日志）
-
-        Returns:
-            排序后的水平线y坐标列表（总长度>200pt的线）
-            
-        Example:
-            >>> h_lines = self._detect_full_horizontal_lines_pymupdf(page, 6)
-            >>> print(h_lines)
-            [28.8, 394.3, 548.5, 702.8]
-            # 4条线，crop后使用[394.3, 548.5]（2条）
-        """
-        # 收集水平线段信息：{y: [(x0, x1), ...]}
-        h_lines_segments = {}
-
-        try:
-            # 获取所有绘图对象
-            drawings = pymupdf_page.get_drawings()
-
-            for drawing in drawings:
-                for item in drawing['items']:
-                    # 'l' 表示线段
-                    if item[0] == 'l':
-                        p1, p2 = item[1], item[2]
-
-                        # 判断是否为水平线（允许2个单位的误差）
-                        if abs(p1.y - p2.y) < 2:
-                            y = round(p1.y, 1)  # 四舍五入到0.1
-                            x0, x1 = min(p1.x, p2.x), max(p1.x, p2.x)
-
-                            if y not in h_lines_segments:
-                                h_lines_segments[y] = []
-                            h_lines_segments[y].append((x0, x1))
-
-                    # 're' 表示矩形（PDF可能使用细矩形绘制线条）
-                    elif item[0] == 're':
-                        rect = item[1]  # fitz.Rect对象
-
-                        # 判断是否为水平线（高度很小的细矩形）
-                        width = abs(rect.x1 - rect.x0)
-                        height = abs(rect.y1 - rect.y0)
-
-                        # 如果高度 < 2pt 且宽度 > 10pt，认为是水平线
-                        if height < 2 and width > 10:
-                            y = round((rect.y0 + rect.y1) / 2, 1)  # 取中点
-                            x0, x1 = min(rect.x0, rect.x1), max(rect.x0, rect.x1)
-
-                            if y not in h_lines_segments:
-                                h_lines_segments[y] = []
-                            h_lines_segments[y].append((x0, x1))
-
-            # 过滤：只保留总长度 > 200pt 的水平线（表格相关的长线）
-            # 水平线阈值比垂直线低,因为单行可能较短
-            table_h_lines = []
-
-            for y, segments in h_lines_segments.items():
-                # 计算总长度
-                total_length = sum(x1 - x0 for x0, x1 in segments)
-
-                # 保留条件：总长度 > 200pt
-                if total_length > 200:
-                    table_h_lines.append(y)
-
-            # 排序
-            result = sorted(table_h_lines)
-
-            if result:
-                print(f"  [PyMuPDF行检测] 页{page_num+1}: 检测到 {len(result)} 条表格水平线")
-                print(f"    前10条: {[f'{y:.1f}' for y in result[:10]]}")
-
-            return result
-
-        except Exception as e:
-            print(f"  [PyMuPDF行检测] 页{page_num+1}: 检测失败: {e}")
-            return []
-
-    def _merge_vertical_lines_with_prev_table(
-        self,
-        pymupdf_v_lines: List[float],
-        prev_table_v_lines: List[float],
-        tolerance: float = 5.0
-    ) -> List[float]:
-        """
-        合并当前页的垂直线和前一页表格的列边界
-
-        如果当前页缺失某些列边界（如左侧第一列），从前一页补充
-
-        Args:
-            pymupdf_v_lines: 当前页 PyMuPDF 检测的垂直线
-            prev_table_v_lines: 前一页表格的列边界
-            tolerance: 判断两条线是否为同一条的容差
-
-        Returns:
-            合并后的垂直线列表
-        """
-        if not prev_table_v_lines:
-            return pymupdf_v_lines
-
-        # 找出前一页有但当前页缺失的列边界
-        missing_lines = []
-        for prev_x in prev_table_v_lines:
-            # 检查是否在当前页的垂直线中存在
-            found = any(abs(prev_x - curr_x) < tolerance for curr_x in pymupdf_v_lines)
-            if not found:
-                missing_lines.append(prev_x)
-                print(f"    [列边界补充] 从前页补充缺失的列边界: x={prev_x:.1f}")
-
-        # 合并并排序
-        all_lines = sorted(list(set(pymupdf_v_lines + missing_lines)))
-        return all_lines
+        # 页脚/页码过滤器
+        # TODO: 页脚安全区固定30pt，后续需支持动态检测（FooterConfig mode="auto"）
+        self.footer_filter = FooterFilter(FooterConfig(mode="fixed", fixed_points=30.0))
 
     # ==================== TEXT-FALLBACK 辅助方法 ====================
 
@@ -533,113 +249,21 @@ class TableExtractor:
         - pdfplumber: 识别表格结构和单元格位置
         - PyMuPDF: 从单元格坐标提取文本内容（避免字符重复）
 
-        ## 核心流程
-
-        ### 1. 列边界检测（每页独立）
-        - 使用 PyMuPDF.get_drawings() 检测页面中的垂直线
-        - 过滤条件：总长度 > 300pt 的垂直线（过滤装饰线）
-        - 支持线段('l')和矩形('re')两种类型
-
-        ### 2. 列边界继承策略（2025-10-30 重构）
-        **当前策略**: DisabledInheritanceStrategy（完全不继承前页列边界）
-        
-        **背景问题**：
-        - 之前的逻辑：无条件继承前页列边界
-        - 导致问题：页面5的10条线（9列）被继承到页面6-8，但实际只需6条线（5列）
-        - 解决方案：提取为策略模式，默认禁用继承
-
-        **策略模式设计**：
-        - 位置：`crossPageTable/column_boundary_strategy.py`
-        - 可选策略：
-          * DisabledInheritanceStrategy（当前）：完全不继承
-          * ConservativeInheritanceStrategy：只继承列数相似的页面
-          * SmartInheritanceStrategy（待扩展）：基于bbox/内容智能判断
-        
-        **已知问题**：
-        ⚠️ 禁用继承后，页面6-8列数正确（5列），但可能影响真正需要跨页表格的场景
-
-        ### 3. 左侧列缺失检测与重提取（crop + explicit lines）
-        **触发条件**：
-        - detected_left（PyMuPDF检测的最左边界）< table_left（pdfplumber检测的最左边界）
-        - 缺口 > 10pt
-
-        **重提取策略**（三级fallback）：
-        - S1（优先）：explicit vertical lines + explicit horizontal lines（完整网格）
-        - S2（次选）：explicit vertical lines + 最小2条水平线（上下边界）
-        - S3（保底）：explicit vertical lines + text horizontal strategy
-
-        **成功案例**：
-        - 页面6-8：检测到左侧缺失65.4pt，S1策略成功修复
-        - 修复前：bbox从99.0开始（缺失左侧列）
-        - 修复后：bbox从33.6开始（完整5列）
-
-        ### 4. 诊断元数据
-        重提取成功的表格会附加 `_diagnostic` 字段到raw.json：
-        ```json
-        {
-          "reextraction_applied": true,
-          "strategy_used": "S1 (explicit V+H)",
-          "original_bbox": [99.0, 28.8, 561.1, 702.8],
-          "new_bbox": [33.6, 394.3, 561.1, 548.5],
-          "detected_v_lines_range": [33.6, 561.1],
-          "detected_v_lines_count": 6,
-          "detected_h_lines_count": 2,
-          "left_gap_fixed": 65.4
-        }
-        ```
-
-        ## 当前验证结果（2025-10-30）
-
-        ### 测试文件：国土空间规划实施监测网络建设项目.pdf
-        
-        **页面5**：
-        - 检测到8条垂直线（7列）
-        - 原因：页面5本身有子列结构
-        
-        **页面6-8**（关闭继承后）：
-        - 检测到6条垂直线（5列）✓
-        - 不再继承页面5的额外列
-        - S1策略成功修复左侧列缺失
-        - 行数正常：页6=1行，页7=3行，页8=2行
-
-        ## 待讨论问题
-
-        1. **列数不一致**：
-           - 页面5：7列（有子列）
-           - 页面6-8：5列（主列）
-           - 是否需要跨页合并？还是应该各自独立？
-
-        2. **列继承策略选择**：
-           - 当前：完全禁用继承（保守）
-           - 是否需要ConservativeInheritanceStrategy（只继承列数相似的）？
-           - 何时需要继承？判断条件是什么？
-
-        3. **表头识别**：
-           - 延迟表头识别（detect_header=False）配合跨页合并
-           - 合并后统一识别表头
-           - 是否存在表头被误识别为数据行的情况？
-
         Args:
             detect_header: 是否检测表头（默认True）。
                           False时使用延迟表头识别模式，适用于跨页合并场景。
 
         Returns:
-            提取的表格列表，每个表格包含：
-            - columns: 列定义
-            - rows: 数据行
-            - bbox: 表格边界框
-            - _diagnostic (可选): 重提取诊断信息
+            提取的表格列表
         """
+        import uuid
+
         tables_data = []
 
         # 打开PyMuPDF文档
         doc_pymupdf = fitz.open(self.pdf_path)
 
         print(f"\n[表格提取] 开始提取PDF: {self.pdf_path.name}")
-
-        # 用于跨页表格的列边界传递
-        prev_page_vertical_lines = None
-        prev_page_table_x_coords = None  # 上一页表格的实际列边界
 
         with pdfplumber.open(self.pdf_path) as pdf:
             print(f"[表格提取] PDF总页数: {len(pdf.pages)}")
@@ -648,253 +272,26 @@ class TableExtractor:
                 # 获取PyMuPDF的对应页面
                 pymupdf_page = doc_pymupdf[page_num - 1]
 
-                # 使用PyMuPDF检测完整的垂直线边界
-                pymupdf_v_lines = self._detect_full_vertical_lines_pymupdf(pymupdf_page, page_num - 1)
-
-                # 使用列边界继承策略决定是否继承前页列边界
-                # 默认策略：DisabledInheritanceStrategy（完全不继承）
-                prev_lines = prev_page_vertical_lines or prev_page_table_x_coords
-                
-                if self.column_inheritance_strategy.should_inherit(
-                    current_page_lines=pymupdf_v_lines,
-                    prev_page_lines=prev_lines,
-                    context={'page_num': page_num}
-                ):
-                    merged_v_lines = self.column_inheritance_strategy.merge_lines(
-                        current_page_lines=pymupdf_v_lines,
-                        prev_page_lines=prev_lines,
-                        context={'page_num': page_num}
-                    )
-                    print(f"    [列继承策略] 应用策略: {type(self.column_inheritance_strategy).__name__}")
-                else:
-                    merged_v_lines = pymupdf_v_lines
-                    print(f"    [列继承策略] 不继承前页列边界 (策略: {type(self.column_inheritance_strategy).__name__})")
-
-                # 使用pdfplumber找到表格
+                # 使用pdfplumber找到表格（只使用lines策略，不回退到text）
                 table_settings = {
+                    "vertical_strategy": "lines",
                     "horizontal_strategy": "lines",
                     "intersection_x_tolerance": 3,
                     "intersection_y_tolerance": 3
                 }
-
-                # 如果检测到垂直线，使用explicit策略；否则使用lines策略
-                if merged_v_lines and len(merged_v_lines) >= 2:
-                    table_settings["vertical_strategy"] = "explicit"
-                    table_settings["explicit_vertical_lines"] = merged_v_lines
-                    print(f"  [列边界检测] 使用PyMuPDF检测到 {len(merged_v_lines)} 条垂直线")
-                else:
-                    table_settings["vertical_strategy"] = "lines"
-                    print(f"  [列边界检测] 未检测到垂直线，使用lines策略")
-
                 tables = page.find_tables(table_settings=table_settings)
 
                 print(f"\n[表格提取] 页码 {page_num}: 检测到 {len(tables)} 个表格")
-
-                # 记录当前页的列边界，用于下一页
-                if merged_v_lines:
-                    prev_page_vertical_lines = merged_v_lines
 
                 # 不再回退到默认策略（text不准确）
                 # if not tables:
                 #     tables = page.find_tables()
 
-                # ===== 新增：table_regions 重提取逻辑 =====
-                # 检测pdfplumber是否遗漏了左侧或右侧的列（通过对比检测到的垂直线和表格bbox）
-                # 如果发现缺失，使用 table_regions 参数强制在完整区域内重新提取
-                tables_list = list(tables)  # 转换为列表以便替换
-
-                for table_idx, table in enumerate(tables_list):
-                    need_region_reextract = False
-                    table_region = None
-
-                    if merged_v_lines and len(merged_v_lines) >= 2:
-                        # 获取检测到的垂直线范围
-                        detected_left = min(merged_v_lines)
-                        detected_right = max(merged_v_lines)
-
-                        # 获取pdfplumber检测到的表格范围
-                        table_left = table.bbox[0]
-                        table_right = table.bbox[2]
-
-                        # 使用重提取策略判断是否需要重提取
-                        need_region_reextract = self.reextraction_strategy.should_reextract(
-                            detected_left=detected_left,
-                            detected_right=detected_right,
-                            table_left=table_left,
-                            table_right=table_right,
-                            context={
-                                'page_num': page_num,
-                                'table_idx': table_idx
-                            }
-                        )
-                        
-                        if need_region_reextract:
-                            # 计算缺口信息（用于日志）
-                            left_gap = table_left - detected_left
-                            right_gap = detected_right - table_right
-                            
-                            if left_gap > 10:
-                                print(f"  [表格 {table_idx + 1}] [列边界诊断] 检测到左侧缺失: detected_left={detected_left:.1f}, table_left={table_left:.1f}, gap={left_gap:.1f}pt")
-                            if right_gap > 10:
-                                print(f"  [表格 {table_idx + 1}] [列边界诊断] 检测到右侧缺失: detected_right={detected_right:.1f}, table_right={table_right:.1f}, gap={right_gap:.1f}pt")
-                            
-                            print(f"  [表格 {table_idx + 1}] [重提取策略] {type(self.reextraction_strategy).__name__} → 触发重提取")
-                        else:
-                            print(f"  [表格 {table_idx + 1}] [重提取策略] {type(self.reextraction_strategy).__name__} → 不重提取")
-
-                        # 如果需要重提取，使用显式垂直线 + 显式水平线策略（纯几何路线）
-                        if need_region_reextract:
-                            # 构建完整的表格区域（使用检测到的垂直线范围 + 表格的垂直范围）
-                            crop_region = (
-                                detected_left,       # 使用检测到的最左边界
-                                table.bbox[1],       # 保留表格的顶部边界
-                                detected_right,      # 使用检测到的最右边界
-                                table.bbox[3]        # 保留表格的底部边界
-                            )
-
-                            print(f"  [表格 {table_idx + 1}] [显式行列重提取] 使用区域: [{crop_region[0]:.1f}, {crop_region[1]:.1f}, {crop_region[2]:.1f}, {crop_region[3]:.1f}]")
-
-                            # 检测水平线（在crop区域内）
-                            pymupdf_h_lines = self._detect_full_horizontal_lines_pymupdf(pymupdf_page, page_num - 1)
-
-                            # 过滤：只保留在crop区域内的水平线
-                            crop_h_lines = [y for y in pymupdf_h_lines if crop_region[1] <= y <= crop_region[3]]
-
-                            print(f"  [表格 {table_idx + 1}] [水平线检测] 区域内检测到 {len(crop_h_lines)} 条水平线")
-                            if crop_h_lines:
-                                print(f"    水平线y坐标: {[f'{y:.1f}' for y in crop_h_lines[:10]]}")
-
-                            # 获取启用的fallback策略列表
-                            enabled_strategies = self.reextraction_strategy.get_fallback_strategies()
-                            
-                            # 策略S1：显式垂直线 + 显式水平线（完整网格）
-                            reextracted_table = None
-                            strategy_used = None
-
-                            if 'S1' in enabled_strategies and len(crop_h_lines) >= 2:
-                                # S1: 完整网格策略
-                                print(f"  [表格 {table_idx + 1}] [策略S1] 尝试：显式垂直线 ({len(merged_v_lines)}条) + 显式水平线 ({len(crop_h_lines)}条)")
-
-                                try:
-                                    cropped_page = page.crop(crop_region)
-                                    reextracted_tables = cropped_page.find_tables(table_settings={
-                                        'vertical_strategy': 'explicit',
-                                        'explicit_vertical_lines': merged_v_lines,
-                                        'horizontal_strategy': 'explicit',
-                                        'explicit_horizontal_lines': crop_h_lines,
-                                        'intersection_x_tolerance': 3,
-                                        'intersection_y_tolerance': 3
-                                    })
-
-                                    if reextracted_tables and len(reextracted_tables) > 0:
-                                        reextracted_table = reextracted_tables[0]
-                                        strategy_used = "S1 (explicit V+H)"
-                                        print(f"  [表格 {table_idx + 1}] [策略S1] 成功")
-                                    else:
-                                        print(f"  [表格 {table_idx + 1}] [策略S1] 未检测到表格")
-                                except Exception as e:
-                                    print(f"  [表格 {table_idx + 1}] [策略S1] 失败: {e}")
-
-                            # 策略S2：显式垂直线 + 最小2条水平线（上下边界）
-                            if 'S2' in enabled_strategies and not reextracted_table and len(crop_h_lines) >= 2:
-                                print(f"  [表格 {table_idx + 1}] [策略S2] 尝试：显式垂直线 + 最小水平线（上下边界）")
-
-                                # 只使用顶部和底部的水平线
-                                minimal_h_lines = [min(crop_h_lines), max(crop_h_lines)]
-                                print(f"    使用水平线: {[f'{y:.1f}' for y in minimal_h_lines]}")
-
-                                try:
-                                    cropped_page = page.crop(crop_region)
-                                    reextracted_tables = cropped_page.find_tables(table_settings={
-                                        'vertical_strategy': 'explicit',
-                                        'explicit_vertical_lines': merged_v_lines,
-                                        'horizontal_strategy': 'explicit',
-                                        'explicit_horizontal_lines': minimal_h_lines,
-                                        'intersection_x_tolerance': 3,
-                                        'intersection_y_tolerance': 3
-                                    })
-
-                                    if reextracted_tables and len(reextracted_tables) > 0:
-                                        reextracted_table = reextracted_tables[0]
-                                        strategy_used = "S2 (explicit V + minimal H)"
-                                        print(f"  [表格 {table_idx + 1}] [策略S2] 成功")
-                                    else:
-                                        print(f"  [表格 {table_idx + 1}] [策略S2] 未检测到表格")
-                                except Exception as e:
-                                    print(f"  [表格 {table_idx + 1}] [策略S2] 失败: {e}")
-
-                            # 策略S3：显式垂直线 + text水平策略
-                            if 'S3' in enabled_strategies and not reextracted_table:
-                                print(f"  [表格 {table_idx + 1}] [策略S3] 尝试：显式垂直线 + text水平策略")
-
-                                try:
-                                    cropped_page = page.crop(crop_region)
-                                    reextracted_tables = cropped_page.find_tables(table_settings={
-                                        'vertical_strategy': 'explicit',
-                                        'explicit_vertical_lines': merged_v_lines,
-                                        'horizontal_strategy': 'text',
-                                        'text_y_tolerance': 3,
-                                        'intersection_x_tolerance': 3,
-                                        'intersection_y_tolerance': 3
-                                    })
-
-                                    if reextracted_tables and len(reextracted_tables) > 0:
-                                        reextracted_table = reextracted_tables[0]
-                                        strategy_used = "S3 (explicit V + text H)"
-                                        print(f"  [表格 {table_idx + 1}] [策略S3] OK 成功")
-                                    else:
-                                        print(f"  [表格 {table_idx + 1}] [策略S3] ERROR 未检测到表格")
-                                except Exception as e:
-                                    print(f"  [表格 {table_idx + 1}] [策略S3] ERROR 失败: {e}")
-
-                            # 检查重提取结果
-                            if reextracted_table:
-                                new_bbox = list(reextracted_table.bbox)
-                                new_left = new_bbox[0]
-                                new_right = new_bbox[2]
-
-                                print(f"  [表格 {table_idx + 1}] [重提取结果] 策略: {strategy_used}")
-                                print(f"  [表格 {table_idx + 1}] [重提取结果] 新bbox: [{new_bbox[0]:.1f}, {new_bbox[1]:.1f}, {new_bbox[2]:.1f}, {new_bbox[3]:.1f}]")
-
-                                # 检查重提取是否改善了问题
-                                improved = False
-                                if left_gap > 10 and abs(new_left - detected_left) < 5:
-                                    print(f"  [表格 {table_idx + 1}] [重提取结果] OK 修复了左侧缺失 (new_left={new_left:.1f})")
-                                    improved = True
-                                if right_gap > 10 and abs(new_right - detected_right) < 5:
-                                    print(f"  [表格 {table_idx + 1}] [重提取结果] OK 修复了右侧缺失 (new_right={new_right:.1f})")
-                                    improved = True
-
-                                if improved:
-                                    # 准备诊断元数据（稍后传递给 _build_structured_table）
-                                    diagnostic_info = {
-                                        'reextraction_applied': True,
-                                        'strategy_used': strategy_used,
-                                        'original_bbox': list(table.bbox),
-                                        'new_bbox': new_bbox,
-                                        'detected_v_lines_range': [detected_left, detected_right],
-                                        'detected_v_lines_count': len(merged_v_lines),
-                                        'detected_h_lines_count': len(crop_h_lines),
-                                        'left_gap_fixed': left_gap if left_gap > 10 else 0,
-                                        'right_gap_fixed': right_gap if right_gap > 10 else 0
-                                    }
-
-                                    # 将诊断信息附加到表格对象（使用自定义属性）
-                                    reextracted_table._diagnostic = diagnostic_info
-
-                                    # 替换原表格
-                                    tables_list[table_idx] = reextracted_table
-                                    print(f"  [表格 {table_idx + 1}] [重提取结果] OK 采用重提取结果")
-                                else:
-                                    print(f"  [表格 {table_idx + 1}] [重提取结果] ERROR 未改善，保留原结果")
-                            else:
-                                print(f"  [表格 {table_idx + 1}] [重提取结果] ERROR 所有策略均失败，保留原结果")
-
-                # 使用可能已更新的表格列表
-                tables = tables_list
-                # ===== table_regions 重提取逻辑结束 =====
-
                 for table_idx, table in enumerate(tables):
+                    # 生成表格元数据
+                    table_count_in_page = table_idx + 1  # 该页的第几个表格（1-indexed）
+                    table_uuid = str(uuid.uuid4())  # 唯一标识符
+
                     print(f"  [表格 {table_idx + 1}] bbox: {table.bbox}")
 
                     # 先用pdfplumber提取表格结构（用于获取行列结构）
@@ -964,13 +361,10 @@ class TableExtractor:
                             table_bbox=list(table.bbox),
                             nested_map=nested_map,
                             pymupdf_page=pymupdf_page,
-                            detect_header=detect_header
+                            detect_header=detect_header,
+                            table_uuid=table_uuid,
+                            table_count_in_page=table_count_in_page
                         )
-
-                        # 如果table对象有诊断信息（来自crop reextraction），添加到structured_table
-                        if hasattr(table, '_diagnostic'):
-                            structured_table['_diagnostic'] = table._diagnostic
-                            print(f"  [表格 {table_idx + 1}] [诊断信息] 已添加到structured_table")
 
                         # [TEXT-FALLBACK] 触发条件：左侧缺口很大 或 列索引不从0开始 或 bbox异常偏右
                         try:
@@ -1019,11 +413,6 @@ class TableExtractor:
 
                         tables_data.append(structured_table)
                         print(f"  [表格 {table_idx + 1}] [OK] 成功添加到结果列表")
-
-                        # 记录当前表格的列边界（x_coords），用于下一页
-                        if x_coords:
-                            prev_page_table_x_coords = x_coords
-                            print(f"    [列边界记录] 保存当前表格的 {len(x_coords)} 条列边界用于下一页")
                     else:
                         print(f"  [表格 {table_idx + 1}] 跳过: table_data为空")
 
@@ -1083,9 +472,7 @@ class TableExtractor:
                 table_settings = {
                     "vertical_strategy": "explicit",
                     "explicit_vertical_lines": col_xs,
-                    "horizontal_strategy": "lines",  # 使用lines而非lines_strict，更宽松
-                    "intersection_x_tolerance": 3,
-                    "intersection_y_tolerance": 3
+                    "horizontal_strategy": "lines_strict",  # 或 "text"
                 }
 
                 print(f"  使用设置: {table_settings}")
@@ -1189,7 +576,7 @@ class TableExtractor:
 
     def extract_cell_text(self, pymupdf_page, bbox: tuple, debug: bool = False) -> str:
         """
-        使用PyMuPDF从指定边界框提取文本
+        使用PyMuPDF从指定边界框提取文本（带页脚过滤）
 
         Args:
             pymupdf_page: PyMuPDF的page对象
@@ -1197,21 +584,16 @@ class TableExtractor:
             debug: 是否输出调试信息
 
         Returns:
-            提取的文本内容（已移除换行符）
+            提取的文本内容（已移除换行符和页码）
         """
-        rect_obj = fitz.Rect(bbox)
-        text = pymupdf_page.get_text("text", clip=rect_obj)
+        # 使用 FooterFilter 提取文本（自动避开页脚区域和页码）
+        text = self.footer_filter.extract_cell_text_safe(
+            fitz_page=pymupdf_page,
+            cell_bbox=bbox,
+            debug=debug
+        )
 
-        if debug:
-            print(f"\n[DEBUG] PyMuPDF提取:")
-            print(f"  Bbox: {bbox}")
-            print(f"  原始文本长度: {len(text)}")
-            print(f"  文本预览: {repr(text[:100])}")
-
-        # 移除所有换行符
-        text = text.replace('\n', '').replace('\r', '')
-
-        return text.strip()
+        return text
 
     def get_table_bboxes_per_page(self) -> Dict[int, List[tuple]]:
         """
@@ -1300,7 +682,9 @@ class TableExtractor:
         pymupdf_page = None,
         hint_col_levels: int = None,
         hint_row_levels: int = None,
-        detect_header: bool = True
+        detect_header: bool = True,
+        table_uuid: str = None,
+        table_count_in_page: int = None
     ) -> Dict[str, Any]:
         """
         构建结构化表格数据（支持多层表头 + 延迟表头识别）
@@ -1421,7 +805,9 @@ class TableExtractor:
                 page_num=page_num,
                 table_bbox=table_bbox,
                 nested_map=nested_map,
-                pymupdf_page=pymupdf_page
+                pymupdf_page=pymupdf_page,
+                table_uuid=table_uuid,
+                table_count_in_page=table_count_in_page
             )
 
         # ===== 立即表头识别模式（原逻辑）=====
@@ -1443,10 +829,15 @@ class TableExtractor:
                 hint_row_levels=hint_row_levels
             )
 
-            # 调试：打印表头分析结果（已禁用，避免编码问题）
-            # if header_model:
-            #     print(f"\n[DEBUG] 表头分析结果 - 页码 {page_num}")
-            #     print(f"  col_levels: {header_model.col_levels}, row_levels: {header_model.row_levels}")
+            # 调试：打印表头分析结果
+            if header_model:
+                print(f"\n[DEBUG] 表头分析结果 - 页码 {page_num}")
+                print(f"  col_levels: {header_model.col_levels}, row_levels: {header_model.row_levels}")
+                print(f"  table_data 前3行前3列:")
+                for i in range(min(3, len(table_data))):
+                    print(f"    行{i}: {table_data[i][:3] if len(table_data[i]) >= 3 else table_data[i]}")
+                print(f"  row_paths (前5个): {header_model.row_paths[:5]}")
+                print(f"  col_paths (前3个): {header_model.col_paths[:3]}")
         except Exception as e:
             print(f"[INFO] 表头分析失败，使用单层表头: {e}")
             import traceback
@@ -1478,7 +869,9 @@ class TableExtractor:
                 cells_bbox_orig=cells_bbox,  # 传递原始pdfplumber cells用于bbox修正
                 col_x_edges=col_x_edges,  # 列边界坐标
                 row_y_edges=row_y_edges,  # 行边界坐标
-                cell_spans=cell_spans  # 单元格跨度信息
+                cell_spans=cell_spans,  # 单元格跨度信息
+                table_uuid=table_uuid,
+                table_count_in_page=table_count_in_page
             )
 
             # 检查是否存在列缺失问题（columns为空 或 first_col_index > 0）
@@ -1537,7 +930,9 @@ class TableExtractor:
         cells_bbox_orig: list = None,
         col_x_edges: List[float] = None,
         row_y_edges: List[float] = None,
-        cell_spans: List[List[Dict]] = None
+        cell_spans: List[List[Dict]] = None,
+        table_uuid: str = None,
+        table_count_in_page: int = None
     ) -> Dict[str, Any]:
         """
         使用多层表头模型构建表格
@@ -1648,6 +1043,7 @@ class TableExtractor:
 
             rows.append({
                 "id": row_id,
+                "raw_row_id": row_id,  # 原始行ID（用于AI匹配）
                 "rowPath": row_path,  # 多层行路径
                 "cells": cells
             })
@@ -1669,6 +1065,7 @@ class TableExtractor:
             "parent_table_id": None,
             "page": page_num,
             "bbox": validated_bbox,
+            "raw_bbox": table_bbox,  # 保留PDFPlumber原始bbox（用于调试）
             "columns": columns,
             "rows": rows,
             "header_info": {
@@ -1685,6 +1082,12 @@ class TableExtractor:
         if row_y_edges:
             result['row_y_edges'] = [round(y, 2) for y in row_y_edges]
 
+        # 添加元数据字段（如果提供）
+        if table_uuid is not None:
+            result["raw_uuid"] = table_uuid
+        if table_count_in_page is not None:
+            result["tableCountInPage"] = table_count_in_page
+
         return result
 
     def _build_table_with_single_level_headers(
@@ -1695,7 +1098,9 @@ class TableExtractor:
         table_bbox: list,
         nested_map: Dict[tuple, List[Dict]],
         page_height: float,
-        cells_bbox_orig: list = None
+        cells_bbox_orig: list = None,
+        table_uuid: str = None,
+        table_count_in_page: int = None
     ) -> Dict[str, Any]:
         """
         使用单层表头构建表格（回退逻辑）
@@ -1763,6 +1168,7 @@ class TableExtractor:
 
             rows.append({
                 "id": row_id,
+                "raw_row_id": row_id,  # 原始行ID（用于AI匹配）
                 "rowPath": [row_first_cell] if row_first_cell else [],
                 "cells": cells
             })
@@ -1778,12 +1184,13 @@ class TableExtractor:
 
         validated_bbox = validate_and_fix_bbox(table_bbox, cells_for_validation, page_height)
 
-        return {
+        result = {
             "type": "table",
             "level": 1,
             "parent_table_id": None,
             "page": page_num,
             "bbox": validated_bbox,
+            "raw_bbox": table_bbox,  # 保留PDFPlumber原始bbox（用于调试）
             "columns": columns,
             "rows": rows,
             "header_info": {
@@ -1794,6 +1201,14 @@ class TableExtractor:
             "method": "hybrid (pdfplumber cells + pymupdf text)"
         }
 
+        # 添加元数据字段（如果提供）
+        if table_uuid is not None:
+            result["raw_uuid"] = table_uuid
+        if table_count_in_page is not None:
+            result["tableCountInPage"] = table_count_in_page
+
+        return result
+
     def _build_table_without_header_detection(
         self,
         table_data: List[List[str]],
@@ -1801,7 +1216,9 @@ class TableExtractor:
         page_num: int,
         table_bbox: list,
         nested_map: Dict[tuple, List[Dict]],
-        pymupdf_page = None
+        pymupdf_page = None,
+        table_uuid: str = None,
+        table_count_in_page: int = None
     ) -> Dict[str, Any]:
         """
         延迟表头识别模式：构建表格但不进行表头分析
@@ -1873,6 +1290,7 @@ class TableExtractor:
 
             rows.append({
                 "id": row_id,
+                "raw_row_id": row_id,  # 原始行ID（用于AI匹配）
                 "rowPath": [row_first_cell] if row_first_cell else [],
                 "cells": cells
             })
@@ -1885,12 +1303,13 @@ class TableExtractor:
 
         validated_bbox = validate_and_fix_bbox(table_bbox, cells_for_validation, page_height)
 
-        return {
+        result = {
             "type": "table",
             "level": 1,
             "parent_table_id": None,
             "page": page_num,
             "bbox": validated_bbox,
+            "raw_bbox": table_bbox,  # 保留PDFPlumber原始bbox（用于调试）
             "columns": columns,
             "rows": rows,
             "header_info": {
@@ -1901,6 +1320,14 @@ class TableExtractor:
             },
             "method": "no_header_detection (delayed)"
         }
+
+        # 添加元数据字段（如果提供）
+        if table_uuid is not None:
+            result["raw_uuid"] = table_uuid
+        if table_count_in_page is not None:
+            result["tableCountInPage"] = table_count_in_page
+
+        return result
 
     def _find_index(self, coord: float, coords_list: list) -> int:
         """
