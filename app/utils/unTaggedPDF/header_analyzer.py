@@ -191,8 +191,9 @@ class HeaderAnalyzer:
                     import fitz
                     rect_obj = fitz.Rect(bbox)
                     text = pymupdf_page.get_text("text", clip=rect_obj)
-                    # 移除换行符
-                    text = text.replace('\n', '').replace('\r', '').strip()
+                    # 注意：不在这里清理文本，保留原始 \n，延迟到 pdf_content_extractor 中清理
+                    # text = text.replace('\n', '').replace('\r', '').strip()
+                    text = text.strip()  # 只去掉首尾空格
                 except Exception:
                     # 失败时尝试从table_data兜底
                     if r0 < len(table_data) and c0 < len(table_data[r0]):
@@ -213,10 +214,11 @@ class HeaderAnalyzer:
                     print(f"    ⚠️ WARNING: rowspan={rowspan}, colspan={colspan} - 不会填充grid!")
 
             # 创建SpanCell
+            # 注意：不在这里清理文本，保留原始 \n，延迟到 pdf_content_extractor 中清理
             span_cell = SpanCell(
                 r0=r0, r1=r1, c0=c0, c1=c1,
                 rowspan=rowspan, colspan=colspan,
-                text=self._clean_text(text),
+                text=text,  # 保留原始文本，不调用 _clean_text()
                 bbox=bbox
             )
             span_cells.append(span_cell)

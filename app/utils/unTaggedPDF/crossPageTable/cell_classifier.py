@@ -29,8 +29,8 @@ class PromptTemplates:
 判断两行数据是否是"表格中同一行被分页截断"，只关注行内容本身的连续性。
 
 输入数据格式：
-- 上页最后一行：多个单元格的内容（key-value格式）
-- 下页第一行：多个单元格的内容（key-value格式）
+- 上页最后一行：多个单元格的内容（c0, c1, c2...表示列）
+- 下页第一行：多个单元格的内容（c0, c1, c2...表示列）
 
 输出格式要求：
 1. 必须使用 ```json 代码块包裹
@@ -40,12 +40,13 @@ class PromptTemplates:
 {
     "should_merge": true,
     "confidence": 0.95,
-    "reason": "第0列内容明显被截断，应该合并"
+    "reason": "c0列内容明显被截断，应该合并"
 }
 ```
 
 **重要**：必须使用 ```json 代码块格式，不要输出其他内容。
 """
+
 
 
 class CrossPageCellClassifier:
@@ -60,7 +61,7 @@ class CrossPageCellClassifier:
         max_tokens: int = 8192,  # 根据API示例调整
         top_p: float = 1.0,  # 新增参数
         repetition_penalty: float = 1.0,  # 新增参数
-        truncate_length: int = 50  # 字符截取长度（取最后/最前n个字符）
+        truncate_length: int = 50  # 已废弃，保留参数以保持向后兼容
     ):
         """
         初始化跨页单元格分类器
@@ -71,7 +72,7 @@ class CrossPageCellClassifier:
             api_key: API密钥
             temperature: 温度参数（0-1），越低越确定
             max_tokens: 生成文本的最大 token 数
-            truncate_length: 字符截取长度，用于行级别判断
+            truncate_length: 已废弃（现在固定取3行），保留参数以保持向后兼容
         """
         self.model_name = model_name
         self.base_url = base_url
@@ -116,13 +117,19 @@ class CrossPageCellClassifier:
             print(f"[CellClassifier] 警告: API 连接测试失败: {e}")
             print(f"[CellClassifier] 将在实际调用时验证连接")
 
-    def _truncate_text(self, text: str, from_end: bool = True) -> str:
+    def _truncate_text(self, text: str, from_end: bool = True, max_chars: int = 100) -> str:
         """
-        截取文本（取最后/最前 n 个字符）
+        截取文本（取最后/最前 3 行，且字符数上限为 100）
+
+        策略：
+        1. 优先按换行符分割（如果有 \n）
+        2. 取最多3行
+        3. 如果文本无换行符或结果超过 max_chars，按字符截断
 
         Args:
             text: 要截取的文本
-            from_end: True=取最后n个字符，False=取最前n个字符
+            from_end: True=取最后3行，False=取最前3行
+            max_chars: 字符数上限（默认100）
 
         Returns:
             截取后的文本
@@ -130,15 +137,36 @@ class CrossPageCellClassifier:
         if not text:
             return text
 
-        if len(text) <= self.truncate_length:
+        # 如果文本长度 <= max_chars，直接返回
+        if len(text) <= max_chars:
             return text
 
+        # 按换行符分割成行
+        lines = text.split('\n')
+
+        if len(lines) > 1:
+            # 有换行符，按行提取
+            if from_end:
+                # 取最后 3 行
+                extracted_lines = lines[-3:]
+                result = "...\n" + "\n".join(extracted_lines)
+            else:
+                # 取最前 3 行
+                extracted_lines = lines[:3]
+                result = "\n".join(extracted_lines) + "\n..."
+
+            # 检查是否超过字符上限
+            if len(result) <= max_chars:
+                return result
+            # 超过字符上限，fallback 到字符截断
+
+        # 无换行符或行提取结果超过上限，按字符截断
         if from_end:
-            # 取最后 n 个字符
-            return "..." + text[-self.truncate_length:]
+            # 取最后 max_chars 个字符
+            return "..." + text[-max_chars:]
         else:
-            # 取最前 n 个字符
-            return text[:self.truncate_length] + "..."
+            # 取最前 max_chars 个字符
+            return text[:max_chars] + "..."
 
     def _count_tokens(self, text: str) -> int:
         """
@@ -343,10 +371,10 @@ class CrossPageCellClassifier:
             retry_delay: 重试延迟（秒）
 
         Returns:
-            判断结果列表
+            判断结果列表（按 row_pairs 顺序）
         """
 
-        # 构建批量请求
+        # 构建批量请求（会为每个 pair 生成 UUID）
         user_content = self._build_batch_row_prompt(row_pairs)
 
         # 打印发送的数据
@@ -374,12 +402,12 @@ class CrossPageCellClassifier:
                         {"role": "user", "content": user_content}
                     ],
                     temperature=self.temperature,
-                    max_tokens=self.max_output_tokens,  # 使用固定输出token（8192）
+                    max_tokens=self.max_output_tokens,
                     top_p=self.top_p,
                     extra_body={
                         "repetition_penalty": self.repetition_penalty
                     },
-                    timeout=60.0  # 60秒超时
+                    timeout=60.0
                 )
 
                 result_text = response.choices[0].message.content.strip()
@@ -391,8 +419,8 @@ class CrossPageCellClassifier:
                 print(result_text)
                 print("="*80 + "\n")
 
-                # 解析批量结果
-                results = self._parse_batch_result(result_text, len(row_pairs))
+                # 解析批量结果（使用 pair_id 匹配）
+                results = self._parse_and_match_batch_result(result_text, row_pairs)
 
                 # 打印解析后的结果
                 print("\n" + "="*80)
@@ -428,36 +456,51 @@ class CrossPageCellClassifier:
         ]
 
     def _build_batch_row_prompt(self, row_pairs: List[Dict]) -> str:
-        """构建批量行对判断的提示词"""
+        """
+        构建批量行对判断的提示词
+
+        为每个行对生成一个 UUID，用于后续匹配结果
+        """
+        import uuid
+
         prompt = "请分析以下跨页表格的行对，判断每一对是否应该合并：\n\n"
 
+        # 为每个 pair 生成 UUID（如果还没有）
         for i, pair in enumerate(row_pairs):
-            prompt += f"## 行对 {i+1}\n\n"
+            if 'pair_uuid' not in pair:
+                pair['pair_uuid'] = str(uuid.uuid4())
 
-            # 上页最后一行（截取字符）
+            pair_uuid = pair['pair_uuid']
+            ctx = pair.get('context', {})
+
+            prompt += f"## 行对 {i+1} (ID: {pair_uuid})\n\n"
+
+            # 添加上下文信息（页码、hint信息等）
+            # prompt += f"**上下文信息**：\n"
+            # prompt += f"  - 跨页: 页{ctx.get('prev_page', '?')} → 页{ctx.get('next_page', '?')}\n"
+            # prompt += f"  - Hint评分: {ctx.get('hint_score', 0):.2f}\n"
+            # prompt += f"  - Hint期望列数: {ctx.get('hint_expected_cols', 0)}\n"
+            # if ctx.get('hint_source_page') and ctx.get('hint_source_table_id'):
+            #     prompt += f"  - Hint来源: 页{ctx.get('hint_source_page')}表{ctx.get('hint_source_table_id')}\n"
+            prompt += "\n"
+
+            # 上页最后一行（取最后3行）
             prompt += f"**上页最后一行**：\n"
             prev_row = pair.get('prev_row', {})
             for col, content in prev_row.items():
-                truncated = self._truncate_text(content, from_end=True)  # 取最后n个字符
-                prompt += f"  - {col}: {truncated}\n"
+                # 将"第X列"转换为"cX"
+                col_name = col.replace('第', 'c').replace('列', '') if '第' in col and '列' in col else col
+                truncated = self._truncate_text(content, from_end=True)  # 取最后3行
+                prompt += f"  - {col_name}: {truncated}\n"
 
-            # 下页第一行（截取字符）
+            # 下页第一行（取最前3行）
             prompt += f"\n**下页第一行**：\n"
             next_row = pair.get('next_row', {})
             for col, content in next_row.items():
-                truncated = self._truncate_text(content, from_end=False)  # 取最前n个字符
-                prompt += f"  - {col}: {truncated}\n"
-
-            # 上下文信息（包含匹配用的UUID和行ID）
-            if 'context' in pair:
-                ctx = pair['context']
-                prompt += f"\n**上下文信息**：\n"
-                prompt += f"  - 页码：{ctx.get('prev_page')} → {ctx.get('next_page')}\n"
-                prompt += f"  - Hint得分：{ctx.get('hint_score', 0):.2f}\n"
-                prompt += f"  - 上页表格UUID: {ctx.get('prev_table_uuid')}\n"
-                prompt += f"  - 下页表格UUID: {ctx.get('next_table_uuid')}\n"
-                prompt += f"  - 上页行ID: {ctx.get('prev_row_id')}\n"
-                prompt += f"  - 下页行ID: {ctx.get('next_row_id')}\n"
+                # 将"第X列"转换为"cX"
+                col_name = col.replace('第', 'c').replace('列', '') if '第' in col and '列' in col else col
+                truncated = self._truncate_text(content, from_end=False)  # 取最前3行
+                prompt += f"  - {col_name}: {truncated}\n"
 
             prompt += "\n" + "-" * 60 + "\n\n"
 
@@ -466,35 +509,29 @@ class CrossPageCellClassifier:
 
 **输出格式要求**：
 1. 必须使用 ```json 代码块包裹
-2. **必须在输出中包含 prev_table_uuid, next_table_uuid, prev_row_id, next_row_id 用于匹配**
+2. **必须在输出中包含 pair_id 字段（从标题中的 ID 复制）用于匹配**
 3. 格式如下：
 
 ```json
 [
     {
+        "pair_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
         "should_merge": true,
         "confidence": 0.95,
-        "reason": "...",
-        "prev_table_uuid": "xxx-xxx-xxx",
-        "next_table_uuid": "xxx-xxx-xxx",
-        "prev_row_id": "r007",
-        "next_row_id": "r001"
+        "reason": "..."
     },
     {
+        "pair_id": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
         "should_merge": false,
         "confidence": 0.90,
-        "reason": "...",
-        "prev_table_uuid": "xxx-xxx-xxx",
-        "next_table_uuid": "xxx-xxx-xxx",
-        "prev_row_id": "r008",
-        "next_row_id": "r001"
+        "reason": "..."
     }
 ]
 ```
 
 **重要**：
 1. 必须使用 ```json 代码块格式，不要输出其他内容
-2. 每个结果中必须包含 prev_table_uuid, next_table_uuid, prev_row_id, next_row_id（从上下文信息中复制）
+2. 每个结果中必须包含 pair_id（从 "行对 X (ID: ...)" 中复制 UUID）
 """
         return prompt
 
@@ -573,6 +610,63 @@ class CrossPageCellClassifier:
                 }
                 for _ in range(expected_count)
             ]
+
+    def _parse_and_match_batch_result(
+        self,
+        result_text: str,
+        row_pairs: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        解析AI返回的结果并根据 pair_id 匹配回原始顺序
+
+        Args:
+            result_text: AI返回的JSON文本
+            row_pairs: 原始行对列表（包含 pair_uuid）
+
+        Returns:
+            按 row_pairs 顺序排列的结果列表
+        """
+        # 1. 解析JSON
+        results_raw = self._parse_batch_result(result_text, len(row_pairs))
+
+        # 2. 构建 UUID 到 pair 索引的映射
+        uuid_to_index = {}
+        for i, pair in enumerate(row_pairs):
+            uuid_to_index[pair['pair_uuid']] = i
+
+        # 3. 根据 pair_id 匹配并排序
+        ordered_results = [None] * len(row_pairs)
+
+        for result in results_raw:
+            pair_id = result.get('pair_id')
+            if pair_id and pair_id in uuid_to_index:
+                idx = uuid_to_index[pair_id]
+                ordered_results[idx] = result
+            else:
+                # 如果没有 pair_id 或匹配失败，按顺序填充
+                for i, r in enumerate(ordered_results):
+                    if r is None:
+                        ordered_results[i] = result
+                        break
+
+        # 4. 填充缺失的结果
+        for i, result in enumerate(ordered_results):
+            if result is None:
+                ordered_results[i] = {
+                    "should_merge": False,
+                    "confidence": 0.0,
+                    "reason": "结果缺失或匹配失败"
+                }
+
+        # 5. 将上下文信息添加回结果（用于后续处理）
+        for i, result in enumerate(ordered_results):
+            ctx = row_pairs[i].get('context', {})
+            result['prev_table_uuid'] = ctx.get('prev_table_uuid')
+            result['next_table_uuid'] = ctx.get('next_table_uuid')
+            result['prev_row_id'] = ctx.get('prev_row_id')
+            result['next_row_id'] = ctx.get('next_row_id')
+
+        return ordered_results
 
 
 if __name__ == '__main__':
