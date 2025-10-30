@@ -260,13 +260,19 @@ class PDFContentExtractor:
             if row_pairs:
                 print(f"\n[AI判断] 检测到 {len(row_pairs)} 个跨页行对，正在批量判断...")
                 try:
+                    import time
+                    ai_start_time = time.time()
+
                     classifier = CrossPageCellClassifier(truncate_length=50)
                     ai_row_decisions = classifier.classify_row_pairs_batch(row_pairs)
 
-                    # 打印判断结果（包含表格位置信息）
+                    ai_elapsed = time.time() - ai_start_time
+
+                    # 打印判断结果（包含表格位置信息和耗时）
                     merge_count = sum(1 for d in ai_row_decisions if d.get('should_merge'))
                     no_merge_count = len(ai_row_decisions) - merge_count
                     print(f"[AI判断] 完成判断: {merge_count} 个应合并, {no_merge_count} 个不合并")
+                    print(f"[AI判断] 耗时: {ai_elapsed:.2f}秒 (平均 {ai_elapsed/len(row_pairs):.2f}秒/行对)")
 
                     for i, (decision, pair) in enumerate(zip(ai_row_decisions, row_pairs)):
                         should_merge = decision.get('should_merge')
@@ -766,14 +772,19 @@ class PDFContentExtractor:
         row_pairs: list
     ) -> list:
         """
-        根据 AI 判断结果执行 TR 级别的行合并
+        根据 AI 判断结果执行 TR 级别的行合并（支持链式合并）
 
         逻辑：
-        1. 遍历所有 should_merge=True 的判断
-        2. 根据 UUID 和 row_id 定位到实际的表格和行
-        3. 将上页最后一行和下页第一行的内容合并（拼接）
-        4. 删除下页的第一行
-        5. TODO: 处理 cell bbox（合并后的 bbox 如何计算）
+        1. 构建合并关系图，识别连续的合并链
+        2. 对每条链，将所有行合并到链头
+        3. 标记链中其他行为待删除
+        4. 最后统一删除所有待删除的行
+
+        示例：
+        - AI判断：(页4,r002)→(页5,r001)→(页6,r001)→(页7,r001) 都应合并
+        - 识别为一条链：[(页4,r002), (页5,r001), (页6,r001), (页7,r001)]
+        - 合并：将 页5,r001、页6,r001、页7,r001 的内容依次拼接到 页4,r002
+        - 删除：页5,r001、页6,r001、页7,r001
 
         Args:
             tables: 表格列表
@@ -790,71 +801,130 @@ class PDFContentExtractor:
             if uuid:
                 uuid_to_table[uuid] = table
 
+        # 1. 构建合并关系图（只包含 should_merge=True 的边）
+        merge_graph = {}  # {(uuid, row_id): (uuid, row_id)}
+        row_to_context = {}  # 保存每个节点的上下文信息（用于日志）
+
+        for decision, pair in zip(ai_row_decisions, row_pairs):
+            if not decision.get('should_merge', False):
+                continue
+
+            ctx = pair.get('context', {})
+            prev_key = (ctx.get('prev_table_uuid'), ctx.get('prev_row_id'))
+            next_key = (ctx.get('next_table_uuid'), ctx.get('next_row_id'))
+
+            merge_graph[prev_key] = next_key
+
+            # 保存上下文信息
+            if prev_key not in row_to_context:
+                row_to_context[prev_key] = ctx
+            if next_key not in row_to_context:
+                row_to_context[next_key] = ctx
+
+        # 2. 识别所有合并链
+        chains = []
+        visited = set()
+
+        for start_key in merge_graph:
+            if start_key in visited:
+                continue
+
+            # 从当前节点开始构建链
+            chain = [start_key]
+            visited.add(start_key)
+
+            current = start_key
+            while current in merge_graph:
+                next_key = merge_graph[current]
+                chain.append(next_key)
+                visited.add(next_key)
+                current = next_key
+
+            # 只保留长度 >= 2 的链（至少有2个节点才需要合并）
+            if len(chain) >= 2:
+                chains.append(chain)
+
+        print(f"  识别到 {len(chains)} 条合并链")
+
+        # 3. 对每条链执行合并
         merge_count = 0
         skipped_count = 0
+        rows_to_delete = []  # 记录待删除的行: [(table, row), ...]
 
-        # 遍历所有判断结果
-        for decision, pair in zip(ai_row_decisions, row_pairs):
-            should_merge = decision.get('should_merge', False)
+        for chain_idx, chain in enumerate(chains, start=1):
+            # 链头（合并目标）
+            head_uuid, head_row_id = chain[0]
+            head_table = uuid_to_table.get(head_uuid)
 
-            if not should_merge:
+            if not head_table:
+                print(f"  [链{chain_idx}] 跳过: 找不到表格 {head_uuid[:8]}")
+                skipped_count += len(chain) - 1
                 continue
 
-            # 获取匹配信息
-            ctx = pair.get('context', {})
-            prev_uuid = ctx.get('prev_table_uuid')
-            next_uuid = ctx.get('next_table_uuid')
-            prev_row_id = ctx.get('prev_row_id')
-            next_row_id = ctx.get('next_row_id')
-
-            # 定位表格
-            prev_table = uuid_to_table.get(prev_uuid)
-            next_table = uuid_to_table.get(next_uuid)
-
-            if not prev_table or not next_table:
-                print(f"  [跳过] 无法找到表格 UUID: {prev_uuid[:8]} / {next_uuid[:8]}")
-                skipped_count += 1
-                continue
-
-            # 定位行
-            prev_rows = prev_table.get('rows', [])
-            next_rows = next_table.get('rows', [])
-
-            prev_row = None
-            next_row = None
-
-            for row in prev_rows:
-                if row.get('raw_row_id') == prev_row_id:
-                    prev_row = row
+            head_row = None
+            for row in head_table.get('rows', []):
+                if row.get('raw_row_id') == head_row_id:
+                    head_row = row
                     break
 
-            for row in next_rows:
-                if row.get('raw_row_id') == next_row_id:
-                    next_row = row
-                    break
-
-            if not prev_row or not next_row:
-                print(f"  [跳过] 无法找到行 {prev_row_id} / {next_row_id}")
-                skipped_count += 1
+            if not head_row:
+                print(f"  [链{chain_idx}] 跳过: 找不到行 {head_row_id}")
+                skipped_count += len(chain) - 1
                 continue
 
-            # 执行行合并
-            try:
-                self._merge_two_rows(prev_row, next_row)
+            # 获取链头上下文（用于日志）
+            head_ctx = row_to_context.get(chain[0], {})
+            chain_pages = [head_ctx.get('prev_page', '?')]
 
-                # 删除下页的第一行
-                next_rows.remove(next_row)
+            # 依次合并链中的后续行
+            success_merges = 0
+            for i in range(1, len(chain)):
+                tail_uuid, tail_row_id = chain[i]
+                tail_table = uuid_to_table.get(tail_uuid)
 
-                merge_count += 1
-                print(f"  [合并] 页{ctx.get('prev_page')} {prev_row_id} + 页{ctx.get('next_page')} {next_row_id}")
+                if not tail_table:
+                    print(f"  [链{chain_idx}] 跳过节点{i}: 找不到表格 {tail_uuid[:8]}")
+                    skipped_count += 1
+                    continue
 
-            except Exception as e:
-                print(f"  [错误] 合并失败: {e}")
-                skipped_count += 1
-                import traceback
-                traceback.print_exc()
+                tail_row = None
+                for row in tail_table.get('rows', []):
+                    if row.get('raw_row_id') == tail_row_id:
+                        tail_row = row
+                        break
 
-        print(f"[TR级别行合并] 成功合并 {merge_count} 个行对，跳过 {skipped_count} 个")
+                if not tail_row:
+                    print(f"  [链{chain_idx}] 跳过节点{i}: 找不到行 {tail_row_id}")
+                    skipped_count += 1
+                    continue
+
+                # 执行合并
+                try:
+                    self._merge_two_rows(head_row, tail_row)
+                    rows_to_delete.append((tail_table, tail_row))
+                    success_merges += 1
+
+                    # 记录页码
+                    tail_ctx = row_to_context.get(chain[i], {})
+                    chain_pages.append(tail_ctx.get('next_page', '?'))
+
+                except Exception as e:
+                    print(f"  [链{chain_idx}] 合并节点{i}失败: {e}")
+                    skipped_count += 1
+
+            if success_merges > 0:
+                merge_count += success_merges
+                pages_str = '→'.join(str(p) for p in chain_pages)
+                print(f"  [链{chain_idx}] 成功: {len(chain)}个节点合并为1行 (页{pages_str})")
+
+        # 4. 统一删除所有待删除的行
+        for table, row in rows_to_delete:
+            rows_list = table.get('rows', [])
+            if row in rows_list:
+                rows_list.remove(row)
+
+        print(f"[TR级别行合并] 成功合并 {merge_count} 个行，跳过 {skipped_count} 个")
+        print(f"[TR级别行合并] 删除了 {len(rows_to_delete)} 个行")
 
         return tables
 
