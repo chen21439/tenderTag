@@ -117,6 +117,7 @@ class FooterFilter:
         """
         rect = fitz_page.rect
         footer_h = self.get_footer_height(fitz_page)
+        page_num = fitz_page.number + 1
 
         # 页脚安全区：从页面底部向上收缩 footer_h
         safe_rect = fitz.Rect(
@@ -125,6 +126,14 @@ class FooterFilter:
             rect.x1,
             max(0.0, rect.y1 - footer_h)
         )
+
+        # [DEBUG] 第6页调试日志
+        if page_num == 6:
+            print(f"\n[DEBUG get_safe_page_rect] 页码={page_num}")
+            print(f"  页面 rect: {rect}")
+            print(f"  页脚高度 footer_h: {footer_h}pt")
+            print(f"  计算方式: y1 - footer_h = {rect.y1} - {footer_h} = {rect.y1 - footer_h}")
+            print(f"  safe_rect: {safe_rect}")
 
         return safe_rect
 
@@ -160,15 +169,15 @@ class FooterFilter:
         """
         if not self.config.remove_page_number:
             return text
-
-        # 移除页码模式（如：-第4页-、第4页、- 4 -、4 等）
-        pattern = re.compile(self.config.page_number_regex)
-
-        # 按空格分词，过滤每个词
-        tokens = text.split()
-        filtered_tokens = [tok for tok in tokens if not pattern.match(tok)]
-
-        return " ".join(filtered_tokens)
+        return text
+        # # 移除页码模式（如：-第4页-、第4页、- 4 -、4 等）
+        # pattern = re.compile(self.config.page_number_regex)
+        #
+        # # 按空格分词，过滤每个词
+        # tokens = text.split()
+        # filtered_tokens = [tok for tok in tokens if not pattern.match(tok)]
+        #
+        # return " ".join(filtered_tokens)
 
     def extract_cell_text_safe(
         self,
@@ -188,18 +197,38 @@ class FooterFilter:
             提取的文本内容
         """
         page_rect = fitz_page.rect
+        page_num = fitz_page.number + 1  # PyMuPDF的页码从0开始
+
+        # [DEBUG] 第6页调试日志
+        if page_num == 6:
+            print(f"\n[DEBUG extract_cell_text_safe] 页码={page_num}")
+            print(f"  原始 cell_bbox: {cell_bbox}")
+            print(f"  page_rect: {page_rect}")
 
         # 1. 裁剪 cell bbox 到页面范围
         cell_rect = fitz.Rect(cell_bbox)
         clipped_rect = cell_rect & page_rect
 
+        if page_num == 6:
+            print(f"  cell_rect: {cell_rect}")
+            print(f"  clipped_rect (第一次裁剪到页面): {clipped_rect}")
+            print(f"  clipped_rect.is_empty: {clipped_rect.is_empty}")
+
         if clipped_rect.is_empty:
+            if page_num == 6:
+                print(f"  返回空字符串（clipped_rect 为空）")
             return ""
 
         # 2. 进一步裁剪到安全区域（去掉页脚）
         safe_rect = self.clip_to_safe_area(clipped_rect, fitz_page)
 
+        if page_num == 6:
+            print(f"  safe_rect (第二次裁剪到安全区): {safe_rect}")
+            print(f"  safe_rect.is_empty: {safe_rect.is_empty}")
+
         if safe_rect.is_empty:
+            if page_num == 6:
+                print(f"  返回空字符串（safe_rect 为空）")
             return ""
 
         if debug:
@@ -214,11 +243,19 @@ class FooterFilter:
         # 3. 提取文本
         text = fitz_page.get_text("text", clip=safe_rect)
 
+        if page_num == 6:
+            print(f"  提取的原始文本长度: {len(text)}")
+            print(f"  提取的原始文本预览: '{text[:100]}'")
+
         # 4. 移除换行符
         text = text.replace('\n', '').replace('\r', '')
 
         # 5. 过滤页码模式（兜底保险）
         text = self.filter_page_number(text)
+
+        if page_num == 6:
+            print(f"  最终返回的文本长度: {len(text.strip())}")
+            print(f"  最终返回的文本预览: '{text.strip()[:100]}'")
 
         return text.strip()
 

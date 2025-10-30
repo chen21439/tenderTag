@@ -1000,6 +1000,7 @@ def extract_pdf_tables(pdf_path: str, output_path: str = None) -> Dict[str, str]
 # 主测试函数
 def main():
     """
+
     主测试方法
     """
     # 从taskId构建路径
