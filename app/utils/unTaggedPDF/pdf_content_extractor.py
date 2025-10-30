@@ -28,6 +28,7 @@ class PDFContentExtractor:
                  pdf_path: str,
                  enable_cross_page_merge: bool = True,
                  enable_cell_merge: bool = False,
+                 enable_ai_row_classification: bool = False,
                  verbose: bool = False):
         """
         初始化PDF内容提取器
@@ -37,6 +38,9 @@ class PDFContentExtractor:
             enable_cross_page_merge: 是否启用跨页表格合并（默认True）
             enable_cell_merge: 是否启用跨页单元格合并（默认False，暂时关闭）
                               只有在 enable_cross_page_merge=True 时才有效
+            enable_ai_row_classification: 是否启用AI行级别判断（默认True）
+                                        用于跨页单元格内容的TR级别合并
+                                        只有在 enable_cross_page_merge=True 时才有效
             verbose: 是否输出详细日志（默认False，只输出关键信息）
         """
         self.pdf_path = Path(pdf_path)
@@ -45,6 +49,7 @@ class PDFContentExtractor:
 
         # 保存配置参数
         self.verbose = verbose
+        self.enable_ai_row_classification = enable_ai_row_classification
 
         # 初始化各个提取器
         self.table_extractor = TableExtractor(pdf_path)
@@ -251,11 +256,18 @@ class PDFContentExtractor:
                 # 更新合并前的备份
                 tables_before_merge = copy.deepcopy(tables)
 
-        # AI 行级别判断（如果有 hints）
+        # AI 行级别判断（如果有 hints 且启用了AI判断）
         ai_row_decisions = []
         row_pairs = []  # 初始化为空列表（确保变量在作用域内）
-        if hints_by_page:
+        if hints_by_page and self.enable_ai_row_classification:
             print(f"\n[AI判断] hints_by_page 的页码: {sorted(hints_by_page.keys())}")
+            # 输出hint详细信息
+            for page_num, hint in sorted(hints_by_page.items()):
+                print(f"  页{page_num}: expected_cols={hint.get('expected_cols', 0)}, score={hint.get('score', 0):.2f}, source=页{hint.get('source_page', 'unknown')}表{hint.get('source_table_id', 'unknown')}")
+            # 输出hint耗时统计
+            if hasattr(self.cross_page_merger, 'timing_stats') and 'hint_generation' in self.cross_page_merger.timing_stats:
+                hint_time = self.cross_page_merger.timing_stats['hint_generation']
+                print(f"  [⏱ Hint生成耗时: {hint_time:.3f}秒]")
             row_pairs = self._collect_hint_row_pairs(tables, hints_by_page)
             if row_pairs:
                 print(f"\n[AI判断] 检测到 {len(row_pairs)} 个跨页行对，正在批量判断...")
@@ -298,6 +310,8 @@ class PDFContentExtractor:
                     print(f"[AI判断] 错误: {e}")
                     import traceback
                     traceback.print_exc()
+        elif hints_by_page and not self.enable_ai_row_classification:
+            print(f"\n[AI判断] 已禁用（enable_ai_row_classification=False），跳过TR级别行合并")
 
         # TR 级别行合并（根据 AI 判断结果）
         if ai_row_decisions and row_pairs:
@@ -343,6 +357,11 @@ class PDFContentExtractor:
                     if "nested_tables" in cell:
                         for nested_table in cell["nested_tables"]:
                             nested_table["parent_table_id"] = doc_id
+
+        # 清理最终表格的文本内容（去掉 \n 等符号）
+        # 注意：tables_first_round 和 tables_before_merge 保留原始 \n
+        for table in tables:
+            self._clean_table_content(table)
 
         metadata = self._get_page_metadata()
 
@@ -695,7 +714,10 @@ class PDFContentExtractor:
                     "next_row_id": next_first_row.get('raw_row_id'),
                     "prev_page": prev_page,
                     "next_page": next_page,
-                    "hint_score": hint.get('score', 0)
+                    "hint_score": hint.get('score', 0),
+                    "hint_expected_cols": hint.get('expected_cols', 0),  # 期望列数
+                    "hint_source_page": hint.get('source_page'),  # hint来源页
+                    "hint_source_table_id": hint.get('source_table_id')  # hint来源表格ID
                 }
             })
 
@@ -963,6 +985,49 @@ class PDFContentExtractor:
             # TODO: 处理 bbox 合并
             # 目前保留上页的 bbox，后续需要计算合并后的完整 bbox
             # 这需要考虑跨页的情况，可能需要记录多个 bbox 片段
+
+    def _clean_text(self, text: str) -> str:
+        """
+        清理文本（移除换行符、占位符等）
+
+        复用自 HeaderAnalyzer._clean_text
+
+        Args:
+            text: 原始文本
+
+        Returns:
+            清理后的文本
+        """
+        if not text:
+            return ""
+
+        # 移除换行符
+        text = text.replace('\n', '').replace('\r', '').strip()
+
+        # 移除占位符
+        if text in ['/', '—', '－', '·', '…']:
+            return ""
+
+        return text
+
+    def _clean_table_content(self, table: Dict[str, Any]) -> None:
+        """
+        清理表格中所有单元格的文本内容（原地修改）
+
+        Args:
+            table: 表格对象
+        """
+        for row in table.get('rows', []):
+            for cell in row.get('cells', []):
+                if 'content' in cell:
+                    cell['content'] = self._clean_text(cell['content'])
+
+        # 递归清理嵌套表格
+        for row in table.get('rows', []):
+            for cell in row.get('cells', []):
+                if 'nested_tables' in cell:
+                    for nested_table in cell['nested_tables']:
+                        self._clean_table_content(nested_table)
 
 
 # 便捷函数

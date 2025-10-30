@@ -51,6 +51,7 @@ from typing import List, Dict, Any, Tuple, Optional
 from dataclasses import dataclass
 import hashlib
 import copy
+import time
 
 # 导入已拆分的单元格合并功能
 try:
@@ -140,6 +141,9 @@ class CrossPageTableMerger:
         self.structure_weight = structure_weight
         self.visual_weight = visual_weight
         self.enable_cell_merge = enable_cell_merge
+
+        # 时间统计
+        self.timing_stats = {}
 
     def generate_fingerprint(self,
                             table: Dict[str, Any],
@@ -1216,6 +1220,7 @@ class CrossPageTableMerger:
         Returns:
             hints_by_page: {page_num: {"col_xs": [...], "bbox": [...], "score": ...}}
         """
+        start_time = time.time()
         hints_by_page = {}
 
         print(f"\n[DEBUG build_continuation_hints] 开始分析，共{len(tables)}个表格")
@@ -1344,6 +1349,11 @@ class CrossPageTableMerger:
                 hints_by_page[next_page] = hint
 
                 print(f"[续页检测] 页{current_page}表{bottom_table.get('id')} → 页{next_page}表{top_table.get('id')} (score={score:.2f}, expected_cols={expected_cols})")
+
+        # 计算并记录耗时
+        elapsed = time.time() - start_time
+        self.timing_stats['hint_generation'] = elapsed
+        print(f"\n[⏱ Timing] Hint生成耗时: {elapsed:.3f}秒 (检测了{len(hints_by_page)}个续页)")
 
         return hints_by_page
 
