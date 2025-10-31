@@ -47,7 +47,9 @@ from qdrant_client.models import (
     Filter,
     FieldCondition,
     MatchValue,
-    PayloadSchemaType
+    PayloadSchemaType,
+    SparseVectorParams,
+    SparseIndexParams
 )
 
 
@@ -298,26 +300,46 @@ class QdrantUtil:
 
     # ==================== 招标文件专用方法 ====================
 
-    def init_tender_collection(self, vector_size: int = 768) -> bool:
+    def init_tender_collection(self, use_hybrid: bool = True) -> bool:
         """
         初始化招标文件集合（tender_chunks）
 
         Args:
-            vector_size: 向量维度（默认768，适配常见embedding模型如BERT）
+            use_hybrid: 是否使用混合向量（稠密+稀疏，默认True，适配 bge-m3）
+                       False 则只使用稠密向量（适配 bge-base-zh 等）
 
         Returns:
             是否初始化成功
         """
         collection_name = "tender_chunks"
 
-        # 1. 创建集合
-        success = self.create_collection(
-            collection_name=collection_name,
-            vector_size=vector_size,
-            distance=Distance.COSINE
-        )
+        try:
+            if use_hybrid:
+                # 混合向量配置（稠密 1024维 + 稀疏）
+                print(f"[Qdrant] 创建混合向量集合（稠密 1024维 + 稀疏）...")
+                self.client.create_collection(
+                    collection_name=collection_name,
+                    vectors_config={
+                        "dense": VectorParams(size=1024, distance=Distance.COSINE)
+                    },
+                    sparse_vectors_config={
+                        "sparse": SparseVectorParams(
+                            index=SparseIndexParams()
+                        )
+                    }
+                )
+            else:
+                # 只使用稠密向量
+                print(f"[Qdrant] 创建稠密向量集合（768维）...")
+                self.client.create_collection(
+                    collection_name=collection_name,
+                    vectors_config=VectorParams(size=768, distance=Distance.COSINE)
+                )
 
-        if not success:
+            print(f"[Qdrant] 集合 '{collection_name}' 创建成功")
+
+        except Exception as e:
+            print(f"[Qdrant] 创建集合失败: {e}")
             return False
 
         # 2. 创建payload索引（加速过滤查询）
@@ -377,7 +399,7 @@ class QdrantUtil:
                                         doc_id: str,
                                         tables: List[Dict[str, Any]],
                                         paragraphs: List[Dict[str, Any]],
-                                        embedding_fn=None,
+                                        embedding_util=None,
                                         metadata: Optional[Dict[str, Any]] = None) -> int:
         """
         从内存中的表格和段落数据导入到 tender_chunks（不读文件）
@@ -386,7 +408,8 @@ class QdrantUtil:
             doc_id: 文档ID（如 "ORDOS-2025-0001"）
             tables: 表格列表（来自 extract_all_tables()）
             paragraphs: 段落列表（来自 extract_all_paragraphs()）
-            embedding_fn: 向量化函数（输入文本，返回向量）如果为None，使用占位向量
+            embedding_util: 向量化工具（EmbeddingUtil实例）
+                           如果为None，使用占位向量（全0）
             metadata: 额外元数据（region, agency, published_at_ts等）
 
         Returns:
@@ -401,8 +424,12 @@ class QdrantUtil:
             "published_at_ts": metadata.get("published_at_ts", 0) if metadata else 0,
         }
 
-        print(f"    [内存→Chunks] 开始处理 {len(paragraphs)} 个段落...")
-        # 1. 处理段落
+        # 收集所有需要向量化的文本
+        texts_to_embed = []
+        chunk_metadata_list = []
+
+        print(f"    [内存→Chunks] 开始收集 {len(paragraphs)} 个段落...")
+        # 1. 收集段落文本
         for idx, para in enumerate(paragraphs):
             content = para.get("content", "").strip()
             if not content:
@@ -411,9 +438,6 @@ class QdrantUtil:
             page = para.get("page", 1)
             chunk_id_str = self._generate_chunk_id(doc_id, "paragraph", page, idx)
             chunk_id = self._hash_to_int(chunk_id_str)
-
-            # 生成向量
-            vector = embedding_fn(content) if embedding_fn else [0.0] * 768
 
             payload = {
                 "doc_id": doc_id,
@@ -425,13 +449,13 @@ class QdrantUtil:
                 **default_metadata
             }
 
-            chunks.append({
+            texts_to_embed.append(content)
+            chunk_metadata_list.append({
                 "id": chunk_id,
-                "vector": vector,
                 "payload": payload
             })
 
-        print(f"    [内存→Chunks] 段落处理完成: {len(chunks)} 个有效段落")
+        print(f"    [内存→Chunks] 段落收集完成: {len(texts_to_embed)} 个有效段落")
 
         # 2. 处理表格（按行粒度存储）
         paragraph_count = len(chunks)  # 记录段落数量

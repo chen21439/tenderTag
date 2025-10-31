@@ -5,7 +5,7 @@ PDF内容提取主协调器
 """
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import fitz  # PyMuPDF
 from datetime import datetime
 
@@ -43,7 +43,11 @@ class PDFContentExtractor:
                  enable_cross_page_merge: bool = True,
                  enable_cell_merge: bool = False,
                  enable_ai_row_classification: bool = False,
-                 verbose: bool = False):
+                 verbose: bool = False,
+                 enable_vectorization: bool = False,
+                 qdrant_url: str = "http://localhost:6333",
+                 embedding_model: str = "BAAI/bge-m3",
+                 device: str = "auto"):
         """
         初始化PDF内容提取器
 
@@ -56,6 +60,10 @@ class PDFContentExtractor:
                                         用于跨页单元格内容的TR级别合并
                                         只有在 enable_cross_page_merge=True 时才有效
             verbose: 是否输出详细日志（默认False，只输出关键信息）
+            enable_vectorization: 是否启用向量化（默认False）
+            qdrant_url: Qdrant服务器地址（默认 http://localhost:6333）
+            embedding_model: 向量化模型名称（默认 BAAI/bge-m3）
+            device: 计算设备 ('auto', 'cuda', 'cpu'，默认 'auto' 自动检测）
         """
         self.pdf_path = Path(pdf_path)
         if not self.pdf_path.exists():
@@ -64,6 +72,7 @@ class PDFContentExtractor:
         # 保存配置参数
         self.verbose = verbose
         self.enable_ai_row_classification = enable_ai_row_classification
+        self.enable_vectorization = enable_vectorization
 
         # 初始化各个提取器
         self.table_extractor = TableExtractor(pdf_path)
@@ -91,6 +100,12 @@ class PDFContentExtractor:
         self._page_heights = None
         # 页面drawings缓存
         self._page_drawings = None
+
+        # 初始化向量化组件（如果启用）
+        self.indexer = None
+        self.searcher = None
+        if enable_vectorization and QDRANT_AVAILABLE:
+            self._init_vectorization(qdrant_url, embedding_model, device)
 
     def extract_tables(self):
         """
@@ -1062,6 +1077,136 @@ class PDFContentExtractor:
             # TODO: 处理 bbox 合并
             # 目前保留上页的 bbox，后续需要计算合并后的完整 bbox
             # 这需要考虑跨页的情况，可能需要记录多个 bbox 片段
+
+    def _init_vectorization(self, qdrant_url: str, embedding_model: str, device: str):
+        """
+        初始化向量化组件
+
+        Args:
+            qdrant_url: Qdrant 服务器地址
+            embedding_model: 向量化模型名称
+            device: 计算设备 ('auto', 'cuda', 'cpu')
+        """
+        try:
+            from app.utils.db.qdrant import (
+                QdrantUtil,
+                get_embedding_util,
+                TenderIndexer,
+                TenderSearcher
+            )
+
+            print(f"[向量化] 正在初始化...")
+
+            # 1. 初始化 Qdrant
+            print(f"[向量化]   连接 Qdrant: {qdrant_url}")
+            qdrant_util = QdrantUtil(url=qdrant_url)
+
+            # 2. 初始化向量化模型
+            if device == "auto":
+                import torch
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+
+            print(f"[向量化]   加载模型: {embedding_model}")
+            print(f"[向量化]   设备: {device}")
+            embedding_util = get_embedding_util(
+                model_name=embedding_model,
+                use_fp16=True,
+                device=device
+            )
+
+            # 3. 初始化索引器和搜索器
+            self.indexer = TenderIndexer(qdrant_util, embedding_util)
+            self.searcher = TenderSearcher(qdrant_util, embedding_util)
+
+            print(f"[向量化] ✓ 初始化完成")
+
+        except Exception as e:
+            print(f"[向量化] ✗ 初始化失败: {e}")
+            self.indexer = None
+            self.searcher = None
+
+    def extract_and_index(self,
+                          doc_id: str,
+                          metadata: Optional[Dict[str, Any]] = None,
+                          save_json: bool = True,
+                          output_dir: str = None) -> Dict[str, Any]:
+        """
+        提取内容并索引到向量库（一步完成）
+
+        Args:
+            doc_id: 文档ID (如 "ORDOS-2025-0001")
+            metadata: 元数据 (region, agency, published_at_ts等)
+            save_json: 是否同时保存JSON文件 (默认True)
+            output_dir: JSON输出目录 (如果save_json=True)
+
+        Returns:
+            结果字典，包含:
+            - tables_count: 表格数量
+            - paragraphs_count: 段落数量
+            - chunks_count: 索引的chunk数量 (如果启用了向量化)
+            - json_paths: JSON文件路径 (如果save_json=True)
+
+        示例:
+            extractor = PDFContentExtractor(
+                pdf_path="test.pdf",
+                enable_vectorization=True,
+                device="cuda"
+            )
+
+            result = extractor.extract_and_index(
+                doc_id="ORDOS-2025-0001",
+                metadata={"region": "内蒙古", "agency": "鄂尔多斯市政府"},
+                save_json=True
+            )
+
+            print(f"索引了 {result['chunks_count']} 个 chunks")
+        """
+        print(f"\n{'='*80}")
+        print(f"提取并索引文档: {doc_id}")
+        print(f"{'='*80}\n")
+
+        result = {}
+
+        # 1. 提取表格
+        print(f"[1/3] 提取表格...")
+        tables_result = self.extract_all_tables()
+        tables = tables_result.get("tables", [])
+        print(f"[1/3]   ✓ 提取了 {len(tables)} 个表格")
+        result["tables_count"] = len(tables)
+
+        # 2. 提取段落
+        print(f"\n[2/3] 提取段落...")
+        paragraphs_result = self.extract_all_paragraphs()
+        paragraphs = paragraphs_result.get("paragraphs", [])
+        print(f"[2/3]   ✓ 提取了 {len(paragraphs)} 个段落")
+        result["paragraphs_count"] = len(paragraphs)
+
+        # 3. 保存JSON (如果需要)
+        if save_json:
+            print(f"\n[3/3] 保存JSON文件...")
+            json_paths = self.save_to_json(output_dir=output_dir, task_id=doc_id)
+            print(f"[3/3]   ✓ 已保存")
+            result["json_paths"] = json_paths
+
+        # 4. 索引到向量库 (如果启用)
+        if self.enable_vectorization and self.indexer:
+            print(f"\n[向量化] 索引到向量库...")
+            chunk_count = self.indexer.index_document(
+                doc_id=doc_id,
+                tables=tables,
+                paragraphs=paragraphs,
+                metadata=metadata
+            )
+            result["chunks_count"] = chunk_count
+            print(f"\n[向量化] ✓ 成功索引 {chunk_count} 个 chunks")
+        else:
+            result["chunks_count"] = 0
+
+        print(f"\n{'='*80}")
+        print(f"完成!")
+        print(f"{'='*80}\n")
+
+        return result
 
     def _clean_text(self, text: str) -> str:
         """
