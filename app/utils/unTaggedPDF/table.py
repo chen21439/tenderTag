@@ -1976,16 +1976,20 @@ def make_edges(page, clip=None, tset=None):
     path = {"color": (0, 0, 0), "fill": None, "width": 1}
     for bbox in bboxes:
         line_dict = make_line(path, bbox.tl, bbox.tr, clip)
-        EDGES.append(line_to_edge(line_dict))
+        if line_dict and "top" in line_dict and "bottom" in line_dict:
+            EDGES.append(line_to_edge(line_dict))
 
         line_dict = make_line(path, bbox.bl, bbox.br, clip)
-        EDGES.append(line_to_edge(line_dict))
+        if line_dict and "top" in line_dict and "bottom" in line_dict:
+            EDGES.append(line_to_edge(line_dict))
 
         line_dict = make_line(path, bbox.tl, bbox.bl, clip)
-        EDGES.append(line_to_edge(line_dict))
+        if line_dict and "top" in line_dict and "bottom" in line_dict:
+            EDGES.append(line_to_edge(line_dict))
 
         line_dict = make_line(path, bbox.tr, bbox.br, clip)
-        EDGES.append(line_to_edge(line_dict))
+        if line_dict and "top" in line_dict and "bottom" in line_dict:
+            EDGES.append(line_to_edge(line_dict))
 
 
 def find_tables(
@@ -2064,26 +2068,27 @@ def find_tables(
 if __name__ == "__main__":
     import fitz
     import sys
+    import traceback
     from pathlib import Path
 
     def main():
-        # ✅ 固定 PDF 文件路径
+        # 固定 PDF 文件路径
         pdf_path = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目\国土空间规划实施监测网络建设项目.pdf")
 
-        # ✅ 只检测第 6 页（注意页码从 1 开始）
-        target_page_index = 4  # 第 6 页索引（0-based）
+        # 只检测第 6 页（注意页码从 1 开始）
+        target_page_index = 8  # 第 6 页索引（0-based）
 
         if not pdf_path.exists():
-            print(f"❌ 未找到文件: {pdf_path}")
+            print(f"[ERROR] 未找到文件: {pdf_path}")
             print("请检查路径是否正确。")
             sys.exit(1)
 
-        print(f"✅ 正在打开文件: {pdf_path.name}")
+        print(f"[INFO] 正在打开文件: {pdf_path.name}")
         doc = fitz.open(pdf_path)
         print(f"共有 {len(doc)} 页。\n")
 
         if len(doc) <= target_page_index:
-            print(f"❌ PDF 只有 {len(doc)} 页，无法访问第 6 页。")
+            print(f"[ERROR] PDF 只有 {len(doc)} 页，无法访问第 6 页。")
             sys.exit(1)
 
         # 读取指定页
@@ -2093,15 +2098,15 @@ if __name__ == "__main__":
         try:
             tables = find_tables(page)
         except Exception as e:
-            print(f"❌ 检测表格失败: {e}")
+            print(f"[ERROR] 检测表格失败: {e}")
             traceback.print_exc()
             sys.exit(1)
 
         if not tables or len(tables.tables) == 0:
-            print("⚠️  未检测到表格。")
+            print("[WARN] 未检测到表格。")
             sys.exit(0)
 
-        print(f"✅ 检测到 {len(tables.tables)} 个表格\n")
+        print(f"[SUCCESS] 检测到 {len(tables.tables)} 个表格\n")
 
         # 打印每个表格的行列数及部分内容
         for j, table in enumerate(tables.tables, start=1):
@@ -2112,11 +2117,11 @@ if __name__ == "__main__":
                 for row in data[:5]:
                     print(" | ".join(cell or "" for cell in row))
             except Exception as e:
-                print(f"⚠️ 提取内容失败: {e}")
+                print(f"[WARN] 提取内容失败: {e}")
 
             print("\n")
 
         doc.close()
-        print("🏁 检测完成。")
+        print("[DONE] 检测完成。")
 
     main()
