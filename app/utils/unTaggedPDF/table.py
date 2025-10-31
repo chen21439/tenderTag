@@ -24,6 +24,7 @@ CA 94129, USA, for further information.
 """
 import itertools
 import string
+import traceback
 from dataclasses import dataclass
 from operator import itemgetter
 
@@ -2067,10 +2068,10 @@ if __name__ == "__main__":
 
     def main():
         # ✅ 固定 PDF 文件路径
-        pdf_path = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\table.pdf")
+        pdf_path = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目\国土空间规划实施监测网络建设项目.pdf")
 
         # ✅ 只检测第 6 页（注意页码从 1 开始）
-        target_page_index = 0  # 第 6 页索引（0-based）
+        target_page_index = 4  # 第 6 页索引（0-based）
 
         if not pdf_path.exists():
             print(f"❌ 未找到文件: {pdf_path}")
@@ -2093,6 +2094,7 @@ if __name__ == "__main__":
             tables = find_tables(page)
         except Exception as e:
             print(f"❌ 检测表格失败: {e}")
+            traceback.print_exc()
             sys.exit(1)
 
         if not tables or len(tables.tables) == 0:
