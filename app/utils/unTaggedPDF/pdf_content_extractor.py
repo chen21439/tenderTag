@@ -20,6 +20,20 @@ except ImportError:
     from cross_page_merger import CrossPageTableMerger
     from crossPageTable import CrossPageCellClassifier
 
+# Qdrant 导入
+try:
+    import sys
+    from pathlib import Path as ImportPath
+    # 添加项目根目录到 sys.path（向上3级到达 table/ 目录）
+    project_root = ImportPath(__file__).resolve().parent.parent.parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    from app.utils.db.qdrant import QdrantUtil
+    QDRANT_AVAILABLE = True
+except ImportError as e:
+    print(f"[警告] Qdrant 不可用: {e}")
+    QDRANT_AVAILABLE = False
+
 
 class PDFContentExtractor:
     """PDF内容提取主协调器"""
@@ -504,6 +518,69 @@ class PDFContentExtractor:
             result_paths["paragraphs"] = str(paragraph_path)
 
         return result_paths
+
+    def save_to_qdrant(self,
+                       doc_id: str,
+                       qdrant_url: str = "http://localhost:6333",
+                       metadata: Dict[str, Any] = None,
+                       embedding_fn=None) -> int:
+        """
+        提取内容并直接导入到 Qdrant 向量数据库（不写文件）
+
+        Args:
+            doc_id: 文档ID（如 "ORDOS-2025-0001"）
+            qdrant_url: Qdrant 服务地址
+            metadata: 额外元数据（region, agency, published_at_ts等）
+            embedding_fn: 向量化函数（输入文本，返回向量）如果为None，使用占位向量
+
+        Returns:
+            成功导入的chunk数量
+        """
+        if not QDRANT_AVAILABLE:
+            print("  [Qdrant] ❌ Qdrant 模块不可用，无法导入数据")
+            return 0
+
+        print(f"  [Qdrant] 步骤1: 初始化 Qdrant 客户端...")
+        # 初始化 Qdrant 工具
+        util = QdrantUtil(url=qdrant_url)
+
+        # 确保集合存在
+        print(f"  [Qdrant] 步骤1.1: 检查并初始化 tender_chunks 集合...")
+        existing_collections = util.list_collections()
+        if "tender_chunks" not in existing_collections:
+            print(f"  [Qdrant]   集合不存在，正在创建...")
+            success = util.init_tender_collection(vector_size=768)
+            if not success:
+                print(f"  [Qdrant]   ❌ 创建集合失败")
+                return 0
+            print(f"  [Qdrant]   ✅ 集合创建成功")
+        else:
+            print(f"  [Qdrant]   ✅ 集合已存在")
+
+        print(f"  [Qdrant] 步骤2: 从内存提取表格...")
+        # 1. 提取表格（内存）
+        tables_result = self.extract_all_tables()
+        tables = tables_result.get("tables", [])
+        print(f"  [Qdrant]   提取到 {len(tables)} 个表格")
+
+        print(f"  [Qdrant] 步骤3: 从内存提取段落...")
+        # 2. 提取段落（内存）
+        paragraphs_result = self.extract_all_paragraphs()
+        paragraphs = paragraphs_result.get("paragraphs", [])
+        print(f"  [Qdrant]   提取到 {len(paragraphs)} 个段落")
+
+        print(f"  [Qdrant] 步骤4: 转换为 chunks 并批量导入...")
+        # 3. 直接从内存转换为 chunks 并导入
+        chunk_count = util.insert_tender_chunks_from_memory(
+            doc_id=doc_id,
+            tables=tables,
+            paragraphs=paragraphs,
+            embedding_fn=embedding_fn,
+            metadata=metadata
+        )
+        print(f"  [Qdrant] 步骤5: 导入完成，共 {chunk_count} 个 chunks")
+
+        return chunk_count
 
     def _build_table_bboxes_map(self, tables):
         """
@@ -1083,11 +1160,46 @@ def main():
     print(f"PDF文件: {pdf_path}")
 
     try:
-        # 使用跨页合并（带正文隔断检查）
-        extractor = PDFContentExtractor(str(pdf_path), enable_cross_page_merge=True)
+        # 使用跨页合并（带正文隔断检查）- 关闭详细日志
+        extractor = PDFContentExtractor(str(pdf_path), enable_cross_page_merge=True, verbose=False)
 
         # 保存结果，使用task_id作为文件名前缀
+        print(f"\n[1/2] 正在提取 PDF 内容...")
         output_paths = extractor.save_to_json(include_paragraphs=True, task_id=task_id)
+        print(f"[1/2] ✓ PDF 提取完成")
+
+        # 同时导入到 Qdrant（如果可用）
+        if QDRANT_AVAILABLE:
+            print(f"\n[2/2] 开始导入到 Qdrant 向量库...")
+            try:
+                doc_id = f"ORDOS-{task_id[:10]}"  # 使用 task_id 前10位作为 doc_id
+                metadata = {
+                    "region": "内蒙古-鄂尔多斯",
+                    "agency": "鄂尔多斯市政府",
+                    "published_at_ts": int(datetime.now().timestamp())
+                }
+
+                print(f"  [Qdrant] Doc ID: {doc_id}")
+                print(f"  [Qdrant] 元数据: region={metadata['region']}, agency={metadata['agency']}")
+                print(f"  [Qdrant] 服务地址: http://localhost:6333")
+
+                chunk_count = extractor.save_to_qdrant(
+                    doc_id=doc_id,
+                    qdrant_url="http://localhost:6333",
+                    metadata=metadata,
+                    embedding_fn=None  # 使用占位向量
+                )
+
+                if chunk_count > 0:
+                    print(f"  [Qdrant] ✅ 成功导入 {chunk_count} 个 chunks 到 tender_chunks 集合")
+                else:
+                    print(f"  [Qdrant] ⚠️ 导入数量为 0，可能出现问题")
+            except Exception as e:
+                print(f"  [Qdrant] ❌ 导入失败: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print(f"\n[2/2] ⚠️ Qdrant 不可用，跳过向量库导入")
 
         print(f"\n提取成功!")
         print(f"输出文件:")
