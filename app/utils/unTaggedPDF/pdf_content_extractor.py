@@ -128,10 +128,10 @@ class PDFContentExtractor:
         """
         return self.paragraph_extractor.extract_paragraphs(table_bboxes_per_page)
 
+
     def extract_all_content(self) -> Dict[str, Any]:
         """
         提取所有内容（表格+段落），按页面和Y坐标排序，统一编号
-
         Returns:
             包含所有内容的字典
         """
@@ -461,7 +461,7 @@ class PDFContentExtractor:
         }
 
     def save_to_json(self, output_dir: str = None, include_paragraphs: bool = True,
-                     task_id: str = None) -> Dict[str, str]:
+                     task_id: str = None, save_cells: bool = True) -> Dict[str, str]:
         """
         提取内容并保存到JSON文件
 
@@ -469,6 +469,7 @@ class PDFContentExtractor:
             output_dir: 输出目录路径，如果为None则保存到PDF同目录
             include_paragraphs: 是否提取并保存段落
             task_id: 任务ID，用于生成文件名（如：taskId_table.json）
+            save_cells: 是否同时保存单元格级别的结构化数据 (默认True)
 
         Returns:
             保存的文件路径字典
@@ -490,15 +491,141 @@ class PDFContentExtractor:
             table_filename = f"{task_id}_table_{timestamp}.json"
             table_raw_filename = f"{task_id}_table_raw_{timestamp}.json"
             paragraph_filename = f"{task_id}_paragraph_{timestamp}.json"
+            cells_filename = f"{task_id}_cells_{timestamp}.json"
         else:
             table_filename = f"table_{timestamp}.json"
             table_raw_filename = f"table_raw_{timestamp}.json"
             paragraph_filename = f"paragraph_{timestamp}.json"
+            cells_filename = f"cells_{timestamp}.json"
 
         result_paths = {}
 
         # 提取并保存表格
         tables_result = self.extract_all_tables()
+        tables = tables_result.get("tables", [])
+
+        # ✨ 新增: 转换为单元格级别结构 (在写JSON前)
+        cells_data = None
+        if save_cells and tables:
+            try:
+                # 兼容两种运行方式：包导入和脚本直接运行
+                try:
+                    from .table_to_cells import TableToCellsConverter
+                except ImportError:
+                    from table_to_cells import TableToCellsConverter
+
+                print(f"\n[单元格转换] 将表格转换为单元格结构...")
+                converter = TableToCellsConverter()
+                doc_id = task_id if task_id else self.pdf_path.stem
+                cells = converter.convert_tables_to_cells(tables, doc_id)
+
+                print(f"[单元格转换] ✓ 转换完成: {len(cells)} 个单元格")
+
+                # 保存单元格 JSON
+                cells_data = {
+                    "doc_id": doc_id,
+                    "total_cells": len(cells),
+                    "cells": cells,
+                    "schema": {
+                        "fields": [
+                            "doc_id", "table_id", "row_id", "col_id", "page",
+                            "header_name", "canonical_header",
+                            "cell_value_raw", "cell_value_norm",
+                            "row_context", "num_value", "unit"
+                        ]
+                    }
+                }
+
+                cells_path = output_dir / cells_filename
+                with open(cells_path, 'w', encoding='utf-8') as f:
+                    json.dump(cells_data, f, ensure_ascii=False, indent=2)
+                result_paths["cells"] = str(cells_path)
+                print(f"[单元格转换] ✓ 已保存: {cells_path}")
+
+                # ✨ 新增: 写入向量数据库
+                try:
+                    # 兼容两种运行方式：包导入和脚本直接运行
+                    try:
+                        from ..db.milvus import MilvusUtil
+                        from ..db.qdrant import get_embedding_util
+                    except ImportError:
+                        import sys
+                        from pathlib import Path as ImportPath
+                        # 添加项目根目录到 sys.path
+                        project_root = ImportPath(__file__).resolve().parent.parent.parent.parent
+                        if str(project_root) not in sys.path:
+                            sys.path.insert(0, str(project_root))
+                        from app.utils.db.milvus import MilvusUtil
+                        from app.utils.db.qdrant import get_embedding_util
+
+                    import torch
+
+                    print(f"\n[向量库] 准备写入 Milvus...")
+
+                    # 1. 初始化 Milvus
+                    milvus = MilvusUtil(host="localhost", port="19530")
+
+                    # 2. 创建集合 (使用固定集合名 "pdf")
+                    collection_name = "pdf"
+                    success = milvus.create_collection(
+                        collection_name=collection_name,
+                        dim=1024,  # bge-m3 维度
+                        drop_old=False  # 不删除旧集合，追加数据
+                    )
+
+                    if not success:
+                        print("[向量库] ✗ 创建集合失败")
+                    else:
+                        # 3. 初始化向量化模型
+                        device = "cuda" if torch.cuda.is_available() else "cpu"
+                        embedding_util = get_embedding_util(
+                            model_name='BAAI/bge-m3',
+                            use_fp16=True,
+                            device=device
+                        )
+
+                        # 4. 准备 chunks (将 cells 转换为 Milvus 格式)
+                        chunks = []
+                        for cell in cells:
+                            chunks.append({
+                                "chunk_type": "table_cell",
+                                "content": cell.get("cell_value_with_context", cell.get("cell_value_norm", "")),
+                                "page": cell.get("page", 1)
+                            })
+
+                        # 5. 向量化
+                        print(f"[向量库] 正在向量化 {len(chunks)} 个单元格...")
+                        texts = [chunk["content"] for chunk in chunks]
+                        vectors = embedding_util.encode_batch(texts, use_cache=False)
+                        embeddings = [dense_vec for dense_vec, _, _ in vectors]
+
+                        # 6. 写入 Milvus
+                        count = milvus.insert_data(
+                            doc_id=doc_id,
+                            chunks=chunks,
+                            embeddings=embeddings
+                        )
+
+                        if count > 0:
+                            print(f"[向量库] ✓ 成功写入 {count} 条数据到 Milvus")
+
+                            # 查询统计
+                            stats = milvus.get_stats()
+                            print(f"[向量库] 集合统计: {stats.get('num_entities')} 条记录")
+                        else:
+                            print("[向量库] ✗ 写入失败")
+
+                        milvus.close()
+
+                except Exception as vec_error:
+                    print(f"[向量库] ✗ 向量化写入失败: {vec_error}")
+                    import traceback
+                    traceback.print_exc()
+
+            except Exception as e:
+                print(f"[单元格转换] ✗ 转换失败: {e}")
+                import traceback
+                traceback.print_exc()
 
         # 保存完整结果（包含合并后的表格）
         table_path = output_dir / table_filename
@@ -590,7 +717,7 @@ class PDFContentExtractor:
             doc_id=doc_id,
             tables=tables,
             paragraphs=paragraphs,
-            embedding_fn=embedding_fn,
+            embedding_util=embedding_fn,  # 注意：参数名是 embedding_util
             metadata=metadata
         )
         print(f"  [Qdrant] 步骤5: 导入完成，共 {chunk_count} 个 chunks")
@@ -1291,9 +1418,9 @@ def main():
     主测试方法
     """
     # 从taskId构建路径
-    task_id = "鄂尔多斯市政府网站群集约化平台升级改造项目"
+    task_id = "国土空间规划实施监测网络建设项目"
     base_dir = Path(r""
-                    r"E:\programFile\AIProgram\docxServer\pdf\task\鄂尔多斯市政府网站群集约化平台升级改造项目")
+                    r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目")
     pdf_path = base_dir / f"{task_id}.pdf"
 
     print(f"开始测试PDF内容提取...")
@@ -1309,42 +1436,9 @@ def main():
         extractor = PDFContentExtractor(str(pdf_path), enable_cross_page_merge=True, verbose=False)
 
         # 保存结果，使用task_id作为文件名前缀
-        print(f"\n[1/2] 正在提取 PDF 内容...")
+        print(f"\n正在提取 PDF 内容...")
         output_paths = extractor.save_to_json(include_paragraphs=True, task_id=task_id)
-        print(f"[1/2] ✓ PDF 提取完成")
-
-        # 同时导入到 Qdrant（如果可用）
-        if QDRANT_AVAILABLE:
-            print(f"\n[2/2] 开始导入到 Qdrant 向量库...")
-            try:
-                doc_id = f"ORDOS-{task_id[:10]}"  # 使用 task_id 前10位作为 doc_id
-                metadata = {
-                    "region": "内蒙古-鄂尔多斯",
-                    "agency": "鄂尔多斯市政府",
-                    "published_at_ts": int(datetime.now().timestamp())
-                }
-
-                print(f"  [Qdrant] Doc ID: {doc_id}")
-                print(f"  [Qdrant] 元数据: region={metadata['region']}, agency={metadata['agency']}")
-                print(f"  [Qdrant] 服务地址: http://localhost:6333")
-
-                chunk_count = extractor.save_to_qdrant(
-                    doc_id=doc_id,
-                    qdrant_url="http://localhost:6333",
-                    metadata=metadata,
-                    embedding_fn=None  # 使用占位向量
-                )
-
-                if chunk_count > 0:
-                    print(f"  [Qdrant] ✅ 成功导入 {chunk_count} 个 chunks 到 tender_chunks 集合")
-                else:
-                    print(f"  [Qdrant] ⚠️ 导入数量为 0，可能出现问题")
-            except Exception as e:
-                print(f"  [Qdrant] ❌ 导入失败: {e}")
-                import traceback
-                traceback.print_exc()
-        else:
-            print(f"\n[2/2] ⚠️ Qdrant 不可用，跳过向量库导入")
+        print(f"✓ PDF 提取完成")
 
         print(f"\n提取成功!")
         print(f"输出文件:")

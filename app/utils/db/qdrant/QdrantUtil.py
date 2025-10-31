@@ -491,8 +491,8 @@ class QdrantUtil:
                                                        table_idx * 1000 + row_idx)
                 chunk_id = self._hash_to_int(chunk_id_str)
 
-                # 生成向量
-                vector = embedding_fn(row_content) if embedding_fn else [0.0] * 768
+                # 生成向量（注意：参数名是 embedding_util）
+                vector = embedding_util(row_content) if embedding_util else [0.0] * 768
 
                 payload = {
                     "doc_id": doc_id,
