@@ -1631,6 +1631,7 @@ class TableFinder(object):
             v_base = words_to_edges_v(words, word_threshold=settings.min_words_vertical)
         elif v_strat == "explicit":
             v_base = []
+            print(f"[TableFinder.get_edges] 使用 explicit 竖线策略，explicit_vertical_lines 数量: {len(v_explicit)}")
 
         v = v_base + v_explicit
 
@@ -1662,10 +1663,13 @@ class TableFinder(object):
             )
         elif h_strat == "explicit":
             h_base = []
+            print(f"[TableFinder.get_edges] 使用 explicit 横线策略，explicit_horizontal_lines 数量: {len(h_explicit)}")
 
         h = h_base + h_explicit
 
         edges = list(v) + list(h)
+
+        print(f"[TableFinder.get_edges] 合并前边线数: v={len([e for e in edges if e['orientation']=='v'])}, h={len([e for e in edges if e['orientation']=='h'])}")
 
         edges = merge_edges(
             edges,
@@ -1675,7 +1679,12 @@ class TableFinder(object):
             join_y_tolerance=settings.join_y_tolerance,
         )
 
-        return filter_edges(edges, min_length=settings.edge_min_length)
+        print(f"[TableFinder.get_edges] 合并后边线数: v={len([e for e in edges if e['orientation']=='v'])}, h={len([e for e in edges if e['orientation']=='h'])}")
+
+        filtered = filter_edges(edges, min_length=settings.edge_min_length)
+        print(f"[TableFinder.get_edges] 过滤后边线数: v={len([e for e in filtered if e['orientation']=='v'])}, h={len([e for e in filtered if e['orientation']=='h'])}")
+
+        return filtered
 
     def __getitem__(self, i):
         tcount = len(self.tables)
@@ -2014,6 +2023,7 @@ def find_tables(
     text_tolerance=3,
     text_x_tolerance=3,
     text_y_tolerance=3,
+    hint: bool = False,  # ✅ 新增参数：启用线条补全模式
 ):
     global CHARS, EDGES
     CHARS = []
@@ -2058,12 +2068,339 @@ def find_tables(
     old_small = TOOLS.set_small_glyph_heights()  # save old setting
     TOOLS.set_small_glyph_heights(True)
 
+    # 添加PDF原始绘图指令分析
+    print("\n" + "="*70)
+    print("[PDF] PDF原始绘图指令分析")
+    print("="*70)
+    drawings = page.get_drawings()
+    print(f"[PDF] 页面包含 {len(drawings)} 个绘图对象")
+
+    # 统计绘图类型
+    drawing_types = {}
+    for d in drawings:
+        dtype = d.get('type', 'unknown')
+        drawing_types[dtype] = drawing_types.get(dtype, 0) + 1
+    print(f"[PDF] 绘图类型分布: {drawing_types}")
+
+    # 显示前10个绘图对象的详情
+    print(f"\n[PDF] 前10个绘图对象详情:")
+    for i, d in enumerate(drawings[:10]):
+        rect = d.get('rect', 'N/A')
+        dtype = d.get('type', 'unknown')
+        items = d.get('items', [])
+        print(f"  #{i+1}: type={dtype:4s} rect={rect} items={len(items)}")
+        if items and len(items) <= 3:
+            for j, item in enumerate(items):
+                print(f"      item[{j}]: {item[0]} {item[1] if len(item) > 1 else ''}")
+    print("="*70 + "\n")
+
     make_chars(page, clip=clip)  # create character list of page
     make_edges(page, clip=clip, tset=tset)  # create lines
 
+    # 添加原始线条统计日志
+    print("\n" + "="*70)
+    print("[RAW] 原始线条提取结果")
+    print("="*70)
+    raw_v_edges = [e for e in EDGES if e.get("orientation") == "v"]
+    raw_h_edges = [e for e in EDGES if e.get("orientation") == "h"]
+    print(f"[RAW] 原始竖线数量: {len(raw_v_edges)}")
+    print(f"[RAW] 原始横线数量: {len(raw_h_edges)}")
+
+    if raw_v_edges:
+        # 分析竖线分布
+        v_x_coords = [round(v["x0"], 2) for v in raw_v_edges]
+        unique_v_x = sorted(set(v_x_coords))
+        print(f"\n[RAW] 竖线X坐标分布 (去重后{len(unique_v_x)}条):")
+        for x in unique_v_x:
+            count = v_x_coords.count(x)
+            lines_at_x = [v for v in raw_v_edges if round(v["x0"], 2) == x]
+            y_ranges = [(round(v["top"], 2), round(v["bottom"], 2)) for v in lines_at_x]
+            print(f"  x={x:7.2f}: {count:2d}条线段 - Y范围: {y_ranges[:3]}{'...' if len(y_ranges) > 3 else ''}")
+
+    if raw_h_edges:
+        # 分析横线分布
+        h_y_coords = [round(h["top"], 2) for h in raw_h_edges]
+        unique_h_y = sorted(set(h_y_coords))
+        print(f"\n[RAW] 横线Y坐标分布 (去重后{len(unique_h_y)}条):")
+        for y in unique_h_y:
+            count = h_y_coords.count(y)
+            lines_at_y = [h for h in raw_h_edges if round(h["top"], 2) == y]
+            x_ranges = [(round(h["x0"], 2), round(h["x1"], 2)) for h in lines_at_y]
+            print(f"  y={y:7.2f}: {count:2d}条线段 - X范围: {x_ranges[:3]}{'...' if len(x_ranges) > 3 else ''}")
+
+    print("="*70 + "\n")
+
+    # ✅ 如果 hint=True，则尝试几何补全模式
+    if hint:
+        def geometry_fallback(page, edges):
+            """检测线条不完整时，自动补全缺失的线条
+
+            支持两种模式：
+            1. 竖线多但横线少：自动生成虚拟横线
+            2. 横线多但竖线少：自动生成虚拟竖线
+            """
+            print("\n" + "="*70)
+            print("[HINT] 开始几何补全分析")
+            print("="*70)
+
+            v_edges = [e for e in edges if e["orientation"] == "v"]
+            h_edges = [e for e in edges if e["orientation"] == "h"]
+
+            print(f"[DEBUG] 检测到线条数量: 竖线={len(v_edges)}, 横线={len(h_edges)}")
+
+            if v_edges:
+                xs = sorted(set(round(v['x0'], 2) for v in v_edges))
+                print(f"[DEBUG] 竖线X坐标分布: {xs}")
+                if len(xs) > 1:
+                    gaps = [xs[i+1] - xs[i] for i in range(len(xs)-1)]
+                    mean_gap = sum(gaps) / len(gaps)
+                    print(f"[DEBUG] 竖线间距: min={min(gaps):.2f}, max={max(gaps):.2f}, mean={mean_gap:.2f}")
+
+            if h_edges:
+                ys = sorted(set(round(h['top'], 2) for h in h_edges))
+                print(f"[DEBUG] 横线Y坐标分布: {ys}")
+                if len(ys) > 1:
+                    gaps = [ys[i+1] - ys[i] for i in range(len(ys)-1)]
+                    mean_gap = sum(gaps) / len(gaps)
+                    print(f"[DEBUG] 横线间距: min={min(gaps):.2f}, max={max(gaps):.2f}, mean={mean_gap:.2f}")
+
+            modified = False
+
+            # 情况1：横线太少，竖线够多，则补充横线（放宽条件到 <4）
+            if len(v_edges) >= 3:
+            # if len(v_edges) >= 3 and len(h_edges) < 4:
+                print(f"[HINT] [OK] 触发补全：纯竖线表格（{len(v_edges)}条竖线，{len(h_edges)}条横线）")
+
+                # 检查是否需要补左侧竖线
+                xs = sorted(v["x0"] for v in v_edges)
+                if len(xs) > 1:
+                    mean_gap = sum(xs[i+1] - xs[i] for i in range(len(xs)-1)) / (len(xs) - 1)
+                    print(f"[DEBUG] 竖线平均间距: {mean_gap:.2f}")
+
+                    if xs[0] > mean_gap * 1.5:
+                        # 补充最左侧竖线
+                        new_x = xs[0] - mean_gap
+                        print(f"[DEBUG] 检测到左侧缺失竖线，补充虚拟竖线 x={new_x:.2f}")
+                        v_edges.append({
+                            "x0": new_x,
+                            "x1": new_x,
+                            "top": min(v["top"] for v in v_edges),
+                            "bottom": max(v["bottom"] for v in v_edges),
+                            "height": max(v["bottom"] for v in v_edges) - min(v["top"] for v in v_edges),
+                            "orientation": "v"
+                        })
+
+                # 计算竖线的最大最小Y范围
+                min_top = min(v["top"] for v in v_edges)
+                max_bottom = max(v["bottom"] for v in v_edges)
+                print(f"[DEBUG] 竖线Y轴范围: {min_top:.2f} ~ {max_bottom:.2f}")
+
+                # 按平均高度划分虚拟横线（默认生成6条）
+                n_lines = 6
+                step = (max_bottom - min_top) / (n_lines - 1) if n_lines > 1 else 0
+                print(f"[DEBUG] 将生成 {n_lines} 条虚拟横线，间距={step:.2f}")
+
+                for i in range(n_lines):
+                    y = min_top + i * step
+                    h_edges.append({
+                        "x0": min(v["x0"] for v in v_edges),
+                        "x1": max(v["x0"] for v in v_edges),
+                        "top": y,
+                        "bottom": y,
+                        "width": abs(max(v["x0"] for v in v_edges) - min(v["x0"] for v in v_edges)),
+                        "orientation": "h"
+                    })
+                    print(f"[DEBUG]   生成横线 #{i+1}: y={y:.2f}")
+                modified = True
+
+            # 情况2：竖线太少，横线够多，则补充竖线
+            elif len(h_edges) >= 3 and len(v_edges) < 2:
+                print(f"[HINT] [OK] 触发补全：纯横线表格（{len(h_edges)}条横线，{len(v_edges)}条竖线）")
+
+                # 计算横线的最大最小X范围
+                min_x0 = min(h["x0"] for h in h_edges)
+                max_x1 = max(h["x1"] for h in h_edges)
+                print(f"[DEBUG] 横线X轴范围: {min_x0:.2f} ~ {max_x1:.2f}")
+
+                # 按平均宽度划分虚拟竖线（默认生成5条）
+                n_lines = 5
+                step = (max_x1 - min_x0) / (n_lines - 1) if n_lines > 1 else 0
+                print(f"[DEBUG] 将生成 {n_lines} 条虚拟竖线，间距={step:.2f}")
+
+                for i in range(n_lines):
+                    x = min_x0 + i * step
+                    v_edges.append({
+                        "x0": x,
+                        "x1": x,
+                        "top": min(h["top"] for h in h_edges),
+                        "bottom": max(h["bottom"] for h in h_edges),
+                        "height": abs(max(h["bottom"] for h in h_edges) - min(h["top"] for h in h_edges)),
+                        "orientation": "v"
+                    })
+                    print(f"[DEBUG]   生成竖线 #{i+1}: x={x:.2f}")
+                modified = True
+            else:
+                print(f"[HINT] [X] 不满足补全条件")
+                print(f"[HINT]   条件1: (竖线>=3 且 横线<4) = ({len(v_edges)}>=3 且 {len(h_edges)}<4) = {len(v_edges) >= 3 and len(h_edges) < 4}")
+                print(f"[HINT]   条件2: (横线>=3 且 竖线<2) = ({len(h_edges)}>=3 且 {len(v_edges)}<2) = {len(h_edges) >= 3 and len(v_edges) < 2}")
+
+            # ====== 竖线聚类合并 ======
+            print(f"\n[HINT] 开始竖线聚类合并...")
+            xs = sorted(set(round(v["x0"], 2) for v in v_edges))
+            print(f"[DEBUG] 原始竖线X坐标（去重）: {xs}")
+
+            # 按照容差聚类合并（3pt以内认为是同一条线）
+            merge_tolerance = 3.0
+            merged_xs = []
+            for x in xs:
+                if not merged_xs or abs(x - merged_xs[-1]) > merge_tolerance:
+                    merged_xs.append(x)
+                else:
+                    # 合并到上一组（取平均值）
+                    merged_xs[-1] = (merged_xs[-1] + x) / 2
+                    print(f"[DEBUG]   合并 x={x:.2f} 到 x={merged_xs[-1]:.2f} (相差{abs(x - xs[xs.index(x)-1]):.2f})")
+
+            print(f"[DEBUG] 聚类后竖线数: {len(merged_xs)}, 坐标={[round(x, 2) for x in merged_xs]}")
+
+            # ====== 横线聚类合并 ======
+            print(f"\n[HINT] 开始横线聚类合并...")
+            ys = sorted(set(round(h["top"], 2) for h in h_edges))
+            print(f"[DEBUG] 原始横线Y坐标（去重）: {ys}")
+
+            # 按照容差聚类合并（3pt以内认为是同一条线）
+            merged_ys = []
+            for y in ys:
+                if not merged_ys or abs(y - merged_ys[-1]) > merge_tolerance:
+                    merged_ys.append(y)
+                else:
+                    # 合并到上一组（取平均值）
+                    merged_ys[-1] = (merged_ys[-1] + y) / 2
+                    print(f"[DEBUG]   合并 y={y:.2f} 到 y={merged_ys[-1]:.2f} (相差{abs(y - ys[ys.index(y)-1]):.2f})")
+
+            print(f"[DEBUG] 聚类后横线数: {len(merged_ys)}, 坐标={[round(y, 2) for y in merged_ys]}")
+
+            # ====== 表格结构总结 ======
+            print(f"\n[HINT] 表格结构分析:")
+            print(f"[HINT]   聚类后: {len(merged_xs)} 条竖线 × {len(merged_ys)} 条横线")
+            if len(merged_xs) > 1 and len(merged_ys) > 1:
+                print(f"[HINT]   推断表格: {len(merged_xs)-1} 列 × {len(merged_ys)-1} 行")
+
+            # ====== 极简固定左侧补线增强 ======
+            print(f"\n[HINT] 检查是否需要强制左侧补线...")
+            unique_xs = merged_xs
+            print(f"[DEBUG] 使用聚类后的X坐标: {[round(x, 2) for x in unique_xs]}")
+
+            # 判断是否存在明显的左侧边线 (<40)，否则强制补x=32
+            has_left_line = any(x <= 40 for x in unique_xs)
+            if not has_left_line and v_edges:
+                new_x = 32.0
+                print(f"[HINT] [FORCE] 未检测到靠近页边的竖线(x<=40)，强制补充虚拟竖线 x={new_x:.2f}")
+                v_edges.append({
+                    "x0": new_x,
+                    "x1": new_x,
+                    "top": min(v["top"] for v in v_edges),
+                    "bottom": max(v["bottom"] for v in v_edges),
+                    "height": max(v["bottom"] for v in v_edges) - min(v["top"] for v in v_edges),
+                    "orientation": "v"
+                })
+                edges = v_edges + h_edges
+                modified = True
+                print(f"[DEBUG] 补充后竖线数量: {len(v_edges)}")
+                print(f"[DEBUG] 更新后X坐标: {sorted(set(round(v['x0'], 2) for v in v_edges))}")
+            else:
+                if has_left_line:
+                    print(f"[HINT] 已存在左侧边线 (x<=40)，无需补充")
+                else:
+                    print(f"[HINT] 无竖线可补充")
+
+            if modified:
+                print(f"\n[HINT] [OK] 补全完成！")
+                print(f"[HINT]   最终结果: {len(v_edges)} 条竖线，{len(h_edges)} 条横线")
+            else:
+                print(f"\n[HINT] 保持原始线条")
+
+            print("="*70 + "\n")
+            return edges
+
+        EDGES = geometry_fallback(page, EDGES)
+
+        # 打印最终用于 TableFinder 的边线统计
+        print("\n" + "="*70)
+        print("[FINAL] 最终传递给 TableFinder 的边线")
+        print("="*70)
+        final_v = [e for e in EDGES if e.get("orientation") == "v"]
+        final_h = [e for e in EDGES if e.get("orientation") == "h"]
+        final_v_xs = sorted(set(round(v["x0"], 2) for v in final_v))
+        final_h_ys = sorted(set(round(h["top"], 2) for h in final_h))
+        print(f"[FINAL] 竖线: {len(final_v)} 条 (唯一X: {final_v_xs})")
+        print(f"[FINAL] 横线: {len(final_h)} 条 (唯一Y: {final_h_ys})")
+
+        # 强制使用增强后的边线：将竖线和横线转换为 explicit_lines 格式
+        print(f"\n[HINT] 将增强后的边线转换为 explicit_lines 格式...")
+
+        # 预合并：确保线距 >= 3pt，避免被 PyMuPDF 的 merge_edges() 再次合并
+        pre_merge_tolerance = 3.0
+
+        print(f"[HINT] 预合并竖线（容差={pre_merge_tolerance}pt）...")
+        merged_v_xs = []
+        for x in final_v_xs:
+            if not merged_v_xs or abs(x - merged_v_xs[-1]) >= pre_merge_tolerance:
+                merged_v_xs.append(x)
+            else:
+                print(f"[DEBUG]   跳过 x={x:.2f}（距上一条 {abs(x - merged_v_xs[-1]):.2f}pt < {pre_merge_tolerance}pt）")
+
+        print(f"[HINT] 预合并后竖线: {len(final_v_xs)} → {len(merged_v_xs)} 条")
+        print(f"[DEBUG]   最终X坐标: {[round(x, 2) for x in merged_v_xs]}")
+
+        print(f"\n[HINT] 预合并横线（容差={pre_merge_tolerance}pt）...")
+        merged_h_ys = []
+        for y in final_h_ys:
+            if not merged_h_ys or abs(y - merged_h_ys[-1]) >= pre_merge_tolerance:
+                merged_h_ys.append(y)
+            else:
+                print(f"[DEBUG]   跳过 y={y:.2f}（距上一条 {abs(y - merged_h_ys[-1]):.2f}pt < {pre_merge_tolerance}pt）")
+
+        print(f"[HINT] 预合并后横线: {len(final_h_ys)} → {len(merged_h_ys)} 条")
+        print(f"[DEBUG]   最终Y坐标: {[round(y, 2) for y in merged_h_ys]}")
+
+        # 直接使用坐标数值作为 explicit_lines（推荐方式）
+        print(f"\n[HINT] 使用坐标数值列表作为 explicit_lines...")
+        print(f"[DEBUG]   竖线X坐标: {merged_v_xs}")
+        print(f"[DEBUG]   横线Y坐标: {merged_h_ys}")
+
+        # 更新 settings 使用 explicit 策略
+        # 直接传递坐标列表，而不是边线对象
+        tset.vertical_strategy = "explicit"
+        tset.horizontal_strategy = "explicit"
+        tset.explicit_vertical_lines = merged_v_xs
+        tset.explicit_horizontal_lines = merged_h_ys
+
+        # 禁止 snap 和 join，避免被重新合并
+        tset.snap_tolerance = 0
+        tset.snap_x_tolerance = 0
+        tset.snap_y_tolerance = 0
+        tset.join_tolerance = 0
+        tset.join_x_tolerance = 0
+        tset.join_y_tolerance = 0
+
+        print(f"[HINT] 强制 TableFinder 使用 explicit 策略")
+        print(f"[HINT] 禁用 snap 和 join（避免重新合并）")
+        print("="*70 + "\n")
+
     # re-estalish old setting
     TOOLS.set_small_glyph_heights(old_small)
+
+    # 使用增强后的边线创建 TableFinder
+    # 注意：即使我们修改了 EDGES，TableFinder 内部仍会进行过滤和合并
+    print("[INFO] 创建 TableFinder...")
     tables = TableFinder(page, settings=tset)
+
+    # 打印检测到的表格数量和结构
+    print(f"[INFO] 检测到 {len(tables.tables)} 个表格")
+    for i, table in enumerate(tables.tables, 1):
+        print(f"[INFO]   表格{i}: {table.row_count}行 × {table.col_count}列")
+        print(f"[INFO]     bbox: {table.bbox}")
+
     return tables
 if __name__ == "__main__":
     import fitz
@@ -2076,7 +2413,7 @@ if __name__ == "__main__":
         pdf_path = Path(r"E:\programFile\AIProgram\docxServer\pdf\task\国土空间规划实施监测网络建设项目\国土空间规划实施监测网络建设项目.pdf")
 
         # 只检测第 6 页（注意页码从 1 开始）
-        target_page_index = 8  # 第 6 页索引（0-based）
+        target_page_index = 6  # 第 6 页索引（0-based）
 
         if not pdf_path.exists():
             print(f"[ERROR] 未找到文件: {pdf_path}")
@@ -2096,7 +2433,7 @@ if __name__ == "__main__":
         print(f"--- 正在检测第 {target_page_index + 1} 页 ---")
 
         try:
-            tables = find_tables(page)
+            tables = find_tables(page, hint=True)
         except Exception as e:
             print(f"[ERROR] 检测表格失败: {e}")
             traceback.print_exc()
