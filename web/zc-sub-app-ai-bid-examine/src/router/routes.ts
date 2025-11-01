@@ -55,6 +55,12 @@ const aiNormalRoutes : RouteRecordRaw[] = [
           title: '规则管理'
         },
         component: () => import('@/views/rule-manager/index.vue')
+      },
+      {
+        path: '/ppt/ai',
+        name: 'PptAI',
+        meta: { title: 'PPT 汇报' },
+        component: () => import('@/views/ppt/AI.vue')
       }
     ]
   }

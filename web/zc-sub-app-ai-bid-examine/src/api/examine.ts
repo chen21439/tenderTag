@@ -1,7 +1,7 @@
 import { http } from '@/services/http'
 
 /** 单文件上传 */
-export const fileUpload = (data: any,config) => http({
+export const fileUpload = (data: any, config?: Record<string, any>) => http({
   url: '/file/v1/upload',
   data,
   method: 'post',
@@ -343,12 +343,14 @@ export const exportTask = (dexportTaskId: string) => http({
  */
 export const getLocalTaskList = async () => {
   try {
-    // 判断是否为开发环境
-    const isDev = import.meta.env.VITE_ENV === 'dev'
-    const baseUrl = import.meta.env.VITE_APP_PUBLIC_URL || ''
+    // 本地开发模式：从项目 public 目录读取任务列表
+    // 生产/测试：从 VITE_APP_PUBLIC_URL 前缀读取（由部署环境控制）
+    const isDev = import.meta.env.DEV === true || import.meta.env.MODE === 'dev'
+    const baseUrl = import.meta.env.VITE_APP_PUBLIC_URL || '/'
+    const base = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'
     const url = isDev
-      ? 'http://localhost:3000/api/task-list'
-      : `${baseUrl}/task/taskList.json`
+      ? '/task/taskList.json'
+      : `${base}task/taskList.json`
 
     const response = await fetch(url)
     if (!response.ok) {
