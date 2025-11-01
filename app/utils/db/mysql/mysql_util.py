@@ -279,6 +279,7 @@ class MySQLUtil:
             session.add(instance)
             session.flush()  # 刷新以获取自增 ID
             session.refresh(instance)
+            session.expunge(instance)  # 从 session 分离,使对象可以在 session 外使用
             return instance
 
     def insert_many(self, instances: List[Base]) -> int:

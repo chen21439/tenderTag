@@ -124,7 +124,7 @@ class ComplianceService:
         # 5. 插入数据库
         saved_task = self.mysql.insert_one(task)
 
-        print(f"[合规审查] ✓ 任务创建成功: {saved_task.id}")
+        print(f"[合规审查] [OK] 任务创建成功: {saved_task.id}")
         print(f"[合规审查]   文件: {file_name}")
         print(f"[合规审查]   项目: {project_name or '未指定'}")
         print(f"[合规审查]   状态: 解析中")
@@ -182,16 +182,16 @@ class ComplianceService:
         update_fields.update(kwargs)
 
         if not update_fields:
-            print(f"[合规审查] ⚠ 没有需要更新的字段")
+            print(f"[合规审查] [WARN] 没有需要更新的字段")
             return False
 
         # 更新数据库
         success = self.mysql.update_by_id(ComplianceFileTask, task_id, **update_fields)
 
         if success:
-            print(f"[合规审查] ✓ 任务 {task_id} 状态更新成功")
+            print(f"[合规审查] [OK] 任务 {task_id} 状态更新成功")
         else:
-            print(f"[合规审查] ✗ 任务 {task_id} 不存在或更新失败")
+            print(f"[合规审查] [FAIL] 任务 {task_id} 不存在或更新失败")
 
         return success
 
