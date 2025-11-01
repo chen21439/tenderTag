@@ -282,14 +282,14 @@ _embedding_util_instance: Optional[EmbeddingUtil] = None
 
 def get_embedding_util(model_name: str = 'BAAI/bge-m3',
                        use_fp16: bool = True,
-                       device: str = 'cpu') -> EmbeddingUtil:
+                       device: str = 'auto') -> EmbeddingUtil:
     """
     获取全局向量化工具实例（单例）
 
     Args:
         model_name: 模型名称
         use_fp16: 是否使用 fp16
-        device: 设备
+        device: 设备（'auto'=自动检测GPU, 'cuda'=强制GPU, 'cpu'=强制CPU）
 
     Returns:
         EmbeddingUtil 实例
@@ -297,10 +297,23 @@ def get_embedding_util(model_name: str = 'BAAI/bge-m3',
     global _embedding_util_instance
 
     if _embedding_util_instance is None:
+        # 自动检测 GPU
+        actual_device = device
+        if device == 'auto':
+            try:
+                import torch
+                actual_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+                print(f"[Embedding] 自动检测设备: {actual_device}")
+                if actual_device == 'cuda':
+                    print(f"[Embedding]   GPU: {torch.cuda.get_device_name(0)}")
+            except ImportError:
+                actual_device = 'cpu'
+                print(f"[Embedding] 未安装 PyTorch，使用 CPU")
+
         _embedding_util_instance = EmbeddingUtil(
             model_name=model_name,
             use_fp16=use_fp16,
-            device=device
+            device=actual_device
         )
 
     return _embedding_util_instance
