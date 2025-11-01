@@ -54,6 +54,7 @@ class MilvusUtil:
                 FieldSchema(name="chunk_type", dtype=DataType.VARCHAR, max_length=50),
                 FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=5000),
                 FieldSchema(name="page", dtype=DataType.INT64),
+                FieldSchema(name="insert_time", dtype=DataType.INT64),  # 插入时间戳 (epoch ms)
                 FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=dim)
             ]
 
@@ -105,12 +106,17 @@ class MilvusUtil:
             return 0
 
         try:
+            # 获取当前时间戳 (毫秒)
+            import time
+            current_time_ms = int(time.time() * 1000)
+
             # 准备数据
             entities = [
                 [doc_id] * len(chunks),  # doc_id
                 [chunk["chunk_type"] for chunk in chunks],  # chunk_type
                 [chunk["content"][:5000] for chunk in chunks],  # content (截断到5000字符)
                 [chunk["page"] for chunk in chunks],  # page
+                [current_time_ms] * len(chunks),  # insert_time (所有数据使用同一个时间戳)
                 embeddings  # embedding
             ]
 
@@ -164,7 +170,7 @@ class MilvusUtil:
                 anns_field="embedding",
                 param=search_params,
                 limit=top_k,
-                output_fields=["doc_id", "chunk_type", "content", "page"]
+                output_fields=["doc_id", "chunk_type", "content", "page", "insert_time"]
             )
 
             # 格式化结果
@@ -177,7 +183,8 @@ class MilvusUtil:
                         "doc_id": hit.entity.get("doc_id"),
                         "chunk_type": hit.entity.get("chunk_type"),
                         "content": hit.entity.get("content"),
-                        "page": hit.entity.get("page")
+                        "page": hit.entity.get("page"),
+                        "insert_time": hit.entity.get("insert_time")
                     })
 
             print(f"[Milvus] OK 找到 {len(formatted_results)} 条结果")
