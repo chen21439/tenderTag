@@ -1,12 +1,13 @@
-[project]
-name = "tender-tagger"
+[tool.poetry]
+name = "table"
 version = "0.1.0"
 description = "Docs classifier for tender/bid files"
-authors = [
-    {name = "chen21439",email = "14557167+chen21439@user.noreply.gitee.com"}
-]
+authors = ["chen21439 <14557167+chen21439@user.noreply.gitee.com>"]
 readme = "README.md"
-requires-python = ">=3.11,<3.12"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
 dependencies = [
     "fastapi (>=0.119.1,<0.120.0)",
     "uvicorn[standard] (>=0.38.0,<0.39.0)",
@@ -38,3 +39,7 @@ dev = [
     "pytest (>=8.4.2,<9.0.0)",
     "pytest-asyncio (>=1.2.0,<2.0.0)"
 ]
+
+[tool.poetry.scripts]
+dev = "scripts:dev"
+start = "scripts:start"
