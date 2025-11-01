@@ -465,6 +465,8 @@ class PDFContentExtractor:
         """
         提取内容并保存到JSON文件
 
+
+
         Args:
             output_dir: 输出目录路径，如果为None则保存到PDF同目录
             include_paragraphs: 是否提取并保存段落
@@ -516,7 +518,9 @@ class PDFContentExtractor:
 
                 print(f"\n[单元格转换] 将表格转换为单元格结构...")
                 converter = TableToCellsConverter()
-                doc_id = task_id if task_id else self.pdf_path.stem
+                # 使用相同的时间戳构建 doc_id (确保一个批次使用同一个时间戳)
+                base_doc_id = task_id if task_id else self.pdf_path.stem
+                doc_id = f"{base_doc_id}_{timestamp}"
                 cells = converter.convert_tables_to_cells(tables, doc_id)
 
                 print(f"[单元格转换] ✓ 转换完成: {len(cells)} 个单元格")
