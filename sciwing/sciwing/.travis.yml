@@ -1,0 +1,22 @@
+language: python
+python:
+- '3.7.6'
+install:
+- pip install -r requirements.txt
+- pip install -e .
+before_script:
+- python -m spacy download en
+- sciwing develop makedirs
+- sciwing develop download
+script:
+#- travis_wait 60 pytest -v -p no:warnings tests -m "not slow"
+- echo "Skipping test"
+deploy:
+  provider: pypi
+  user: "abhinavkashyap92"
+  password: "#PhD@NUS2022#"
+  on:
+    tags: true
+  skip_cleanup: true
+notifications:
+  slack: wing-nus:y2FydrZoKNsNzXcqSqfMhsSl

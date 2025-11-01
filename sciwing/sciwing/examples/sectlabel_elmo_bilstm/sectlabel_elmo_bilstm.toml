@@ -1,0 +1,41 @@
+[experiment]
+    exp_name = "sectlabel-elmo-bilstm"
+    exp_dir = "sectlabel_elmo_bilstm"
+
+[dataset]
+	class = "TextClassificationDatasetManager"
+	train_filename="sectLabel.train"
+	dev_filename="sectLabel.dev"
+	test_filename="sectLabel.test"
+
+[model]
+    class="SimpleClassifier"
+    encoding_dim=200
+    num_classes=23
+    classification_layer_bias=true
+    [model.encoder]
+        class="LSTM2VecEncoder"
+        dropout_value = 0.5
+        hidden_dim=100
+        combine_strategy="concat"
+        bidirectional=true
+        [[model.encoder.embedder]]
+        class="WordEmbedder"
+        embedding_type="glove_6B_50"
+        [[model.encoder.embedder]]
+        class="BowElmoEmbedder"
+
+[engine]
+    batch_size=32
+    save_dir="sectlabel_elmo_bilstm/checkpoints"
+    num_epochs=1
+    save_every=10
+    log_train_metrics_every=10
+    device="cpu"
+    gradient_norm_clip_value=5.0
+    sample_proportion=0.01
+    [engine.metric]
+        class="PrecisionRecallFMeasure"
+    [engine.optimizer]
+        class="Adam"
+        lr=1e-3
