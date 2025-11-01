@@ -196,6 +196,43 @@ class MilvusUtil:
             traceback.print_exc()
             return []
 
+    def search_by_keywords(self,
+                          keywords: List[str],
+                          top_k: int = 5,
+                          embedding_util=None) -> List[Dict[str, Any]]:
+        """
+        根据关键字进行向量搜索
+
+        Args:
+            keywords: 关键字列表
+            top_k: 返回结果数量
+            embedding_util: 向量化工具实例
+
+        Returns:
+            搜索结果列表
+        """
+        if not embedding_util:
+            print("[Milvus] FAILED embedding_util 未提供")
+            return []
+
+        try:
+            # 1. 将关键字拼接成查询文本
+            query_text = " ".join(keywords)
+            print(f"[Milvus] 搜索关键字: {query_text}")
+
+            # 2. 向量化查询文本
+            vectors = embedding_util.encode_batch([query_text])
+            query_embedding, _, _ = vectors[0]  # 只使用稠密向量
+
+            # 3. 执行搜索
+            return self.search(query_embedding=query_embedding, top_k=top_k)
+
+        except Exception as e:
+            print(f"[Milvus] FAILED 关键字搜索失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
     def get_stats(self) -> Dict[str, Any]:
         """
         获取集合统计信息

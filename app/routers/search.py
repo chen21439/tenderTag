@@ -44,7 +44,6 @@ class SearchResponse(BaseModel):
 # ============================================================
 
 _milvus_instance = None
-_embedding_util_instance = None
 
 
 def get_milvus_client():
@@ -61,22 +60,6 @@ def get_milvus_client():
         _milvus_instance = MilvusUtil(host=host, port=port)
 
     return _milvus_instance
-
-
-def get_embedding_util():
-    """获取向量化工具（单例）"""
-    global _embedding_util_instance
-
-    if _embedding_util_instance is None:
-        from app.utils.db.qdrant.EmbeddingUtil import get_embedding_util as create_util
-
-        _embedding_util_instance = create_util(
-            model_name='BAAI/bge-m3',
-            use_fp16=True,
-            device='auto'  # 自动检测 GPU
-        )
-
-    return _embedding_util_instance
 
 
 # ============================================================
@@ -122,7 +105,8 @@ async def search_by_keywords(request: SearchRequest):
             milvus.collection = Collection(request.collection_name)
             print(f"[Search API] 切换到集合: {request.collection_name}")
 
-        # 3. 获取向量化工具
+        # 3. 获取向量化工具（使用全局单例，避免重复加载模型）
+        from app.utils.db.qdrant import get_embedding_util
         embedding_util = get_embedding_util()
 
         # 4. 执行搜索

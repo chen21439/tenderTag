@@ -110,6 +110,19 @@ class MilvusPersistence:
         Args:
             drop_old: 是否删除旧集合并重新创建 (默认 False，追加数据)
         """
+        from pymilvus import utility, Collection
+
+        # 检查集合是否已存在
+        collection_exists = utility.has_collection(self.collection_name)
+
+        if collection_exists and not drop_old:
+            # 集合已存在且不需要重建,直接加载
+            print(f"[向量库] 集合 '{self.collection_name}' 已存在,直接使用")
+            self.milvus.collection = Collection(self.collection_name)
+            print(f"[向量库] ✓ 集合 '{self.collection_name}' 已就绪")
+            return
+
+        # 需要创建新集合
         success = self.milvus.create_collection(
             collection_name=self.collection_name,
             dim=self.vector_dim,

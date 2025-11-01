@@ -81,8 +81,8 @@ async def upload_and_process_pdf(
     app_id: Optional[str] = Form(None, description="租户ID"),
     create_user: Optional[str] = Form(None, description="创建用户ID"),
     create_user_name: Optional[str] = Form(None, description="创建用户名称"),
-    save_to_db: bool = Form(True, description="是否保存到数据库"),
-    save_to_milvus: bool = Form(True, description="是否保存到Milvus向量库")
+    save_to_db: Optional[bool] = Form(None, description="是否保存到数据库"),
+    save_to_milvus: Optional[bool] = Form(None, description="是否保存到Milvus向量库")
 ):
     """
     上传并处理 PDF 文件
