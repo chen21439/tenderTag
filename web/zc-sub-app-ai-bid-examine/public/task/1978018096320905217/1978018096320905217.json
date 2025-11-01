@@ -1,0 +1,2077 @@
+{
+  "success": true,
+  "errCode": null,
+  "errMsg": null,
+  "data": {
+    "taskId": "1978018096320905217",
+    "reviewStatus": 2,
+    "reviewResult": 1,
+    "createTime": "2025-10-14 16:40:38",
+    "reviewTime": "2025-10-14 16:42:49",
+    "fileId": "1978018087944880129",
+    "finalFileId": "1978018087944880129",
+    "fileName": "5.19深圳市水库小学新改扩建二装图书馆设备采购招标文件.docx",
+    "stats": {
+      "sceneNum": 44,
+      "detailedSceneNum": 107,
+      "sceneSuccessNum": 39,
+      "sceneFailureNum": 4,
+      "noUseSceneNum": 1,
+      "resultNum": 50,
+      "resultFinishNum": 0,
+      "totalNum": 90,
+      "passNum": 39,
+      "noUseNum": 1
+    },
+    "dataList": [
+      {
+        "uniqueId": "1978018618830520322",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 130,
+            "end": 155,
+            "pid": "t011-r003-c003-p001",
+            "pidText": "2、▲可自定义配置首页快捷菜单，可展示不少于 8 个自定义快捷菜单；可自定义配置首页展示数据图表，可展示不少于 10 个数据图表；数据图表包含今日归还、本月借阅、今日借阅、历史借阅、馆藏总数、馆藏总金额、读者总数、人均借阅、近七日借阅统计和书籍分类统计分析；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714637",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 60,
+            "end": 85,
+            "pid": "t011-r005-c003-p001",
+            "pidText": "4、▲可将读者推荐的书籍做采访录入;可查询、录入、删除和导出；可对单本图书条码置换，并可按照模板文件格式批量条码置换；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714628",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 36,
+            "end": 61,
+            "pid": "t011-r008-c003-p001",
+            "pidText": "▲可自定义书标内容，包含分类号、种次号、辅助区分号、条码号和固定文字；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908937",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 111,
+            "end": 200,
+            "pid": "t011-r010-c003-p001",
+            "pidText": "9、▲书目管理：可按导出库，中央库/采访库、所在馆、作者、书名、ISBN/ISSN查询书目，对书目进行修改、删除和导出；可按模板批量导入数据；可批量导入标准MARC数据；可一键导入采访书目文件、图书采访新增和书籍倒库验收；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714640",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 52,
+            "end": 77,
+            "pid": "t011-r013-c003-p001",
+            "pidText": "12、▲可对单本图书进行状态管理，并可按条码号段进行批量状态管理，可按照模板文件格式进行批量状态管理；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908931",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 146,
+            "end": 171,
+            "pid": "t011-r017-c003-p001",
+            "pidText": "16、▲可对年级进行新增、编辑和删除，并对应标准 K12/高等学校年级；可对班级进行新增、编辑和删除，并可自定义班级名称；可选择年级进行升级和毕业操作，并可对年级进行启用和禁用，当禁用时，整个年级都不能借书；可管理不少于6级部门架构，并可对部门进行启用和禁用，当禁用时，整个部门都不能借书；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908943",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 29,
+            "end": 54,
+            "pid": "t011-r019-c003-p001",
+            "pidText": "18、▲可在闭馆期间收进读者已还的图书，开馆后一起处理；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103244",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 61,
+            "end": 86,
+            "pid": "t011-r020-c003-p001",
+            "pidText": "19、▲假期设置：支持对假期进行新增、编辑、禁用、启用、删除操作；读者还书遇到假期的时候，还书日期自动顺延，且不算超期；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714631",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 140,
+            "end": 165,
+            "pid": "t011-r024-c003-p001",
+            "pidText": "23、▲义工可签到签退，管理员可做审核或自动审核;可进行查询、签到、签退、审核、删除和导出操作;可设定自动签退无需确认；可按多种条件查询书籍平均分值；可查询具体书籍对应读者评分记录；可按多种条件查询读者对书籍的评论信息，并进行审核；支持敏感词设置，按敏感词进行查询，并进行审核；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714634",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 76,
+            "end": 99,
+            "pid": "t011-r028-c003-p001",
+            "pidText": "4、▲图书位置显示，可在读者还书后，显示所还图书在架位置信息；可在读者通过身份认证后对个人在借的图书进行续借，续借时可选择单本续借或在借图书一键续借；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103238",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 86,
+            "end": 109,
+            "pid": "t011-r032-c003-p001",
+            "pidText": "8、▲人体感应功能，可进行人体感应，读者靠近时唤醒系统进入工作模式；灯光指引功能，可在读者进行认证时，根据步骤控制对应区域，包括刷卡区、指纹感应区和图书感应区的灯光指引；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908945",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 24,
+            "end": 47,
+            "pid": "t011-r034-c003-p001",
+            "pidText": "10、▲读者还书后，可对归还图书进行星级评价；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908941",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 38,
+            "end": 61,
+            "pid": "t011-r036-c003-p001",
+            "pidText": "12、▲报警功能，可在设备遭受异常撞击或被剧烈摇晃时系统会发出语音警报；（（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103240",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 53,
+            "end": 76,
+            "pid": "t011-r038-c003-p001",
+            "pidText": "14、▲定时开关机功能，可根据使用单位需求以周为单位，选择周一到周日时间段，进行组合设置设备开关机时间；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908933",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 76,
+            "end": 99,
+            "pid": "t011-r060-c003-p001",
+            "pidText": "4、▲可对标签默认参数进行自定义配置编辑包括加工标准、馆代码、馆藏地代码、AFI值、EAS、DSFID、EPC；可进行设置标签加工时条形码自动加 1；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908935",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 35,
+            "end": 58,
+            "pid": "t011-r062-c003-p001",
+            "pidText": "6▲可显示加工图书信息并采用逆序排序，可显示加工图书信息提示为绿色；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618830520325",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 64,
+            "end": 87,
+            "pid": "t011-r069-c003-p001",
+            "pidText": "13、▲可查询单本图书条码信息、馆代码、馆藏地代码、报警值、RFID电子标签UID号；可批量查询图书 RFID 电子标签信息；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103235",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 37,
+            "end": 60,
+            "pid": "t011-r070-c003-p001",
+            "pidText": "14、▲支持批量修改图书RFID标签状态，如AFI值、EAS、馆藏地等；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103236",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 24,
+            "end": 51,
+            "pid": "t011-r428-c003-p001",
+            "pidText": "1、扬声器单元：4*4寸≥25芯80磁航天磁体（须提供具有CNAS或CMA标识的测试报告复印件或扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103242",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 20,
+            "end": 47,
+            "pid": "t011-r430-c003-p001",
+            "pidText": "3、DSP芯片：两进四出音频DSP处理（须提供具有CNAS或CMA标识的测试报告复印件或扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908939",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 16,
+            "end": 43,
+            "pid": "t011-r431-c003-p001",
+            "pidText": "4、支持微信小程序调节设备音量（须提供具有CNAS或CMA标识的测试报告复印件或扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618876657665",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB4943.1-2011\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB 4943.1-2022",
+            "basicNumber": " 音视频、信息技术和通信技术设备 第1部分：安全要求",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=E4A2A4C875736A5DE05397BE0A0A61E8"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB4943.1-20112022",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB 4943.1-2022\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 10,
+            "end": 27,
+            "pid": "t011-r114-c003-p001",
+            "pidText": "10、★设备整机通过GB4943.1-20112022信息技术设备安全的相关标准检测；",
+            "text": "GB4943.1-20112022"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103243",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 130,
+            "end": 155,
+            "pid": "t011-r003-c003-p001",
+            "pidText": "2、▲可自定义配置首页快捷菜单，可展示不少于 8 个自定义快捷菜单；可自定义配置首页展示数据图表，可展示不少于 10 个数据图表；数据图表包含今日归还、本月借阅、今日借阅、历史借阅、馆藏总数、馆藏总金额、读者总数、人均借阅、近七日借阅统计和书籍分类统计分析；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908938",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 60,
+            "end": 85,
+            "pid": "t011-r005-c003-p001",
+            "pidText": "4、▲可将读者推荐的书籍做采访录入;可查询、录入、删除和导出；可对单本图书条码置换，并可按照模板文件格式批量条码置换；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714635",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 36,
+            "end": 61,
+            "pid": "t011-r008-c003-p001",
+            "pidText": "▲可自定义书标内容，包含分类号、种次号、辅助区分号、条码号和固定文字；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103241",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 111,
+            "end": 200,
+            "pid": "t011-r010-c003-p001",
+            "pidText": "9、▲书目管理：可按导出库，中央库/采访库、所在馆、作者、书名、ISBN/ISSN查询书目，对书目进行修改、删除和导出；可按模板批量导入数据；可批量导入标准MARC数据；可一键导入采访书目文件、图书采访新增和书籍倒库验收；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908932",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 51,
+            "end": 140,
+            "pid": "t011-r013-c003-p001",
+            "pidText": "12、▲可对单本图书进行状态管理，并可按条码号段进行批量状态管理，可按照模板文件格式进行批量状态管理；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618830520324",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 146,
+            "end": 171,
+            "pid": "t011-r017-c003-p001",
+            "pidText": "16、▲可对年级进行新增、编辑和删除，并对应标准 K12/高等学校年级；可对班级进行新增、编辑和删除，并可自定义班级名称；可选择年级进行升级和毕业操作，并可对年级进行启用和禁用，当禁用时，整个年级都不能借书；可管理不少于6级部门架构，并可对部门进行启用和禁用，当禁用时，整个部门都不能借书；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714632",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 29,
+            "end": 54,
+            "pid": "t011-r019-c003-p001",
+            "pidText": "18、▲可在闭馆期间收进读者已还的图书，开馆后一起处理；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908940",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 61,
+            "end": 86,
+            "pid": "t011-r020-c003-p001",
+            "pidText": "19、▲假期设置：支持对假期进行新增、编辑、禁用、启用、删除操作；读者还书遇到假期的时候，还书日期自动顺延，且不算超期；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103237",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的软件测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 140,
+            "end": 165,
+            "pid": "t011-r024-c003-p001",
+            "pidText": "23、▲义工可签到签退，管理员可做审核或自动审核;可进行查询、签到、签退、审核、删除和导出操作;可设定自动签退无需确认；可按多种条件查询书籍平均分值；可查询具体书籍对应读者评分记录；可按多种条件查询读者对书籍的评论信息，并进行审核；支持敏感词设置，按敏感词进行查询，并进行审核；（须提供具有CNAS或CMA标识的软件测试报告扫描件，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的软件测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103239",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "（须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 75,
+            "end": 99,
+            "pid": "t011-r028-c003-p001",
+            "pidText": "4、▲图书位置显示，可在读者还书后，显示所还图书在架位置信息；可在读者通过身份认证后对个人在借的图书进行续借，续借时可选择单本续借或在借图书一键续借；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "（须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908934",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "（须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 85,
+            "end": 109,
+            "pid": "t011-r032-c003-p001",
+            "pidText": "8、▲人体感应功能，可进行人体感应，读者靠近时唤醒系统进入工作模式；灯光指引功能，可在读者进行认证时，根据步骤控制对应区域，包括刷卡区、指纹感应区和图书感应区的灯光指引；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "（须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103234",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 24,
+            "end": 47,
+            "pid": "t011-r034-c003-p001",
+            "pidText": "10、▲读者还书后，可对归还图书进行星级评价；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908942",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 38,
+            "end": 61,
+            "pid": "t011-r036-c003-p001",
+            "pidText": "12、▲报警功能，可在设备遭受异常撞击或被剧烈摇晃时系统会发出语音警报；（（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908936",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "（须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 52,
+            "end": 76,
+            "pid": "t011-r038-c003-p001",
+            "pidText": "14、▲定时开关机功能，可根据使用单位需求以周为单位，选择周一到周日时间段，进行组合设置设备开关机时间；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "（须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714638",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "（须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 75,
+            "end": 99,
+            "pid": "t011-r060-c003-p001",
+            "pidText": "4、▲可对标签默认参数进行自定义配置编辑包括加工标准、馆代码、馆藏地代码、AFI值、EAS、DSFID、EPC；可进行设置标签加工时条形码自动加 1；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "（须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714627",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "（须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 34,
+            "end": 58,
+            "pid": "t011-r062-c003-p001",
+            "pidText": "6▲可显示加工图书信息并采用逆序排序，可显示加工图书信息提示为绿色；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "（须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908944",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 64,
+            "end": 87,
+            "pid": "t011-r069-c003-p001",
+            "pidText": "13、▲可查询单本图书条码信息、馆代码、馆藏地代码、报警值、RFID电子标签UID号；可批量查询图书 RFID 电子标签信息；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908929",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 37,
+            "end": 60,
+            "pid": "t011-r070-c003-p001",
+            "pidText": "14、▲支持批量修改图书RFID标签状态，如AFI值、EAS、馆藏地等；（须提供具有CNAS或CMA标识的测试报告扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714629",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 24,
+            "end": 51,
+            "pid": "t011-r428-c003-p001",
+            "pidText": "1、扬声器单元：4*4寸≥25芯80磁航天磁体（须提供具有CNAS或CMA标识的测试报告复印件或扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103245",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 20,
+            "end": 47,
+            "pid": "t011-r430-c003-p001",
+            "pidText": "3、DSP芯片：两进四出音频DSP处理（须提供具有CNAS或CMA标识的测试报告复印件或扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618843103246",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "122",
+        "sceneDesc": "要求提供CMA标识检测报告的需设定相关检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中要求提供检测报告，但未明确规定适用的检测标准，可能导致评审依据不统一。",
+        "legalBasicSourceList": [
+          {
+            "source": "《检验检测机构资质认定管理办法》",
+            "basicIssue": "国家质量监督检验检疫总局令第163号",
+            "basicNumber": "第十九条",
+            "basicDesc": "检验检测机构应当在资质认定证书规定的检验检测能力范围内，依据相关标准或者技术规范规定的程序和要求，出具检验检测数据、结果。",
+            "sourceLink": "https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/rkjcs/art/2024/art_d3ccd34c96e7467a8e3e2c2f3003f781.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充明确的国家或行业标准编号。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 16,
+            "end": 43,
+            "pid": "t011-r431-c003-p001",
+            "pidText": "4、支持微信小程序调节设备音量（须提供具有CNAS或CMA标识的测试报告复印件或扫描件，注：对应参数在检测报告中标注，原件备查且需提供检测报告编号在全国认证认可信息公共服务平台（认e云）（http://cx.cnca.cn/）的查询记录截图）",
+            "text": "须提供具有CNAS或CMA标识的测试报告复印件或扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714630",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "126",
+        "sceneDesc": "非进口项目不得设置国际标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目拒绝进口，文件中设置检测标准\"ISO18000-3、ISO15693\"，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "、支持行业标准：ISO18000-3，ISO15693，GB/T35660；",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议删除或补充国内同等标准。如不删除且未能补充国内同等标准，需在确保有三个品牌能满足该要求的前提下，考虑如质疑该标准与项目需求相关性时应如何答复。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 1,
+            "end": 39,
+            "pid": "t011-r026-c003-p001",
+            "pidText": "2、支持行业标准：ISO18000-3，ISO15693，GB/T35660；",
+            "text": "、支持行业标准：ISO18000-3，ISO15693，GB/T35660；"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618838908930",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "126",
+        "sceneDesc": "非进口项目不得设置国际标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目拒绝进口，文件中设置检测标准\"ISO/IEC15693\"，可能存在与实际需求不相适应的风险",
+        "legalBasicSourceList": [
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "、RFID读写板模块：工作频率：13.56MHZ；有效读写距离：≤250mm；协议标准：ISO/IEC15693；",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议删除或补充国内同等标准。如不删除且未能补充国内同等标准，需在确保有三个品牌能满足该要求的前提下，考虑如质疑该标准与项目需求相关性时应如何答复。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 2,
+            "end": 58,
+            "pid": "t011-r074-c003-p001",
+            "pidText": "18、RFID读写板模块：工作频率：13.56MHZ；有效读写距离：≤250mm；协议标准：ISO/IEC15693、ISO/IEC18000-3；",
+            "text": "、RFID读写板模块：工作频率：13.56MHZ；有效读写距离：≤250mm；协议标准：ISO/IEC15693"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714639",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "126",
+        "sceneDesc": "非进口项目不得设置国际标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目拒绝进口，文件中设置检测标准\"ISO/IEC15693、ISO/IEC18000-3\"，可能存在与实际需求不相适应的风险",
+        "legalBasicSourceList": [
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "、RFID读写板模块：工作频率：13.56MHZ；有效读写距离：≤250mm；协议标准：ISO/IEC15693、ISO/IEC18000-3；",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议删除或补充国内同等标准。如不删除且未能补充国内同等标准，需在确保有三个品牌能满足该要求的前提下，考虑如质疑该标准与项目需求相关性时应如何答复。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 2,
+            "end": 74,
+            "pid": "t011-r074-c003-p001",
+            "pidText": "18、RFID读写板模块：工作频率：13.56MHZ；有效读写距离：≤250mm；协议标准：ISO/IEC15693、ISO/IEC18000-3；",
+            "text": "、RFID读写板模块：工作频率：13.56MHZ；有效读写距离：≤250mm；协议标准：ISO/IEC15693、ISO/IEC18000-3；"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618830520323",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "126",
+        "sceneDesc": "非进口项目不得设置国际标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目拒绝进口，文件中设置检测标准\"ISO14443A\"，可能存在与实际需求不相适应的风险",
+        "legalBasicSourceList": [
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "、IC读卡器模块：工作频率：13.56MHZ；协议标准：ISO14443A；",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议删除或补充国内同等标准。如不删除且未能补充国内同等标准，需在确保有三个品牌能满足该要求的前提下，考虑如质疑该标准与项目需求相关性时应如何答复。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 2,
+            "end": 40,
+            "pid": "t011-r075-c003-p001",
+            "pidText": "19、IC读卡器模块：工作频率：13.56MHZ；协议标准：ISO14443A；",
+            "text": "、IC读卡器模块：工作频率：13.56MHZ；协议标准：ISO14443A；"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714626",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "126",
+        "sceneDesc": "非进口项目不得设置国际标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目拒绝进口，文件中设置检测标准\"ISO14443A\"，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "协议标准：ISO14443A（读者证）；",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议删除或补充国内同等标准。如不删除且未能补充国内同等标准，需在确保有三个品牌能满足该要求的前提下，考虑如质疑该标准与项目需求相关性时应如何答复。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 69,
+            "end": 89,
+            "pid": "t011-r084-c003-p001",
+            "pidText": "9、电脑模组（工控主机）：处理器：I5系列,双核四线程；内存：≥8G；接口：RJ45、USB；IC读卡器模块：工作频率：13.56MHZ；协议标准：ISO14443A（读者证）；",
+            "text": "协议标准：ISO14443A（读者证）；"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714633",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "126",
+        "sceneDesc": "非进口项目不得设置国际标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目拒绝进口，文件中设置检测标准\"ISO/IEC15693、ISO18000-3、ISO/IEC14443\"，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "协议标准：ISO/IEC15693、ISO18000-3、ISO/IEC14443；",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议删除或补充国内同等标准。如不删除且未能补充国内同等标准，需在确保有三个品牌能满足该要求的前提下，考虑如质疑该标准与项目需求相关性时应如何答复。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 3,
+            "end": 45,
+            "pid": "t011-r098-c003-p001",
+            "pidText": "13、协议标准：ISO/IEC15693、ISO18000-3、ISO/IEC14443；",
+            "text": "协议标准：ISO/IEC15693、ISO18000-3、ISO/IEC14443；"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1978018618834714636",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "126",
+        "sceneDesc": "非进口项目不得设置国际标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目拒绝进口，文件中设置检测标准\"ISO/IEC 15693\"，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "协议标准：ISO/IEC 15693；",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议删除或补充国内同等标准。如不删除且未能补充国内同等标准，需在确保有三个品牌能满足该要求的前提下，考虑如质疑该标准与项目需求相关性时应如何答复。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 3,
+            "end": 22,
+            "pid": "t011-r122-c003-p001",
+            "pidText": "18、协议标准：ISO/IEC 15693；",
+            "text": "协议标准：ISO/IEC 15693；"
+          }
+        ]
+      }
+    ],
+    "analysisFinishTime": "2025-10-14 16:41:23"
+  }
+}

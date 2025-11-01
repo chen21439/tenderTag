@@ -1,0 +1,23 @@
+// 对于antd的样式修改
+.ant-drawer-content-wrapper .ant-drawer-body {
+  padding: 0px !important;
+}
+
+.ant-drawer-content-wrapper {
+  border-radius: var(--border-radius-16) !important;
+}
+.ant-tag.ant-tag-orange {
+  color: var(--warning-6);
+}
+.ant-tag.ant-tag-red{
+  color: var(--error-6);
+}
+.ant-tag.ant-tag-green {
+  color: var(--success-6);
+}
+.ant-tag.ant-tag-red{
+  color: var(--error-6);
+}
+.ant-tag.ant-tag-default {
+  color: var(--text-5);
+}

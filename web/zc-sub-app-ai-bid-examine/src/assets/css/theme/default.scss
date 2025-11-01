@@ -1,0 +1,187 @@
+/* 默认 */
+:root {
+// 主色
+--main-10: #00054F;
+--main-9: #000C75;
+--main-8: #00159C;
+--main-7: #0625C2;
+--main-6: #133CE8; // 常规主色
+--main-5: #3B66F5;
+--main-4: #668FFF;
+--main-3: #8FB0FF;
+--main-2: #B8CFFF;
+--main-1: #E6EFFF;
+
+// success部分
+--success-10: #123800;
+--success-9: #215E00;
+--success-8: #348503;
+--success-7: #4EAB0C;
+--success-6: #6DD11A; // 常规
+--success-5: #8BDE3E;
+--success-4: #ABEB67;
+--success-3: #CBF794;
+--success-2: #E6FFC2;
+--success-1: #F7FFEB;
+
+// warning部分
+--warning-10: #662900;
+--warning-9: #8C3D00;
+--warning-8: #B35300;
+--warning-7: #D96C00;
+--warning-6: #FF8E0C; // 常规
+--warning-5: #FFA836;
+--warning-4: #FFBF5E;
+--warning-3: #FFD387;
+--warning-2: #FFE5B0;
+--warning-1: #FFF7E6;
+
+// error部分
+--error-10: #5C0A11;
+--error-9: #821015;
+--error-8: #A81D1F;
+--error-7: #CF302D;
+--error-6: #F44C43; // 常规
+--error-5: #FF7A6E;
+--error-4: #FFA396;
+--error-3: #FFC9BF;
+--error-2: #FFECE8;
+--error-1: #fdedee;
+// 中性色
+--neutral-1:#F7F8FA;
+--neutral-2:#F2F3F5;
+--neutral-3:#E5E6EB;
+--neutral-6: #86909C;
+// 辅助色-1
+--sub-1-10: #26005C;
+--sub-1-9: #3B0082;
+--sub-1-8: #3B0082;
+--sub-1-7: #6E06CF;
+--sub-1-6: #8F14F5;
+--sub-1-5: #AE3DFF;
+--sub-1-4: #C466FF;
+--sub-1-3: #D88FFF;
+--sub-1-2: #E8B8FF;
+--sub-1-1: #F8E6FF;
+// 辅助色-2
+--sub-2-10: #633F00;
+--sub-2-9: #8A5C00;
+--sub-2-8: #B07B00;
+--sub-2-7: #D69D00;
+--sub-2-6: #FDC200;
+--sub-2-5: #FFD429;
+--sub-2-4: #FFE252;
+--sub-2-3: #FFED7A;
+--sub-2-2: #FFF6A3;
+--sub-2-1: #FFFDE6;
+// 辅助色-3
+--sub-3-10: #00423E;
+--sub-3-9: #00695E;
+--sub-3-8: #008F7C;
+--sub-3-7: #02B597;
+--sub-3-6: #0DDCB3;
+--sub-3-5: #33E8BE;
+--sub-3-4: #5DF5CC;
+--sub-3-3: #8AFFDC;
+--sub-3-2: #B3FFE5;
+--sub-3-1: #E6FFF6;
+// 辅助色-4
+--sub-4-10: #002D4F;
+--sub-4-9: #004675;
+--sub-4-8: #00639C;
+--sub-4-7: #0683C2;
+--sub-4-6: #13A8E8;
+--sub-4-5: #3BC3F5;
+--sub-4-4: #66DBFF;
+--sub-4-3: #8FE9FF;
+--sub-4-2: #B8F3FF;
+--sub-4-1: #E6FCFF;
+
+// 文字部分
+--text-5: #010207; // 强调/正文标题
+--text-4: #5F6065;// 次强调/正文标题
+--text-3: #727378; // 次强调/正文标题
+--text-2: #B8B9BE; // 次要信息
+--text-1: #DADBE0; // 置灰信息
+--text-0: #fff; // 纯白文字
+
+// 线条部分
+--line-4: #DADBE0; // 重/按钮描边
+--line-3: #E8E9EE; // 深/悬浮
+--line-2: #EEEFF4; // 一般
+--line-1: #F3F4F9; // 浅
+
+// 填充部分
+--fill-12: #000000;
+--fill-11: #010207;
+--fill-10: #212227;
+--fill-9: #414247;
+--fill-8: #5F6065;
+--fill-7: #727378;
+--fill-6: #9A9BA0;
+--fill-5: #B8B9BE;
+--fill-4: #DADBE0; //强调/图标/按钮框颜色
+--fill-3: #E8E9EE; //  深/灰底悬浮
+--fill-2: #EEEFF4; // 一般/常规/白底悬浮
+--fill-1: #F3F4F9; // 浅/禁用
+--fill-0: #fff; // 白色
+--fill-rgb-12: 0, 0, 0;
+--fill-rbg-7: 243, 244, 249;
+--fill-rbg-0: 255, 255, 255;
+// 弹窗遮罩蒙版
+--fill-1-1: rgb(0 0 0 / 60%);
+// 文字部分
+--font-10: 10px; //
+--font-12: 12px; // 辅助文案
+--font-13: 13px; // 正文-常规-小
+--font-14: 14px; // 正文-常规-大
+--font-16: 16px; // 标题-小
+--font-18: 18px; // 标题-小
+--font-20: 20px; // 标题-中
+--font-22: 22px; // 标题-中
+--font-24: 24px; // 标题-大
+--font-28: 28px; // 标题-大
+--font-36: 36px; // 运营标题-小
+--font-48: 48px; // 运营标题-中
+--font-56: 56px; // 运营标题-大
+
+// 行高部分
+--line-height-12: 20px; // 辅助文案
+--line-height-13: 22px; // 正文-常规-小
+--line-height-14: 22px; // 正文-常规-大
+--line-height-16: 24px; // 标题-小
+--line-height-20: 28px; // 标题-中
+--line-height-24: 32px; // 标题-大
+--line-height-36: 44px; // 运营标题-小
+--line-height-48: 56px; // 运营标题-中
+--line-height-56: 64px; // 运营标题-大
+// 圆角大小
+--border-radius-16: 16px;
+--border-radius-12: 12px;
+--border-radius-10: 10px;
+--border-radius-8: 8px;
+--border-radius-6: 6px;
+--border-radius-5: 5px;
+--border-radius-4: 4px;
+--border-radius-2: 2px;
+// 覆写ant主题
+--ant-color-info: var(--main-6);
+--ant-color-primary: var(--main-6);
+// 背景图变量
+--login-bg: url(@/assets/images/theme/default/bg.avif);
+--logo-bg: transparent;
+--menu-expand: url('@/assets/images/theme/default/menu-expand.svg');
+--menu-collapse: url('@/assets/images/theme/default/menu-collapse.svg');
+
+// 无规律-辅助主题色-回答气泡和左侧菜单
+ --main-1-5: #E6EFFF;
+ --main-1-4: #000C75;
+ --main-1-3: #B8CFFF;
+ --main-1-2: #8FB0FF;
+ --main-1-1: #E6EFFF;
+//  无规律
+--theme-bg-1: var(--fill-2);
+--theme-bg-2: var(--main-1);
+--theme-bg-3: var(--fill-7);
+--theme-text-1: var(--text-5);
+}

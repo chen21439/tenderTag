@@ -1,0 +1,4 @@
+docker-compose
+kubernetes
+dist/
+node_modules/

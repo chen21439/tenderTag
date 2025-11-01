@@ -1,0 +1,3249 @@
+{
+  "success": true,
+  "errCode": null,
+  "errMsg": null,
+  "data": {
+    "taskId": "1981173691773419522",
+    "reviewStatus": 2,
+    "reviewResult": 1,
+    "createTime": "2025-10-23 09:39:51",
+    "reviewTime": "2025-10-23 09:43:30",
+    "fileId": "1981173607191060481",
+    "finalFileId": "1981173607191060481",
+    "fileName": "1深圳市文化广电旅游体育局深圳市青少年足球训练基地办公家具项目采购.docx",
+    "stats": {
+      "sceneNum": 44,
+      "detailedSceneNum": 107,
+      "sceneSuccessNum": 35,
+      "sceneFailureNum": 8,
+      "noUseSceneNum": 1,
+      "resultNum": 79,
+      "resultFinishNum": 2,
+      "totalNum": 115,
+      "passNum": 35,
+      "noUseNum": 1
+    },
+    "dataList": [
+      {
+        "uniqueId": "1981174547533070344",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 346,
+            "end": 412,
+            "pid": "t011-r004-c003-p001",
+            "pidText": "1.3、▲PVC封边条:检验依据：QB/T 4463-2013《家具用封边条技术要求》、GB/T 24128-2018《塑料 塑料防霉剂的防霉效果评估》，理化性能：耐干热性、耐磨性、耐开裂性（耐龟裂性)、耐冷热循环检测合格，塑料封边条有害物质限量：甲醛释放量（mg/L)未检出，可迁移元素（可溶性重金属）(mg/kg)，铅(Pb)、镉(Cd)、铬(Cr)、汞(Hg)、砷(As)、钡(Ba)、锑(Sb)、硒(Se)均为未检出；氯乙烯单体(mg/kg)未检出；邻苯二甲酸酯（DBP、BBP、DEHP、DNOP、DINP和DIDP）的总量（%）未检出；多溴联苯（PBB)(mg/kg)未检出；多溴联苯谜(PBDE)(mg/kg)未检出，抗菌性能：表皮葡萄球菌、白色假丝酵母抗菌性能值≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179207",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 269,
+            "end": 335,
+            "pid": "t011-r010-c003-p001",
+            "pidText": "1.4、▲原木桌面：检测依据：GB/T 14531-2017《办公家具 阅览桌、椅、凳》、GB/T35607-2017《绿色产品评价 家具》、QB/T 4371-2012《家具抗菌性能的评价》，外观要求、木制件表面理化性能检测合格，甲醛释放量（9-11L干燥器法）≤0.2mg/L，有害物质限量（mg/kg）：可迁移元素锑、可迁移元素砷、可迁移元素钡、可迁移元素镉、可迁移元素铬、可迁移元素铅、可迁移元素汞、可迁移元素硒为未检出，产品有害物质：总挥发性有机化合物（TVOC）（mg/m3）为未检出，抗菌性能：鼠伤寒沙门氏菌抑菌率≥99%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458955",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 266,
+            "end": 332,
+            "pid": "t011-r013-c003-p001",
+            "pidText": "1.3、高回弹海绵：检验依据：GB 17927.1-2011《软体家具 床垫和沙发抗引燃特性的评定 第1部分：阴燃的香烟》、GB/T24128-2018《塑料 塑料防霉剂的防霉效果评估》，等级≥151N，25%压陷硬度≥180N、75%压缩永久变形≤6%、回弹率≥58%、拉伸强度≥155kPa、伸长率≥120%、撕裂强度≥3.0N/cm；恒定负荷反复压陷疲劳性能≤20%；抗引燃特性-阴燃的香烟：进行试验和检查时，未观察到试样表面或内部出现任何续燃、阴燃现象，阻燃Ⅰ级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗菌性能值≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179218",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 171,
+            "end": 237,
+            "pid": "t011-r014-c003-p001",
+            "pidText": "1.4、▲沙发：检验依据：QB/T 1952.1-2012《软体家具 沙发》、GB/T 24346-2009《纺织品 防霉性能的评价》、QB/T4371-2012《家具抗菌性能的评价》，主要尺寸及外形对称度、外观性能、安全性能检测合格，抗菌性能：表皮葡萄球菌、白色假丝酵母抑菌率均≥99.5%，防霉性能：桔青霉、可可毛球二孢防霉等级达到0级。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547528876038",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 327,
+            "end": 393,
+            "pid": "t011-r023-c003-p001",
+            "pidText": "1.3、★玻璃纤维塑料：检验依据：HJ 2540-2015《环境标志产品技术要求 木塑制品》；GB 28481-2012《塑料家具中有害物质限量》；HJ571-2010《环境标志产品技术要求 人造板及其制品》；GB 18584-2001《室内装饰装修材料木家具中有害物质限量》；QB/T 4371-2012《家具抗菌性能的评价》，邻苯二甲酸酯总量（%）、甲醛释放量（mg/m³）为未检出，重金属（mg/㎡）：可溶性铅、可溶性镉、可溶性铬、可溶性汞均为未检出，重金属含量（限色漆）（mg/Kg）：可溶性铅、可溶性镉、可溶性铬、可溶性汞均为未检出，总挥发性有机化合物（TVOC）mg/（㎡·h)（72h)为未检出。抗菌性能乙型溶血性链球菌抑菌率≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264643",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 326,
+            "end": 388,
+            "pid": "t011-r030-c003-p001",
+            "pidText": "1.3、★中密度纤维板：检验依据：GB/T 11718-2021《中密度纤维板》、GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放限量》、JC/T 2039-2010《抗菌防霉木质装饰板》，静曲强度（MPa)≥36；弹性模量（MPa)≥4500；内胶合强度(MPa)≥0.6；吸水厚度膨胀率(%)≤7；表面胶合强度(MPa)≥1.6；握螺钉力（N）板面≥1600、板边≥1100；密度（g/cm³ )符合要求；板内密度偏差(%)±1范围内；含水率(%)≤7；甲醛释放量（1m³气候箱法）≤0.03（mg/m³），抗细菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99.5%，防霉菌性能：可可毛球二孢、桔青霉防霉菌等级达到0级。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264646",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 328,
+            "end": 352,
+            "pid": "t011-r035-c003-p001",
+            "pidText": "1.3、▲黑色天然皮革：检验依据：GB/T 16799-2018 《家具用皮革》，摩擦色牢度：干擦（500次）、湿擦（250次）、碱性汗液（80次）检测合格;感官要求、耐折牢度（50000次）a、耐磨性（CS-10,500g,500r)检测合格;涂层粘着牢度a≥5.0 N/10mm;撕裂力a≥30N，PH值≥3.5;稀释差（当PH值＜4.0时检验稀释差）≤0.2;气味：干态≤3级，湿态≤3级;禁用偶氮染料含量a(mg/kg)、游离甲醛(mg/kg)、可萃取的重金属a(mg/kg)：铅（Pb）、镉（Cd)均为未检出，挥发性有机物（VOC）a(mg/kg)≤50.0。 投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264649",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 185,
+            "end": 251,
+            "pid": "t011-r044-c003-p001",
+            "pidText": "1.3、▲铁丝网：检测依据：GB/T35607-2017《绿色产品评价 家具》、QB/T 4371-2012《家具抗菌性能的评价》、GB/T 3325-2017《金属家具通用技术条件》，理化性能要求单项评价合格，产品有害物质（家具涂层可迁元素）（mg/kg）：镉Cd、铅Pb、铬Cr、汞Hg、锑Sb、钡Ba、硒Se、砷As为未检出，抗菌性能：铜绿假单胞菌抑菌率≥99%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179204",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "要求投标时提供2021年1月1日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的所投产品的原材料检验报告",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 299,
+            "end": 365,
+            "pid": "t011-r049-c003-p001",
+            "pidText": "1.3、▲多层实木板，检验依据：GB/T 35601-2017 《绿色产品评价 人造板和木质地板》, GB/T17657-2013 《人造板及饰面人造板理化性能试验方法》,GB/T 9846-2015 《普通胶合板》，JC/T2039-2010《抗菌防霉木质装饰板》，甲醛释放量（1m³气候箱法）未检出，苯、甲苯、二甲苯、总挥发性有机化合物（TOVC)均为未检出,胶合强度≥1.1MPa，静曲强度顺纹≥45MPa、横纹≥39MPa；弹性模量顺纹≥6900MPa、横纹≥6600MPa，抗细菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99.5%，防霉菌性能：可可毛球二孢、桔青霉防霉菌性等级达到0级。要求投标时提供2021年1月1日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的所投产品的原材料检验报告（提供扫描件，原件备查）。",
+            "text": "要求投标时提供2021年1月1日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的所投产品的原材料检验报告"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264653",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 332,
+            "end": 356,
+            "pid": "t011-r052-c003-p001",
+            "pidText": "1.3、★低温静电喷涂粉末板：GB/T 37005-2018 《油漆饰面人造板》、GB 18580-2017《室内装饰装修材料 人造板及其制品中甲醛释放限量》，密度≥0.8g/c㎡，含水率为8.0-12%，表面耐磨≤0.12g/100r，漆膜附着力单项判定合格，漆膜硬度≥2H，表面抗冲击、表面耐液性、表面耐冷热温差、光泽度、耐光色牢度、耐干热、耐湿热单项判定合格，TVOC≤0.2mg/（㎡·h）（72h），静曲强度≥30MPa，弹性模量≥2800MPa，内结合强度≥0.6MPa，24h吸水厚度膨胀率≤8%，表面胶合强度≥1.5MPa，甲醛释放量（mg/m³）E1≤0.02。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179210",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 623,
+            "end": 689,
+            "pid": "t011-r061-c003-p001",
+            "pidText": "1.3、★三聚氰胺刨花板：检验依据：HJ 571-2010《环境标志产品技术要求 人造板及其制品》、GB 8624-2012《建筑材料及制品燃烧性能分级》、GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；JC/T2039-2010《抗菌防霉木质装饰板》，表面耐冷热循环、表面耐划痕、表面耐磨、表面耐污染腐蚀检测合格，静曲强度≥20MPa，弹性模量≥3300MPa，内结合强度≥0.50MPa，表面胶合强度≥1.30MPa,2h吸水厚度膨胀率≤0.5%，含水率为6.0-8%，密度为0.60-0.80g/cm³,握螺钉力：板面≥1200N、板边≥900N,表面耐香烟灼烧、表面耐干热、表面耐龟裂、表面耐水蒸气均≥5级，耐光色牢度≥4级，甲醛释放量（mg/m³)为未检出，总挥发性有机化合物（TVOC)释放率≤0.05mg/（m²·h）（72h）。抗菌性能铜绿假单胞菌抗细菌率≥99.5%，燃烧性能等级B1(C-S1,d0)燃烧增长速率指数FIGRAO.4MJ≤150，火焰横向蔓延未到达试样长翼边缘单项评价合格，600s的总放热量THR600S≤15MJ，产烟特性等级S1烟气生成速率指数SMOGRA≤30m²/s²，产烟特性等级S1：试验600s总烟气生成量TSP600≤50m²，燃烧滴落物/微粒等级d0：600s内无燃烧滴落物/微粒单项评价合格，60s内焰尖高度Fs≤140mm，60s内无燃烧滴落物引燃滤纸现象单项评价合格。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458947",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 270,
+            "end": 336,
+            "pid": "t011-r066-c003-p001",
+            "pidText": "1.3、▲ABS封边树脂，检验依据：QB/T 4463-2013 《家具用封边条技术要求》、GB/T24128-2018《塑料 塑料防霉剂的防霉效果评估》，甲醛释放量、氯乙烯单体、邻苯二甲酸酯 (DBP、BBP、DEHP、DNOP、DINP和DIDP)的总量、多溴联苯(PBB)、多溴联苯醚 (PBDE)实测结果未检出，可溶性重金属铅(Pb)、镉(Cd)、钡（Ba）、铬(Cr)、汞(Hg)、砷(As)、锑(Sb)、硒(Se)要求未检出。防霉性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗菌性能≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179216",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 283,
+            "end": 349,
+            "pid": "t011-r067-c003-p001",
+            "pidText": "1.4、▲缓冲铰链，检验依据：QB/T 2189-2013《家具五金杯状暗铰链》，GB/T11253-2019《碳素结构钢冷扎钢板及钢带》，GB/T1741-2020《漆膜耐霉菌性测定法》检测合格：过载垂直静载荷、水平静载荷，实测结果符合；耐久性试验次数30万次或以上，功能无损坏，安装B型试验门时，下沉量≤1mm；耐腐蚀试验时间:150h，无锈点，耐霉菌性：桔青霉、可可毛球二孢耐霉菌性等级达到0级，化学成分（质量分数）/%：C≤0.03、Si≤0.02，Mn≤0.2，P≤0.015，S≤0.01，力学性能：抗拉强度MPa在400-500，断后伸长率/%≥45.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264651",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "要求投标时提供2021年1月1日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的所投产品的原材料检验报告",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 350,
+            "end": 416,
+            "pid": "t011-r070-c003-p001",
+            "pidText": "1.3、▲阻尼导轨:检验依据：QB/T 2454-2013《家具五金 抽屉导轨》、GB/T11253-2019《碳素结构钢冷轧钢板及钢带》、GB/T1741-2020《漆膜耐霉菌性测定法》、QB/T4371-2012《家具抗菌性能的评价》，过载：垂直向下静载荷、水平侧向静载荷检测合格；耐久性试验次数30万次或以上，所有组件或连接件未断裂损坏，功能无损坏；下沉量不应超过抽屉导轨拉出长度的2%；耐腐蚀试验时间:150h，无锈点，耐霉菌性：桔青霉、可可毛球二孢耐霉菌性等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抑菌率≥99.5%，化学成分（质量分数）/%：C≤0.05、Si≤0.05，Mn≤0.2，P≤0.02，S≤0.01，力学性能：抗拉强度Rm在400-450MPa，断后伸长率/%≥45要求投标时提供2021年1月1日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的所投产品的原材料检验报告（提供扫描件，原件备查）。",
+            "text": "要求投标时提供2021年1月1日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的所投产品的原材料检验报告"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547520487427",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 940,
+            "end": 1006,
+            "pid": "t011-r079-c003-p001",
+            "pidText": "1.3、★卡座：检测和判定依据：GB/T 7999-2015《铝及铝合金光电直读发射光谱分析方法》；GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；GB/T 39600-2021《人造板及其制品甲醛释放量分级》；GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放限量》；GB/T 4897-2015《刨花板》；GB/T3280-2015《不锈钢冷轧钢板和钢带》；QB/T 4371-2012《家具抗菌性能的评价》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 5237.1-2017《铝合金建筑型材 第1部分：基材》，铜加速乙酸盐雾试验（CASS)连续喷雾500h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，密度g/cm³达到0.7-0.9，表面耐冷热循环、表面耐划痕单项评价合格，表面耐磨磨耗值mg/100r≤10，表面情况：素色磨350r以后应无露底现象单项评价合格，表面耐香烟灼烧、表面耐干热、表面耐污染腐蚀、表面耐龟裂、表面耐水蒸气均达到5级或以上（单项评价合格），耐光色牢度单项评价合格，甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出，理化性能：板内密度偏差%±2以内，含水率%5-8，静曲强度（MOR)MPa≥35，弹性模量（MOE)MPa≥4800，内胶合强度MPa≥1.5，表面胶合强度MPa≥2，24h吸水厚度膨胀率%≤3，握螺钉力板面N≥1500，板边N≥900，防潮性能（沸水煮后内胶合强度）MPa≥1，抗菌性能：宋内志贺氏菌抑菌率≥99.5%，耐霉菌性等级绳状青霉达到0级，化学成分：Si%达到0.6-0.8、Fe%≤0.2、Cu%达到0.2-0.3，Mn%≤0.15、Mg%达到1-1.2、Cr%达到0.1-0.3、Zn%≤0.1，Ti%≤0.1，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547528876036",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 333,
+            "end": 357,
+            "pid": "t011-r084-c003-p001",
+            "pidText": "1.3、★阻燃布：检验依据：GB 18401-2010 《国家纺织产品基本安全技术规范》、GB 17927.1-2011《软体家具 床垫和沙发 抗引燃特性的评定 第1部分：阴燃的香烟》、GB/T24346-2009《纺织品 防霉性能的评价》、QB/T 4371-2012《家具抗菌性能的评价》，抗引燃特性-阴燃的香烟阻燃Ⅰ级，无异味，耐干摩擦色牢度≥4级，耐碱汗渍色牢度变色≥4级、沾色≥4级，耐酸汗渍色牢度变色≥4级、沾色≥4级，耐水色牢度变色≥4级、沾色≥4级，甲醛含量（mk/kg）、可分解致癌芳香胺染料实测结果未检出，抗菌性能：表皮葡萄球菌、白色假丝酵母抑菌率≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458949",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 397,
+            "end": 463,
+            "pid": "t011-r093-c003-p001",
+            "pidText": "1.3、▲不锈钢脚：检测和判定依据GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB/T 10125-2021《人造气氛腐蚀试验盐雾试验》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 3325-2017《金属家具通用技术条件》，外观性能要求金属件：管材、焊接件、冲压件、喷涂层单项评价合格，理化性能要求：金属喷漆（塑）涂层硬度≥3H，冲击强度单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥200h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性等级宛氏拟青霉达到0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070339",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 844,
+            "end": 910,
+            "pid": "t011-r098-c003-p001",
+            "pidText": "1.3、★展示柜：检测和判定依据：GB/T 4897-2015《刨花板》；GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 39600-2021《人造板及其制品甲醛释放量分级》；GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放量》；GB 20286-2006《公共场所阻燃制品及组件燃烧性能要求和标识》，理化性能板内密度偏差%达到±2以内、含水率%8-10、静曲强度（MOR)MPa≥35，弹性模量（MOE)MPa≥5200，内胶合强度MPa≥1.5，表面胶合强度MPa≥2，24h吸水厚度膨胀率%≤3，握螺钉力板面N≥1500，板边N≥1000，防潮性能（沸水煮后内胶合强度）MPa≥1，密度g/cm³达到0.8-0.9，表面耐冷热循环、表面耐划痕单项评价合格，表面耐磨磨耗值mg/100r≤10，表面情况：素色磨350r以后无露底现象单项评价合格，表面耐香烟灼烧、表面耐干热、表面耐污染腐蚀、表面耐龟裂、表面耐水蒸气均达到5级或以上（单项评价合格），耐光色牢度单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥240h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性产黄青霉达到0级，甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出，公共场所阻燃家具及组件的燃烧性能阻燃1级（家具/组件）KW热释放速率峰值≤20kW,5min内放出的总能量≤2MJ，最大烟密度≤20%，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.045、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547524681730",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 1300,
+            "end": 1366,
+            "pid": "t011-r101-c003-p001",
+            "pidText": "1.3、★功能椅：检测和判定依据：GB/T 16799-2018《家具用皮革》；GB 28481-2012《塑料家具中有害物质限量》；GB/T 32487-2016《塑料家具通用技术条件》；GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB 18401-2010《国家纺织产品基本安全技术规范》；GB/T 1741-2020《漆膜耐霉菌性测定法》，摩擦色牢度干擦、湿擦、碱性汗液单项评价合格，涂层粘着牢度N/10mm≥7，耐折牢度（50000次）无裂纹单项评价合格，耐磨性（CS-10,500g，500r）单项评价合格，撕裂力N≥75，气味≤2级，PH≥5，游离甲醛mg/kg为未检出，挥发性有机物（VOC）mg/kg为未检出，可萃取重金属铅（Pb）mg/kg为未检出、镉（Cd）mg/kg为未检出，禁用偶氮染料：4-氨基联苯、联苯胺、4-氯邻甲苯胺、2-萘胺、邻氨基偶氮甲苯、2-氨基-4-硝基甲苯、对氯苯胺、2，4-二氨基苯甲醚、4，4’-二氨基二苯甲烷、3，3’-二氯联苯胺、3，3’-二甲氧基联苯胺、3，3’-二甲基联苯胺、3，3’-二甲基-4，4’-二氨基二苯甲烷、3-氨基对甲苯甲醚（ρ-克利酊）、4，4’-次甲基-双-（2-氯苯胺）、4，4’-二氨基二苯醚、4，4’-二氨基二苯硫醚、邻甲苯胺、2，4-二氨基甲苯、2，4，5-三甲基苯胺、邻甲氧基苯胺（邻氨基苯甲醚）、2，4-二甲基苯胺、2，6-二甲基苯胺均为未检出，感官要求：两侧表皮、裂缝、气孔、气味、污染、色泽均单项评价合格，物理力学性能：75%压缩永久变形%≤3，回弹率%≥40，拉伸强度KPa≥120，伸长率%≥180，撕裂强度N/cm≥5，干热老化后拉伸强度KPa≥110，湿热老化后拉伸强度KPa≥105，邻苯二甲酸酯/%：邻苯二甲酸二丁酯（DBP）、邻苯二甲酸丁酯苄酯（BBP）、邻苯二甲酸-2-乙基己基酯（DEHP）、邻苯二甲酸二正辛酯（DNOP)、邻苯二甲酸二异壬酯（DINP）、邻苯二甲酸二异癸酯（DIDP）均为未检出，重金属可溶性铅、可溶性镉、可溶性铬、可溶性汞mg/kg均≤3，多环芳烃苯并〔α〕芘、16种多环方烃（PAH）总量均为未检出，多溴联苯（PBB）、多溴二苯醚（PBDE）均为未检出，塑料材料耐老化性单项评价合格，冲击强度J/㎡≥15000，外观、其他外观、塑料件外观单项评价合格，塑料件硬度邵氏D硬度≥HD63，耐冷热循环单项评价合格，甲醛含量未检出，PH值在5-7，染色牢度：耐水（变色、沾色）、耐酸汗渍（变色、沾色）、耐碱汗渍（变色、沾色）、耐干摩擦、耐唾液（变色、沾色）、异味单项评价合格，可分解致癌芳香胺染料未检出，耐霉菌性等级链格孢为0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.75、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.力学性能：抗拉强度Rm/MPa≥790，断后伸长率A/%≥55，规定塑性延伸强度Rpo.2/MPa≥300.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070342",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 458,
+            "end": 524,
+            "pid": "t011-r108-c003-p001",
+            "pidText": "1.3、▲水性油漆（底漆）：检测依据：GB18581-2020《木器涂料中有害物质限量》、GB/T23993-2009《水性涂料中甲醛含量的测定乙酰丙酮分光光度法》、GB/T31414-2015《水性涂料表面活性剂的测定烷基酚聚氧乙烯醚》、GB/T1741-2020《漆膜耐霉菌性测定法》、GB/T21866-2008《抗菌涂料（漆膜）抗菌性测定法和抗菌效果》VOC含量未检出、甲醛含量未检出、乙二醇醚及醚酯总和含量(限乙二醇甲醚、乙二醇甲醚醋酸酯、乙二醇乙醚、乙二醇乙醚醋酸酯、乙二醇二甲醚、乙二醇二乙醚、二乙二醇二甲醚、三乙二醇二甲醚)未检出，苯系物总和含量[限苯、甲苯、二甲苯(含乙苯)]未检出，烷基酚聚氧乙烯醚总和含量{限辛基酚聚氧乙烯醚[C8H17-C6H4-(OC2H4)nOH，简称OPnEO]和壬基酚聚氧乙烯醚[C9H19-C6H4-(OC2H4)nOH,简称NPnEO],n=2～16}未检出，耐霉菌性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179212",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 458,
+            "end": 524,
+            "pid": "t011-r109-c003-p001",
+            "pidText": "1.4、▲水性油漆（面漆）：检测依据：GB18581-2020《木器涂料中有害物质限量》、GB/T23993-2009《水性涂料中甲醛含量的测定乙酰丙酮分光光度法》、GB/T31414-2015《水性涂料表面活性剂的测定烷基酚聚氧乙烯醚》、GB/T1741-2020《漆膜耐霉菌性测定法》、GB/T21866-2008《抗菌涂料（漆膜）抗菌性测定法和抗菌效果》VOC含量未检出、甲醛含量未检出、乙二醇醚及醚酯总和含量(限乙二醇甲醚、乙二醇甲醚醋酸酯、乙二醇乙醚、乙二醇乙醚醋酸酯、乙二醇二甲醚、乙二醇二乙醚、二乙二醇二甲醚、三乙二醇二甲醚)未检出，苯系物总和含量[限苯、甲苯、二甲苯(含乙苯)]未检出，烷基酚聚氧乙烯醚总和含量{限辛基酚聚氧乙烯醚[C8H17-C6H4-(OC2H4)nOH，简称OPnEO]和壬基酚聚氧乙烯醚[C9H19-C6H4-(OC2H4)nOH,简称NPnEO],n=2～16}未检出，耐霉菌性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070347",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 308,
+            "end": 332,
+            "pid": "t011-r116-c003-p001",
+            "pidText": "1.3、★水曲柳切片胶合板：检验依据：HJ 571-2010《环境标志产品技术要求 人造板及其制品》、GB/T 9846-2015《普通胶合板》、GB 8624-2012《建筑材料及制品燃烧性能分级》，胶合强度、浸渍剥离、静曲强度检测合格，燃烧性能等级（B1)：燃烧增长速率指数≤140W/s、600s内总热释放量≤15MJ、火焰横向蔓延长度、燃烧长度、燃烧滴落物检测合格，附加等级（GB 8624）：烟气生成速率/600s内总烟气生成量达到s1级、燃烧滴落物/微粒等级达到d0级，甲醛释放量（HJ 571）（mg/m³）为未检出。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458952",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 161,
+            "end": 227,
+            "pid": "t011-r123-c003-p001",
+            "pidText": "1.3、▲304不锈钢门铰：检验依据：QB/T 2189-2013《家具五金杯状暗铰链》、QB/T 4371-2012《家具抗菌性能的评价》，过载：垂直静载荷、水平静载荷单项评价合格，功能：操作力、垂直静载荷、水平静载荷、耐久性（80000次）、下沉量单项评价合格，耐腐蚀单项评价合格。嗜麦芽窄食单胞菌抑菌率≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179202",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 354,
+            "end": 420,
+            "pid": "t011-r142-c003-p001",
+            "pidText": "1.3、▲不锈钢制连接件：检测和判定依据：GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T3280-2015《不锈钢冷轧钢板和钢带》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T3325-2017《金属家具通用技术条件》，金属件外观性能单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥240h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性等级可可毛球二孢达到0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.045、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.55、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179214",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "84",
+        "sceneDesc": "非进口项目的检测报告不得要求CNAS标识",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目不涉及检测报告国际互认问题，该条款要求检测机构具有CNAS资质，可能存在与实际需求不相适应的风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "市财政局行政裁决书",
+            "basicIssue": "（深财书〔2025〕153 号）",
+            "basicNumber": "",
+            "basicDesc": "“CNAS”标识是中国合格评定国家认可委员会颁发的认证标识，是对实验室的认可，CNAS认可的实验室具备按照相关国际认可准则开展检测和校准服务的技术能力，其检测报告在国际上具有广泛的互认性，但是否申请CNAS认可属于机构的自愿行为，检测报告是否具备CNAS标识并非国家强制要求。",
+            "sourceLink": null
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构有下列情形之一的，属于以不合理的条件对供应商实行差别待遇或者歧视待遇：……（二）设定的资格、技术、商务条件与采购项目的具体特点和实际需要不相适应或者与合同履行无关；",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除CNAS相关描述。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 490,
+            "end": 556,
+            "pid": "t011-r149-c003-p001",
+            "pidText": "1.3、★沙发：检验依据：GB 20286-2006《公共场所阻燃制品及组件燃烧性能要求和标识》、QB/T 4371-2012《家具抗菌性能的评价》、QB/T 1952.1-2023《软体家具 沙发》、GB/T 24253-2009《纺织品 防螨性能的评价》、GB/T 39223.6-2020《健康家居的人类工效学要求 第6部分：沙发》、GB 17927.2-2011《软体家具 床垫和沙发 抗引燃特性的评定 第2部分：模拟火柴火焰》，大肠杆菌（大肠埃希氏菌）抑菌率≥99%，尺寸要求单项判定合格，抗引燃特性试验：阻燃Ⅱ级-模拟火柴火焰未观察到试样表面或内部出现任何续燃、阴燃现象单项判定合格，燃烧性能：阻燃性能等级-阻燃1级（家具/组件）-软垫家具热释放速率峰值≤55kW,5min内放出的总能量≤10MJ，最大烟密度≤30%，无有焰燃烧引燃或阴燃引燃现象，力学性能单项判定合格，有害物质限量-甲醛释放量、总挥发性有机化合物（TVOC）、木制件表面涂层可迁移元素（mg/kg）-镉Cd、铅Pb、铬Cr、汞Hg、锑Sb、钡Ba、硒Se、砷As均为未检出，防螨性能驱避率≥95%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547524681729",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量（mg/L)未检出",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 1,
+        "acceptStatus": 1,
+        "acceptText": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 124,
+            "end": 138,
+            "pid": "t011-r004-c003-p001",
+            "pidText": "1.3、▲PVC封边条:检验依据：QB/T 4463-2013《家具用封边条技术要求》、GB/T 24128-2018《塑料 塑料防霉剂的防霉效果评估》，理化性能：耐干热性、耐磨性、耐开裂性（耐龟裂性)、耐冷热循环检测合格，塑料封边条有害物质限量：甲醛释放量（mg/L)未检出，可迁移元素（可溶性重金属）(mg/kg)，铅(Pb)、镉(Cd)、铬(Cr)、汞(Hg)、砷(As)、钡(Ba)、锑(Sb)、硒(Se)均为未检出；氯乙烯单体(mg/kg)未检出；邻苯二甲酸酯（DBP、BBP、DEHP、DNOP、DINP和DIDP）的总量（%）未检出；多溴联苯（PBB)(mg/kg)未检出；多溴联苯谜(PBDE)(mg/kg)未检出，抗菌性能：表皮葡萄球菌、白色假丝酵母抗菌性能值≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（mg/L)未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264654",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量（9-11L干燥器法）≤0.2mg/L",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 116,
+            "end": 140,
+            "pid": "t011-r010-c003-p001",
+            "pidText": "1.4、▲原木桌面：检测依据：GB/T 14531-2017《办公家具 阅览桌、椅、凳》、GB/T35607-2017《绿色产品评价 家具》、QB/T 4371-2012《家具抗菌性能的评价》，外观要求、木制件表面理化性能检测合格，甲醛释放量（9-11L干燥器法）≤0.2mg/L，有害物质限量（mg/kg）：可迁移元素锑、可迁移元素砷、可迁移元素钡、可迁移元素镉、可迁移元素铬、可迁移元素铅、可迁移元素汞、可迁移元素硒为未检出，产品有害物质：总挥发性有机化合物（TVOC）（mg/m3）为未检出，抗菌性能：鼠伤寒沙门氏菌抑菌率≥99%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（9-11L干燥器法）≤0.2mg/L"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070348",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "防霉性能：桔青霉、可可毛球二孢防霉等级达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 147,
+            "end": 170,
+            "pid": "t011-r014-c003-p001",
+            "pidText": "1.4、▲沙发：检验依据：QB/T 1952.1-2012《软体家具 沙发》、GB/T 24346-2009《纺织品 防霉性能的评价》、QB/T4371-2012《家具抗菌性能的评价》，主要尺寸及外形对称度、外观性能、安全性能检测合格，抗菌性能：表皮葡萄球菌、白色假丝酵母抑菌率均≥99.5%，防霉性能：桔青霉、可可毛球二孢防霉等级达到0级。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "防霉性能：桔青霉、可可毛球二孢防霉等级达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070343",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量（mg/m³）为未检出",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 177,
+            "end": 193,
+            "pid": "t011-r023-c003-p001",
+            "pidText": "1.3、★玻璃纤维塑料：检验依据：HJ 2540-2015《环境标志产品技术要求 木塑制品》；GB 28481-2012《塑料家具中有害物质限量》；HJ571-2010《环境标志产品技术要求 人造板及其制品》；GB 18584-2001《室内装饰装修材料木家具中有害物质限量》；QB/T 4371-2012《家具抗菌性能的评价》，邻苯二甲酸酯总量（%）、甲醛释放量（mg/m³）为未检出，重金属（mg/㎡）：可溶性铅、可溶性镉、可溶性铬、可溶性汞均为未检出，重金属含量（限色漆）（mg/Kg）：可溶性铅、可溶性镉、可溶性铬、可溶性汞均为未检出，总挥发性有机化合物（TVOC）mg/（㎡·h)（72h)为未检出。抗菌性能乙型溶血性链球菌抑菌率≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（mg/m³）为未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070341",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "防霉菌性能：可可毛球二孢、桔青霉防霉菌等级达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 296,
+            "end": 321,
+            "pid": "t011-r030-c003-p001",
+            "pidText": "1.3、★中密度纤维板：检验依据：GB/T 11718-2021《中密度纤维板》、GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放限量》、JC/T 2039-2010《抗菌防霉木质装饰板》，静曲强度（MPa)≥36；弹性模量（MPa)≥4500；内胶合强度(MPa)≥0.6；吸水厚度膨胀率(%)≤7；表面胶合强度(MPa)≥1.6；握螺钉力（N）板面≥1600、板边≥1100；密度（g/cm³ )符合要求；板内密度偏差(%)±1范围内；含水率(%)≤7；甲醛释放量（1m³气候箱法）≤0.03（mg/m³），抗细菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99.5%，防霉菌性能：可可毛球二孢、桔青霉防霉菌等级达到0级。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "防霉菌性能：可可毛球二孢、桔青霉防霉菌等级达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179219",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量（1m³气候箱法）≤0.03（mg/m³）",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 239,
+            "end": 265,
+            "pid": "t011-r030-c003-p001",
+            "pidText": "1.3、★中密度纤维板：检验依据：GB/T 11718-2021《中密度纤维板》、GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放限量》、JC/T 2039-2010《抗菌防霉木质装饰板》，静曲强度（MPa)≥36；弹性模量（MPa)≥4500；内胶合强度(MPa)≥0.6；吸水厚度膨胀率(%)≤7；表面胶合强度(MPa)≥1.6；握螺钉力（N）板面≥1600、板边≥1100；密度（g/cm³ )符合要求；板内密度偏差(%)±1范围内；含水率(%)≤7；甲醛释放量（1m³气候箱法）≤0.03（mg/m³），抗细菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99.5%，防霉菌性能：可可毛球二孢、桔青霉防霉菌等级达到0级。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（1m³气候箱法）≤0.03（mg/m³）"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179208",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "游离甲醛(mg/kg)",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 215,
+            "end": 226,
+            "pid": "t011-r035-c003-p001",
+            "pidText": "1.3、▲黑色天然皮革：检验依据：GB/T 16799-2018 《家具用皮革》，摩擦色牢度：干擦（500次）、湿擦（250次）、碱性汗液（80次）检测合格;感官要求、耐折牢度（50000次）a、耐磨性（CS-10,500g,500r)检测合格;涂层粘着牢度a≥5.0 N/10mm;撕裂力a≥30N，PH值≥3.5;稀释差（当PH值＜4.0时检验稀释差）≤0.2;气味：干态≤3级，湿态≤3级;禁用偶氮染料含量a(mg/kg)、游离甲醛(mg/kg)、可萃取的重金属a(mg/kg)：铅（Pb）、镉（Cd)均为未检出，挥发性有机物（VOC）a(mg/kg)≤50.0。 投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "游离甲醛(mg/kg)"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264642",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量（mg/m³）E1≤0.02",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 270,
+            "end": 289,
+            "pid": "t011-r052-c003-p001",
+            "pidText": "1.3、★低温静电喷涂粉末板：GB/T 37005-2018 《油漆饰面人造板》、GB 18580-2017《室内装饰装修材料 人造板及其制品中甲醛释放限量》，密度≥0.8g/c㎡，含水率为8.0-12%，表面耐磨≤0.12g/100r，漆膜附着力单项判定合格，漆膜硬度≥2H，表面抗冲击、表面耐液性、表面耐冷热温差、光泽度、耐光色牢度、耐干热、耐湿热单项判定合格，TVOC≤0.2mg/（㎡·h）（72h），静曲强度≥30MPa，弹性模量≥2800MPa，内结合强度≥0.6MPa，24h吸水厚度膨胀率≤8%，表面胶合强度≥1.5MPa，甲醛释放量（mg/m³）E1≤0.02。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（mg/m³）E1≤0.02"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547604373506",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量（mg/m³)为未检出",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 325,
+            "end": 341,
+            "pid": "t011-r061-c003-p001",
+            "pidText": "1.3、★三聚氰胺刨花板：检验依据：HJ 571-2010《环境标志产品技术要求 人造板及其制品》、GB 8624-2012《建筑材料及制品燃烧性能分级》、GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；JC/T2039-2010《抗菌防霉木质装饰板》，表面耐冷热循环、表面耐划痕、表面耐磨、表面耐污染腐蚀检测合格，静曲强度≥20MPa，弹性模量≥3300MPa，内结合强度≥0.50MPa，表面胶合强度≥1.30MPa,2h吸水厚度膨胀率≤0.5%，含水率为6.0-8%，密度为0.60-0.80g/cm³,握螺钉力：板面≥1200N、板边≥900N,表面耐香烟灼烧、表面耐干热、表面耐龟裂、表面耐水蒸气均≥5级，耐光色牢度≥4级，甲醛释放量（mg/m³)为未检出，总挥发性有机化合物（TVOC)释放率≤0.05mg/（m²·h）（72h）。抗菌性能铜绿假单胞菌抗细菌率≥99.5%，燃烧性能等级B1(C-S1,d0)燃烧增长速率指数FIGRAO.4MJ≤150，火焰横向蔓延未到达试样长翼边缘单项评价合格，600s的总放热量THR600S≤15MJ，产烟特性等级S1烟气生成速率指数SMOGRA≤30m²/s²，产烟特性等级S1：试验600s总烟气生成量TSP600≤50m²，燃烧滴落物/微粒等级d0：600s内无燃烧滴落物/微粒单项评价合格，60s内焰尖高度Fs≤140mm，60s内无燃烧滴落物引燃滤纸现象单项评价合格。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（mg/m³)为未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264645",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 78,
+            "end": 83,
+            "pid": "t011-r066-c003-p001",
+            "pidText": "1.3、▲ABS封边树脂，检验依据：QB/T 4463-2013 《家具用封边条技术要求》、GB/T24128-2018《塑料 塑料防霉剂的防霉效果评估》，甲醛释放量、氯乙烯单体、邻苯二甲酸酯 (DBP、BBP、DEHP、DNOP、DINP和DIDP)的总量、多溴联苯(PBB)、多溴联苯醚 (PBDE)实测结果未检出，可溶性重金属铅(Pb)、镉(Cd)、钡（Ba）、铬(Cr)、汞(Hg)、砷(As)、锑(Sb)、硒(Se)要求未检出。防霉性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗菌性能≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264652",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "防霉性能：桔青霉、可可毛球二孢防霉等级达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 219,
+            "end": 242,
+            "pid": "t011-r066-c003-p001",
+            "pidText": "1.3、▲ABS封边树脂，检验依据：QB/T 4463-2013 《家具用封边条技术要求》、GB/T24128-2018《塑料 塑料防霉剂的防霉效果评估》，甲醛释放量、氯乙烯单体、邻苯二甲酸酯 (DBP、BBP、DEHP、DNOP、DINP和DIDP)的总量、多溴联苯(PBB)、多溴联苯醚 (PBDE)实测结果未检出，可溶性重金属铅(Pb)、镉(Cd)、钡（Ba）、铬(Cr)、汞(Hg)、砷(As)、锑(Sb)、硒(Se)要求未检出。防霉性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗菌性能≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "防霉性能：桔青霉、可可毛球二孢防霉等级达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179217",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "桔青霉、可可毛球二孢耐霉菌性等级达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 180,
+            "end": 200,
+            "pid": "t011-r067-c003-p001",
+            "pidText": "1.4、▲缓冲铰链，检验依据：QB/T 2189-2013《家具五金杯状暗铰链》，GB/T11253-2019《碳素结构钢冷扎钢板及钢带》，GB/T1741-2020《漆膜耐霉菌性测定法》检测合格：过载垂直静载荷、水平静载荷，实测结果符合；耐久性试验次数30万次或以上，功能无损坏，安装B型试验门时，下沉量≤1mm；耐腐蚀试验时间:150h，无锈点，耐霉菌性：桔青霉、可可毛球二孢耐霉菌性等级达到0级，化学成分（质量分数）/%：C≤0.03、Si≤0.02，Mn≤0.2，P≤0.015，S≤0.01，力学性能：抗拉强度MPa在400-500，断后伸长率/%≥45.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "桔青霉、可可毛球二孢耐霉菌性等级达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070338",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "耐霉菌性等级绳状青霉达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 722,
+            "end": 736,
+            "pid": "t011-r079-c003-p001",
+            "pidText": "1.3、★卡座：检测和判定依据：GB/T 7999-2015《铝及铝合金光电直读发射光谱分析方法》；GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；GB/T 39600-2021《人造板及其制品甲醛释放量分级》；GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放限量》；GB/T 4897-2015《刨花板》；GB/T3280-2015《不锈钢冷轧钢板和钢带》；QB/T 4371-2012《家具抗菌性能的评价》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 5237.1-2017《铝合金建筑型材 第1部分：基材》，铜加速乙酸盐雾试验（CASS)连续喷雾500h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，密度g/cm³达到0.7-0.9，表面耐冷热循环、表面耐划痕单项评价合格，表面耐磨磨耗值mg/100r≤10，表面情况：素色磨350r以后应无露底现象单项评价合格，表面耐香烟灼烧、表面耐干热、表面耐污染腐蚀、表面耐龟裂、表面耐水蒸气均达到5级或以上（单项评价合格），耐光色牢度单项评价合格，甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出，理化性能：板内密度偏差%±2以内，含水率%5-8，静曲强度（MOR)MPa≥35，弹性模量（MOE)MPa≥4800，内胶合强度MPa≥1.5，表面胶合强度MPa≥2，24h吸水厚度膨胀率%≤3，握螺钉力板面N≥1500，板边N≥900，防潮性能（沸水煮后内胶合强度）MPa≥1，抗菌性能：宋内志贺氏菌抑菌率≥99.5%，耐霉菌性等级绳状青霉达到0级，化学成分：Si%达到0.6-0.8、Fe%≤0.2、Cu%达到0.2-0.3，Mn%≤0.15、Mg%达到1-1.2、Cr%达到0.1-0.3、Zn%≤0.1，Ti%≤0.1，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "耐霉菌性等级绳状青霉达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179215",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目发出公告后预计10天后开标，铜加速乙酸盐雾试验（CASS）的标准检测周期为连续喷雾500h，加上获取文件、准备送检样品及送检的合理时间，已超出10天。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "铜加速乙酸盐雾试验（CASS)连续喷雾500h",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 315,
+            "end": 338,
+            "pid": "t011-r079-c003-p001",
+            "pidText": "1.3、★卡座：检测和判定依据：GB/T 7999-2015《铝及铝合金光电直读发射光谱分析方法》；GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；GB/T 39600-2021《人造板及其制品甲醛释放量分级》；GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放限量》；GB/T 4897-2015《刨花板》；GB/T3280-2015《不锈钢冷轧钢板和钢带》；QB/T 4371-2012《家具抗菌性能的评价》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 5237.1-2017《铝合金建筑型材 第1部分：基材》，铜加速乙酸盐雾试验（CASS)连续喷雾500h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，密度g/cm³达到0.7-0.9，表面耐冷热循环、表面耐划痕单项评价合格，表面耐磨磨耗值mg/100r≤10，表面情况：素色磨350r以后应无露底现象单项评价合格，表面耐香烟灼烧、表面耐干热、表面耐污染腐蚀、表面耐龟裂、表面耐水蒸气均达到5级或以上（单项评价合格），耐光色牢度单项评价合格，甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出，理化性能：板内密度偏差%±2以内，含水率%5-8，静曲强度（MOR)MPa≥35，弹性模量（MOE)MPa≥4800，内胶合强度MPa≥1.5，表面胶合强度MPa≥2，24h吸水厚度膨胀率%≤3，握螺钉力板面N≥1500，板边N≥900，防潮性能（沸水煮后内胶合强度）MPa≥1，抗菌性能：宋内志贺氏菌抑菌率≥99.5%，耐霉菌性等级绳状青霉达到0级，化学成分：Si%达到0.6-0.8、Fe%≤0.2、Cu%达到0.2-0.3，Mn%≤0.15、Mg%达到1-1.2、Cr%达到0.1-0.3、Zn%≤0.1，Ti%≤0.1，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "铜加速乙酸盐雾试验（CASS)连续喷雾500h"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458956",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 535,
+            "end": 560,
+            "pid": "t011-r079-c003-p001",
+            "pidText": "1.3、★卡座：检测和判定依据：GB/T 7999-2015《铝及铝合金光电直读发射光谱分析方法》；GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；GB/T 39600-2021《人造板及其制品甲醛释放量分级》；GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放限量》；GB/T 4897-2015《刨花板》；GB/T3280-2015《不锈钢冷轧钢板和钢带》；QB/T 4371-2012《家具抗菌性能的评价》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 5237.1-2017《铝合金建筑型材 第1部分：基材》，铜加速乙酸盐雾试验（CASS)连续喷雾500h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，密度g/cm³达到0.7-0.9，表面耐冷热循环、表面耐划痕单项评价合格，表面耐磨磨耗值mg/100r≤10，表面情况：素色磨350r以后应无露底现象单项评价合格，表面耐香烟灼烧、表面耐干热、表面耐污染腐蚀、表面耐龟裂、表面耐水蒸气均达到5级或以上（单项评价合格），耐光色牢度单项评价合格，甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出，理化性能：板内密度偏差%±2以内，含水率%5-8，静曲强度（MOR)MPa≥35，弹性模量（MOE)MPa≥4800，内胶合强度MPa≥1.5，表面胶合强度MPa≥2，24h吸水厚度膨胀率%≤3，握螺钉力板面N≥1500，板边N≥900，防潮性能（沸水煮后内胶合强度）MPa≥1，抗菌性能：宋内志贺氏菌抑菌率≥99.5%，耐霉菌性等级绳状青霉达到0级，化学成分：Si%达到0.6-0.8、Fe%≤0.2、Cu%达到0.2-0.3，Mn%≤0.15、Mg%达到1-1.2、Cr%达到0.1-0.3、Zn%≤0.1，Ti%≤0.1，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547516293122",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "抗菌性能：表皮葡萄球菌、白色假丝酵母抑菌率≥99.5%",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 263,
+            "end": 290,
+            "pid": "t011-r084-c003-p001",
+            "pidText": "1.3、★阻燃布：检验依据：GB 18401-2010 《国家纺织产品基本安全技术规范》、GB 17927.1-2011《软体家具 床垫和沙发 抗引燃特性的评定 第1部分：阴燃的香烟》、GB/T24346-2009《纺织品 防霉性能的评价》、QB/T 4371-2012《家具抗菌性能的评价》，抗引燃特性-阴燃的香烟阻燃Ⅰ级，无异味，耐干摩擦色牢度≥4级，耐碱汗渍色牢度变色≥4级、沾色≥4级，耐酸汗渍色牢度变色≥4级、沾色≥4级，耐水色牢度变色≥4级、沾色≥4级，甲醛含量（mk/kg）、可分解致癌芳香胺染料实测结果未检出，抗菌性能：表皮葡萄球菌、白色假丝酵母抑菌率≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "抗菌性能：表皮葡萄球菌、白色假丝酵母抑菌率≥99.5%"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547604373509",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛含量（mk/kg）",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 233,
+            "end": 244,
+            "pid": "t011-r084-c003-p001",
+            "pidText": "1.3、★阻燃布：检验依据：GB 18401-2010 《国家纺织产品基本安全技术规范》、GB 17927.1-2011《软体家具 床垫和沙发 抗引燃特性的评定 第1部分：阴燃的香烟》、GB/T24346-2009《纺织品 防霉性能的评价》、QB/T 4371-2012《家具抗菌性能的评价》，抗引燃特性-阴燃的香烟阻燃Ⅰ级，无异味，耐干摩擦色牢度≥4级，耐碱汗渍色牢度变色≥4级、沾色≥4级，耐酸汗渍色牢度变色≥4级、沾色≥4级，耐水色牢度变色≥4级、沾色≥4级，甲醛含量（mk/kg）、可分解致癌芳香胺染料实测结果未检出，抗菌性能：表皮葡萄球菌、白色假丝酵母抑菌率≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛含量（mk/kg）"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547604373507",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "耐霉菌性等级宛氏拟青霉达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 267,
+            "end": 282,
+            "pid": "t011-r093-c003-p001",
+            "pidText": "1.3、▲不锈钢脚：检测和判定依据GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB/T 10125-2021《人造气氛腐蚀试验盐雾试验》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 3325-2017《金属家具通用技术条件》，外观性能要求金属件：管材、焊接件、冲压件、喷涂层单项评价合格，理化性能要求：金属喷漆（塑）涂层硬度≥3H，冲击强度单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥200h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性等级宛氏拟青霉达到0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "耐霉菌性等级宛氏拟青霉达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458951",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目发出公告后预计10天后开标，铜加速乙酸盐雾试验（CASS）的标准检测周期为连续喷雾≥200h，加上获取文件、准备送检样品及送检的合理时间，已超出10天。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "铜加速乙酸盐雾试验（CASS)连续喷雾≥200h",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 191,
+            "end": 215,
+            "pid": "t011-r093-c003-p001",
+            "pidText": "1.3、▲不锈钢脚：检测和判定依据GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB/T 10125-2021《人造气氛腐蚀试验盐雾试验》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 3325-2017《金属家具通用技术条件》，外观性能要求金属件：管材、焊接件、冲压件、喷涂层单项评价合格，理化性能要求：金属喷漆（塑）涂层硬度≥3H，冲击强度单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥200h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性等级宛氏拟青霉达到0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "铜加速乙酸盐雾试验（CASS)连续喷雾≥200h"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547528876037",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "耐霉菌性产黄青霉达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 621,
+            "end": 633,
+            "pid": "t011-r098-c003-p001",
+            "pidText": "1.3、★展示柜：检测和判定依据：GB/T 4897-2015《刨花板》；GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 39600-2021《人造板及其制品甲醛释放量分级》；GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放量》；GB 20286-2006《公共场所阻燃制品及组件燃烧性能要求和标识》，理化性能板内密度偏差%达到±2以内、含水率%8-10、静曲强度（MOR)MPa≥35，弹性模量（MOE)MPa≥5200，内胶合强度MPa≥1.5，表面胶合强度MPa≥2，24h吸水厚度膨胀率%≤3，握螺钉力板面N≥1500，板边N≥1000，防潮性能（沸水煮后内胶合强度）MPa≥1，密度g/cm³达到0.8-0.9，表面耐冷热循环、表面耐划痕单项评价合格，表面耐磨磨耗值mg/100r≤10，表面情况：素色磨350r以后无露底现象单项评价合格，表面耐香烟灼烧、表面耐干热、表面耐污染腐蚀、表面耐龟裂、表面耐水蒸气均达到5级或以上（单项评价合格），耐光色牢度单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥240h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性产黄青霉达到0级，甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出，公共场所阻燃家具及组件的燃烧性能阻燃1级（家具/组件）KW热释放速率峰值≤20kW,5min内放出的总能量≤2MJ，最大烟密度≤20%，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.045、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "耐霉菌性产黄青霉达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458948",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 634,
+            "end": 659,
+            "pid": "t011-r098-c003-p001",
+            "pidText": "1.3、★展示柜：检测和判定依据：GB/T 4897-2015《刨花板》；GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 39600-2021《人造板及其制品甲醛释放量分级》；GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放量》；GB 20286-2006《公共场所阻燃制品及组件燃烧性能要求和标识》，理化性能板内密度偏差%达到±2以内、含水率%8-10、静曲强度（MOR)MPa≥35，弹性模量（MOE)MPa≥5200，内胶合强度MPa≥1.5，表面胶合强度MPa≥2，24h吸水厚度膨胀率%≤3，握螺钉力板面N≥1500，板边N≥1000，防潮性能（沸水煮后内胶合强度）MPa≥1，密度g/cm³达到0.8-0.9，表面耐冷热循环、表面耐划痕单项评价合格，表面耐磨磨耗值mg/100r≤10，表面情况：素色磨350r以后无露底现象单项评价合格，表面耐香烟灼烧、表面耐干热、表面耐污染腐蚀、表面耐龟裂、表面耐水蒸气均达到5级或以上（单项评价合格），耐光色牢度单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥240h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性产黄青霉达到0级，甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出，公共场所阻燃家具及组件的燃烧性能阻燃1级（家具/组件）KW热释放速率峰值≤20kW,5min内放出的总能量≤2MJ，最大烟密度≤20%，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.045、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179213",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目发出公告后预计10天后开标，铜加速乙酸盐雾试验（CASS）的标准检测周期为连续喷雾≥240h，加上获取文件、准备送检样品及送检的合理时间，已超出10天。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "铜加速乙酸盐雾试验（CASS)连续喷雾≥240h",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 545,
+            "end": 569,
+            "pid": "t011-r098-c003-p001",
+            "pidText": "1.3、★展示柜：检测和判定依据：GB/T 4897-2015《刨花板》；GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 39600-2021《人造板及其制品甲醛释放量分级》；GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放量》；GB 20286-2006《公共场所阻燃制品及组件燃烧性能要求和标识》，理化性能板内密度偏差%达到±2以内、含水率%8-10、静曲强度（MOR)MPa≥35，弹性模量（MOE)MPa≥5200，内胶合强度MPa≥1.5，表面胶合强度MPa≥2，24h吸水厚度膨胀率%≤3，握螺钉力板面N≥1500，板边N≥1000，防潮性能（沸水煮后内胶合强度）MPa≥1，密度g/cm³达到0.8-0.9，表面耐冷热循环、表面耐划痕单项评价合格，表面耐磨磨耗值mg/100r≤10，表面情况：素色磨350r以后无露底现象单项评价合格，表面耐香烟灼烧、表面耐干热、表面耐污染腐蚀、表面耐龟裂、表面耐水蒸气均达到5级或以上（单项评价合格），耐光色牢度单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥240h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性产黄青霉达到0级，甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出，公共场所阻燃家具及组件的燃烧性能阻燃1级（家具/组件）KW热释放速率峰值≤20kW,5min内放出的总能量≤2MJ，最大烟密度≤20%，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.045、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "铜加速乙酸盐雾试验（CASS)连续喷雾≥240h"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179211",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "耐霉菌性等级链格孢为0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 1117,
+            "end": 1129,
+            "pid": "t011-r101-c003-p001",
+            "pidText": "1.3、★功能椅：检测和判定依据：GB/T 16799-2018《家具用皮革》；GB 28481-2012《塑料家具中有害物质限量》；GB/T 32487-2016《塑料家具通用技术条件》；GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB 18401-2010《国家纺织产品基本安全技术规范》；GB/T 1741-2020《漆膜耐霉菌性测定法》，摩擦色牢度干擦、湿擦、碱性汗液单项评价合格，涂层粘着牢度N/10mm≥7，耐折牢度（50000次）无裂纹单项评价合格，耐磨性（CS-10,500g，500r）单项评价合格，撕裂力N≥75，气味≤2级，PH≥5，游离甲醛mg/kg为未检出，挥发性有机物（VOC）mg/kg为未检出，可萃取重金属铅（Pb）mg/kg为未检出、镉（Cd）mg/kg为未检出，禁用偶氮染料：4-氨基联苯、联苯胺、4-氯邻甲苯胺、2-萘胺、邻氨基偶氮甲苯、2-氨基-4-硝基甲苯、对氯苯胺、2，4-二氨基苯甲醚、4，4’-二氨基二苯甲烷、3，3’-二氯联苯胺、3，3’-二甲氧基联苯胺、3，3’-二甲基联苯胺、3，3’-二甲基-4，4’-二氨基二苯甲烷、3-氨基对甲苯甲醚（ρ-克利酊）、4，4’-次甲基-双-（2-氯苯胺）、4，4’-二氨基二苯醚、4，4’-二氨基二苯硫醚、邻甲苯胺、2，4-二氨基甲苯、2，4，5-三甲基苯胺、邻甲氧基苯胺（邻氨基苯甲醚）、2，4-二甲基苯胺、2，6-二甲基苯胺均为未检出，感官要求：两侧表皮、裂缝、气孔、气味、污染、色泽均单项评价合格，物理力学性能：75%压缩永久变形%≤3，回弹率%≥40，拉伸强度KPa≥120，伸长率%≥180，撕裂强度N/cm≥5，干热老化后拉伸强度KPa≥110，湿热老化后拉伸强度KPa≥105，邻苯二甲酸酯/%：邻苯二甲酸二丁酯（DBP）、邻苯二甲酸丁酯苄酯（BBP）、邻苯二甲酸-2-乙基己基酯（DEHP）、邻苯二甲酸二正辛酯（DNOP)、邻苯二甲酸二异壬酯（DINP）、邻苯二甲酸二异癸酯（DIDP）均为未检出，重金属可溶性铅、可溶性镉、可溶性铬、可溶性汞mg/kg均≤3，多环芳烃苯并〔α〕芘、16种多环方烃（PAH）总量均为未检出，多溴联苯（PBB）、多溴二苯醚（PBDE）均为未检出，塑料材料耐老化性单项评价合格，冲击强度J/㎡≥15000，外观、其他外观、塑料件外观单项评价合格，塑料件硬度邵氏D硬度≥HD63，耐冷热循环单项评价合格，甲醛含量未检出，PH值在5-7，染色牢度：耐水（变色、沾色）、耐酸汗渍（变色、沾色）、耐碱汗渍（变色、沾色）、耐干摩擦、耐唾液（变色、沾色）、异味单项评价合格，可分解致癌芳香胺染料未检出，耐霉菌性等级链格孢为0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.75、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.力学性能：抗拉强度Rm/MPa≥790，断后伸长率A/%≥55，规定塑性延伸强度Rpo.2/MPa≥300.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "耐霉菌性等级链格孢为0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264647",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛含量未检出",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 1023,
+            "end": 1030,
+            "pid": "t011-r101-c003-p001",
+            "pidText": "1.3、★功能椅：检测和判定依据：GB/T 16799-2018《家具用皮革》；GB 28481-2012《塑料家具中有害物质限量》；GB/T 32487-2016《塑料家具通用技术条件》；GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB 18401-2010《国家纺织产品基本安全技术规范》；GB/T 1741-2020《漆膜耐霉菌性测定法》，摩擦色牢度干擦、湿擦、碱性汗液单项评价合格，涂层粘着牢度N/10mm≥7，耐折牢度（50000次）无裂纹单项评价合格，耐磨性（CS-10,500g，500r）单项评价合格，撕裂力N≥75，气味≤2级，PH≥5，游离甲醛mg/kg为未检出，挥发性有机物（VOC）mg/kg为未检出，可萃取重金属铅（Pb）mg/kg为未检出、镉（Cd）mg/kg为未检出，禁用偶氮染料：4-氨基联苯、联苯胺、4-氯邻甲苯胺、2-萘胺、邻氨基偶氮甲苯、2-氨基-4-硝基甲苯、对氯苯胺、2，4-二氨基苯甲醚、4，4’-二氨基二苯甲烷、3，3’-二氯联苯胺、3，3’-二甲氧基联苯胺、3，3’-二甲基联苯胺、3，3’-二甲基-4，4’-二氨基二苯甲烷、3-氨基对甲苯甲醚（ρ-克利酊）、4，4’-次甲基-双-（2-氯苯胺）、4，4’-二氨基二苯醚、4，4’-二氨基二苯硫醚、邻甲苯胺、2，4-二氨基甲苯、2，4，5-三甲基苯胺、邻甲氧基苯胺（邻氨基苯甲醚）、2，4-二甲基苯胺、2，6-二甲基苯胺均为未检出，感官要求：两侧表皮、裂缝、气孔、气味、污染、色泽均单项评价合格，物理力学性能：75%压缩永久变形%≤3，回弹率%≥40，拉伸强度KPa≥120，伸长率%≥180，撕裂强度N/cm≥5，干热老化后拉伸强度KPa≥110，湿热老化后拉伸强度KPa≥105，邻苯二甲酸酯/%：邻苯二甲酸二丁酯（DBP）、邻苯二甲酸丁酯苄酯（BBP）、邻苯二甲酸-2-乙基己基酯（DEHP）、邻苯二甲酸二正辛酯（DNOP)、邻苯二甲酸二异壬酯（DINP）、邻苯二甲酸二异癸酯（DIDP）均为未检出，重金属可溶性铅、可溶性镉、可溶性铬、可溶性汞mg/kg均≤3，多环芳烃苯并〔α〕芘、16种多环方烃（PAH）总量均为未检出，多溴联苯（PBB）、多溴二苯醚（PBDE）均为未检出，塑料材料耐老化性单项评价合格，冲击强度J/㎡≥15000，外观、其他外观、塑料件外观单项评价合格，塑料件硬度邵氏D硬度≥HD63，耐冷热循环单项评价合格，甲醛含量未检出，PH值在5-7，染色牢度：耐水（变色、沾色）、耐酸汗渍（变色、沾色）、耐碱汗渍（变色、沾色）、耐干摩擦、耐唾液（变色、沾色）、异味单项评价合格，可分解致癌芳香胺染料未检出，耐霉菌性等级链格孢为0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.75、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.力学性能：抗拉强度Rm/MPa≥790，断后伸长率A/%≥55，规定塑性延伸强度Rpo.2/MPa≥300.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛含量未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547604373508",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛含量未检出",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 189,
+            "end": 196,
+            "pid": "t011-r108-c003-p001",
+            "pidText": "1.3、▲水性油漆（底漆）：检测依据：GB18581-2020《木器涂料中有害物质限量》、GB/T23993-2009《水性涂料中甲醛含量的测定乙酰丙酮分光光度法》、GB/T31414-2015《水性涂料表面活性剂的测定烷基酚聚氧乙烯醚》、GB/T1741-2020《漆膜耐霉菌性测定法》、GB/T21866-2008《抗菌涂料（漆膜）抗菌性测定法和抗菌效果》VOC含量未检出、甲醛含量未检出、乙二醇醚及醚酯总和含量(限乙二醇甲醚、乙二醇甲醚醋酸酯、乙二醇乙醚、乙二醇乙醚醋酸酯、乙二醇二甲醚、乙二醇二乙醚、二乙二醇二甲醚、三乙二醇二甲醚)未检出，苯系物总和含量[限苯、甲苯、二甲苯(含乙苯)]未检出，烷基酚聚氧乙烯醚总和含量{限辛基酚聚氧乙烯醚[C8H17-C6H4-(OC2H4)nOH，简称OPnEO]和壬基酚聚氧乙烯醚[C9H19-C6H4-(OC2H4)nOH,简称NPnEO],n=2～16}未检出，耐霉菌性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛含量未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179220",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "桔青霉、可可毛球二孢防霉等级达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 412,
+            "end": 430,
+            "pid": "t011-r108-c003-p001",
+            "pidText": "1.3、▲水性油漆（底漆）：检测依据：GB18581-2020《木器涂料中有害物质限量》、GB/T23993-2009《水性涂料中甲醛含量的测定乙酰丙酮分光光度法》、GB/T31414-2015《水性涂料表面活性剂的测定烷基酚聚氧乙烯醚》、GB/T1741-2020《漆膜耐霉菌性测定法》、GB/T21866-2008《抗菌涂料（漆膜）抗菌性测定法和抗菌效果》VOC含量未检出、甲醛含量未检出、乙二醇醚及醚酯总和含量(限乙二醇甲醚、乙二醇甲醚醋酸酯、乙二醇乙醚、乙二醇乙醚醋酸酯、乙二醇二甲醚、乙二醇二乙醚、二乙二醇二甲醚、三乙二醇二甲醚)未检出，苯系物总和含量[限苯、甲苯、二甲苯(含乙苯)]未检出，烷基酚聚氧乙烯醚总和含量{限辛基酚聚氧乙烯醚[C8H17-C6H4-(OC2H4)nOH，简称OPnEO]和壬基酚聚氧乙烯醚[C9H19-C6H4-(OC2H4)nOH,简称NPnEO],n=2～16}未检出，耐霉菌性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "桔青霉、可可毛球二孢防霉等级达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179206",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "桔青霉、可可毛球二孢防霉等级达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 412,
+            "end": 430,
+            "pid": "t011-r109-c003-p001",
+            "pidText": "1.4、▲水性油漆（面漆）：检测依据：GB18581-2020《木器涂料中有害物质限量》、GB/T23993-2009《水性涂料中甲醛含量的测定乙酰丙酮分光光度法》、GB/T31414-2015《水性涂料表面活性剂的测定烷基酚聚氧乙烯醚》、GB/T1741-2020《漆膜耐霉菌性测定法》、GB/T21866-2008《抗菌涂料（漆膜）抗菌性测定法和抗菌效果》VOC含量未检出、甲醛含量未检出、乙二醇醚及醚酯总和含量(限乙二醇甲醚、乙二醇甲醚醋酸酯、乙二醇乙醚、乙二醇乙醚醋酸酯、乙二醇二甲醚、乙二醇二乙醚、二乙二醇二甲醚、三乙二醇二甲醚)未检出，苯系物总和含量[限苯、甲苯、二甲苯(含乙苯)]未检出，烷基酚聚氧乙烯醚总和含量{限辛基酚聚氧乙烯醚[C8H17-C6H4-(OC2H4)nOH，简称OPnEO]和壬基酚聚氧乙烯醚[C9H19-C6H4-(OC2H4)nOH,简称NPnEO],n=2～16}未检出，耐霉菌性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "桔青霉、可可毛球二孢防霉等级达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070346",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛含量未检出",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 189,
+            "end": 196,
+            "pid": "t011-r109-c003-p001",
+            "pidText": "1.4、▲水性油漆（面漆）：检测依据：GB18581-2020《木器涂料中有害物质限量》、GB/T23993-2009《水性涂料中甲醛含量的测定乙酰丙酮分光光度法》、GB/T31414-2015《水性涂料表面活性剂的测定烷基酚聚氧乙烯醚》、GB/T1741-2020《漆膜耐霉菌性测定法》、GB/T21866-2008《抗菌涂料（漆膜）抗菌性测定法和抗菌效果》VOC含量未检出、甲醛含量未检出、乙二醇醚及醚酯总和含量(限乙二醇甲醚、乙二醇甲醚醋酸酯、乙二醇乙醚、乙二醇乙醚醋酸酯、乙二醇二甲醚、乙二醇二乙醚、二乙二醇二甲醚、三乙二醇二甲醚)未检出，苯系物总和含量[限苯、甲苯、二甲苯(含乙苯)]未检出，烷基酚聚氧乙烯醚总和含量{限辛基酚聚氧乙烯醚[C8H17-C6H4-(OC2H4)nOH，简称OPnEO]和壬基酚聚氧乙烯醚[C9H19-C6H4-(OC2H4)nOH,简称NPnEO],n=2～16}未检出，耐霉菌性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛含量未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547528876034",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "甲醛释放量（HJ 571）（mg/m³）为未检出",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 241,
+            "end": 265,
+            "pid": "t011-r116-c003-p001",
+            "pidText": "1.3、★水曲柳切片胶合板：检验依据：HJ 571-2010《环境标志产品技术要求 人造板及其制品》、GB/T 9846-2015《普通胶合板》、GB 8624-2012《建筑材料及制品燃烧性能分级》，胶合强度、浸渍剥离、静曲强度检测合格，燃烧性能等级（B1)：燃烧增长速率指数≤140W/s、600s内总热释放量≤15MJ、火焰横向蔓延长度、燃烧长度、燃烧滴落物检测合格，附加等级（GB 8624）：烟气生成速率/600s内总烟气生成量达到s1级、燃烧滴落物/微粒等级达到d0级，甲醛释放量（HJ 571）（mg/m³）为未检出。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（HJ 571）（mg/m³）为未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264650",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目发出公告后预计10天后开标，杯状暗铰链耐久性的标准检测周期为10天，加上获取文件、准备送检样品及送检的合理时间，已超出10天。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "耐久性（80000次）",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 111,
+            "end": 122,
+            "pid": "t011-r123-c003-p001",
+            "pidText": "1.3、▲304不锈钢门铰：检验依据：QB/T 2189-2013《家具五金杯状暗铰链》、QB/T 4371-2012《家具抗菌性能的评价》，过载：垂直静载荷、水平静载荷单项评价合格，功能：操作力、垂直静载荷、水平静载荷、耐久性（80000次）、下沉量单项评价合格，耐腐蚀单项评价合格。嗜麦芽窄食单胞菌抑菌率≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "耐久性（80000次）"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179203",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "本项目发出公告后预计10天后开标，铜加速乙酸盐雾试验（CASS）的标准检测周期为连续喷雾≥240h，加上获取文件、准备送检样品及送检的合理时间，已超出10天。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "铜加速乙酸盐雾试验（CASS)连续喷雾≥240h",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 144,
+            "end": 168,
+            "pid": "t011-r142-c003-p001",
+            "pidText": "1.3、▲不锈钢制连接件：检测和判定依据：GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T3280-2015《不锈钢冷轧钢板和钢带》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T3325-2017《金属家具通用技术条件》，金属件外观性能单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥240h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性等级可可毛球二孢达到0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.045、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.55、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "铜加速乙酸盐雾试验（CASS)连续喷雾≥240h"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458954",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "防霉检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "耐霉菌性等级可可毛球二孢达到0级",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 220,
+            "end": 236,
+            "pid": "t011-r142-c003-p001",
+            "pidText": "1.3、▲不锈钢制连接件：检测和判定依据：GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T3280-2015《不锈钢冷轧钢板和钢带》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T3325-2017《金属家具通用技术条件》，金属件外观性能单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥240h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性等级可可毛球二孢达到0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.045、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.55、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "耐霉菌性等级可可毛球二孢达到0级"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547604373510",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "130",
+        "sceneDesc": "要求提供检验检测报告的，须给予投标人必要且合理的时间",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "甲醛检测通常需要28天检测周期，远大于招标公告发布后投标截止时间。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "",
+            "basicNumber": "",
+            "basicDesc": "若招标文件要求的检验检测报告属于国家强制检测事项，可以要求投标人提供相应的检验检测报告;若高于或没有国家强制标准的，则在投标截止期届满前，应当给予投标人充足的检测时间;确因项目紧急无法给予投标人充分时间的，招标文件可以要求投标人承诺在中标后提供相关检验检测报告。",
+            "sourceLink": null
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "有害物质限量-甲醛释放量",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "建议延长投标截止期限，或删除检测报告要求，或允许投标人承诺在中标后提供相关检验检测报告。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 392,
+            "end": 404,
+            "pid": "t011-r149-c003-p001",
+            "pidText": "1.3、★沙发：检验依据：GB 20286-2006《公共场所阻燃制品及组件燃烧性能要求和标识》、QB/T 4371-2012《家具抗菌性能的评价》、QB/T 1952.1-2023《软体家具 沙发》、GB/T 24253-2009《纺织品 防螨性能的评价》、GB/T 39223.6-2020《健康家居的人类工效学要求 第6部分：沙发》、GB 17927.2-2011《软体家具 床垫和沙发 抗引燃特性的评定 第2部分：模拟火柴火焰》，大肠杆菌（大肠埃希氏菌）抑菌率≥99%，尺寸要求单项判定合格，抗引燃特性试验：阻燃Ⅱ级-模拟火柴火焰未观察到试样表面或内部出现任何续燃、阴燃现象单项判定合格，燃烧性能：阻燃性能等级-阻燃1级（家具/组件）-软垫家具热释放速率峰值≤55kW,5min内放出的总能量≤10MJ，最大烟密度≤30%，无有焰燃烧引燃或阴燃引燃现象，力学性能单项判定合格，有害物质限量-甲醛释放量、总挥发性有机化合物（TVOC）、木制件表面涂层可迁移元素（mg/kg）-镉Cd、铅Pb、铬Cr、汞Hg、锑Sb、钡Ba、硒Se、砷As均为未检出，防螨性能驱避率≥95%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "有害物质限量-甲醛释放量"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264641",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB/T35607-2017\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB/T 35607-2024",
+            "basicNumber": " 绿色产品评价 家具",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=1C2B2104494C7242E06397BE0A0ACA1F"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB/T35607-2017《绿色产品评价 家具》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB/T 35607-2024\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 45,
+            "end": 70,
+            "pid": "t011-r010-c003-p001",
+            "pidText": "1.4、▲原木桌面：检测依据：GB/T 14531-2017《办公家具 阅览桌、椅、凳》、GB/T35607-2017《绿色产品评价 家具》、QB/T 4371-2012《家具抗菌性能的评价》，外观要求、木制件表面理化性能检测合格，甲醛释放量（9-11L干燥器法）≤0.2mg/L，有害物质限量（mg/kg）：可迁移元素锑、可迁移元素砷、可迁移元素钡、可迁移元素镉、可迁移元素铬、可迁移元素铅、可迁移元素汞、可迁移元素硒为未检出，产品有害物质：总挥发性有机化合物（TVOC）（mg/m3）为未检出，抗菌性能：鼠伤寒沙门氏菌抑菌率≥99%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB/T35607-2017《绿色产品评价 家具》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264648",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"QB/T1952.1-2012\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " QB/T 1952.1-2023",
+            "basicNumber": " 软体家具 沙发",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/hb/search/stdHBDetailed?id=10C5421C7090D71DE06397BE0A0AD0B4"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "QB/T 1952.1-2012《软体家具 沙发》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"QB/T 1952.1-2023\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 13,
+            "end": 38,
+            "pid": "t011-r014-c003-p001",
+            "pidText": "1.4、▲沙发：检验依据：QB/T 1952.1-2012《软体家具 沙发》、GB/T 24346-2009《纺织品 防霉性能的评价》、QB/T4371-2012《家具抗菌性能的评价》，主要尺寸及外形对称度、外观性能、安全性能检测合格，抗菌性能：表皮葡萄球菌、白色假丝酵母抑菌率均≥99.5%，防霉性能：桔青霉、可可毛球二孢防霉等级达到0级。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "QB/T 1952.1-2012《软体家具 沙发》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458950",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB18584-2001\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB 18584-2024",
+            "basicNumber": " 家具中有害物质限量",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=1BD5B9878E5F2FCEE06397BE0A0A10CC"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB 18584-2001《室内装饰装修材料木家具中有害物质限量》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB 18584-2024\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 105,
+            "end": 138,
+            "pid": "t011-r023-c003-p001",
+            "pidText": "1.3、★玻璃纤维塑料：检验依据：HJ 2540-2015《环境标志产品技术要求 木塑制品》；GB 28481-2012《塑料家具中有害物质限量》；HJ571-2010《环境标志产品技术要求 人造板及其制品》；GB 18584-2001《室内装饰装修材料木家具中有害物质限量》；QB/T 4371-2012《家具抗菌性能的评价》，邻苯二甲酸酯总量（%）、甲醛释放量（mg/m³）为未检出，重金属（mg/㎡）：可溶性铅、可溶性镉、可溶性铬、可溶性汞均为未检出，重金属含量（限色漆）（mg/Kg）：可溶性铅、可溶性镉、可溶性铬、可溶性汞均为未检出，总挥发性有机化合物（TVOC）mg/（㎡·h)（72h)为未检出。抗菌性能乙型溶血性链球菌抑菌率≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB 18584-2001《室内装饰装修材料木家具中有害物质限量》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070345",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB28481-2012\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB 18584-2024",
+            "basicNumber": " 家具中有害物质限量",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=1BD5B9878E5F2FCEE06397BE0A0A10CC"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB 28481-2012《塑料家具中有害物质限量》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB 18584-2024\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 47,
+            "end": 73,
+            "pid": "t011-r023-c003-p001",
+            "pidText": "1.3、★玻璃纤维塑料：检验依据：HJ 2540-2015《环境标志产品技术要求 木塑制品》；GB 28481-2012《塑料家具中有害物质限量》；HJ571-2010《环境标志产品技术要求 人造板及其制品》；GB 18584-2001《室内装饰装修材料木家具中有害物质限量》；QB/T 4371-2012《家具抗菌性能的评价》，邻苯二甲酸酯总量（%）、甲醛释放量（mg/m³）为未检出，重金属（mg/㎡）：可溶性铅、可溶性镉、可溶性铬、可溶性汞均为未检出，重金属含量（限色漆）（mg/Kg）：可溶性铅、可溶性镉、可溶性铬、可溶性汞均为未检出，总挥发性有机化合物（TVOC）mg/（㎡·h)（72h)为未检出。抗菌性能乙型溶血性链球菌抑菌率≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB 28481-2012《塑料家具中有害物质限量》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179209",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB/T3325-2017\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB/T 3325-2024",
+            "basicNumber": " 金属家具通用技术条件",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=25940C3CEF148A9AE06397BE0A0A525A"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB/T 3325-2017《金属家具通用技术条件》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB/T 3325-2024\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 66,
+            "end": 92,
+            "pid": "t011-r044-c003-p001",
+            "pidText": "1.3、▲铁丝网：检测依据：GB/T35607-2017《绿色产品评价 家具》、QB/T 4371-2012《家具抗菌性能的评价》、GB/T 3325-2017《金属家具通用技术条件》，理化性能要求单项评价合格，产品有害物质（家具涂层可迁元素）（mg/kg）：镉Cd、铅Pb、铬Cr、汞Hg、锑Sb、钡Ba、硒Se、砷As为未检出，抗菌性能：铜绿假单胞菌抑菌率≥99%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB/T 3325-2017《金属家具通用技术条件》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070340",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB/T35607-2017\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB/T 35607-2024",
+            "basicNumber": " 绿色产品评价 家具",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=1C2B2104494C7242E06397BE0A0ACA1F"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB/T35607-2017《绿色产品评价 家具》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB/T 35607-2024\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 14,
+            "end": 39,
+            "pid": "t011-r044-c003-p001",
+            "pidText": "1.3、▲铁丝网：检测依据：GB/T35607-2017《绿色产品评价 家具》、QB/T 4371-2012《家具抗菌性能的评价》、GB/T 3325-2017《金属家具通用技术条件》，理化性能要求单项评价合格，产品有害物质（家具涂层可迁元素）（mg/kg）：镉Cd、铅Pb、铬Cr、汞Hg、锑Sb、钡Ba、硒Se、砷As为未检出，抗菌性能：铜绿假单胞菌抑菌率≥99%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB/T35607-2017《绿色产品评价 家具》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547533070337",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB/T35601-2017\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB/T 35601-2024",
+            "basicNumber": " 绿色产品评价  人造板和木质地板",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=28045D84DA069055E06397BE0A0A7C5C"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB/T 35601-2017 《绿色产品评价 人造板和木质地板》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB/T 35601-2024\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 16,
+            "end": 49,
+            "pid": "t011-r049-c003-p001",
+            "pidText": "1.3、▲多层实木板，检验依据：GB/T 35601-2017 《绿色产品评价 人造板和木质地板》, GB/T17657-2013 《人造板及饰面人造板理化性能试验方法》,GB/T 9846-2015 《普通胶合板》，JC/T2039-2010《抗菌防霉木质装饰板》，甲醛释放量（1m³气候箱法）未检出，苯、甲苯、二甲苯、总挥发性有机化合物（TOVC)均为未检出,胶合强度≥1.1MPa，静曲强度顺纹≥45MPa、横纹≥39MPa；弹性模量顺纹≥6900MPa、横纹≥6600MPa，抗细菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99.5%，防霉菌性能：可可毛球二孢、桔青霉防霉菌性等级达到0级。要求投标时提供2021年1月1日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的所投产品的原材料检验报告（提供扫描件，原件备查）。",
+            "text": "GB/T 35601-2017 《绿色产品评价 人造板和木质地板》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458946",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB/T17657-2013\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB/T 17657-2022",
+            "basicNumber": " 人造板及饰面人造板理化性能试验方法",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=F159DFC2A86347EFE05397BE0A0AF334"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB/T17657-2013 《人造板及饰面人造板理化性能试验方法》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB/T 17657-2022\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 51,
+            "end": 85,
+            "pid": "t011-r049-c003-p001",
+            "pidText": "1.3、▲多层实木板，检验依据：GB/T 35601-2017 《绿色产品评价 人造板和木质地板》, GB/T17657-2013 《人造板及饰面人造板理化性能试验方法》,GB/T 9846-2015 《普通胶合板》，JC/T2039-2010《抗菌防霉木质装饰板》，甲醛释放量（1m³气候箱法）未检出，苯、甲苯、二甲苯、总挥发性有机化合物（TOVC)均为未检出,胶合强度≥1.1MPa，静曲强度顺纹≥45MPa、横纹≥39MPa；弹性模量顺纹≥6900MPa、横纹≥6600MPa，抗细菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99.5%，防霉菌性能：可可毛球二孢、桔青霉防霉菌性等级达到0级。要求投标时提供2021年1月1日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的所投产品的原材料检验报告（提供扫描件，原件备查）。",
+            "text": "GB/T17657-2013 《人造板及饰面人造板理化性能试验方法》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547600179205",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB/T3325-2017\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB/T 3325-2024",
+            "basicNumber": " 金属家具通用技术条件",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=25940C3CEF148A9AE06397BE0A0A525A"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB/T 3325-2017《金属家具通用技术条件》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB/T 3325-2024\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 100,
+            "end": 126,
+            "pid": "t011-r093-c003-p001",
+            "pidText": "1.3、▲不锈钢脚：检测和判定依据GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB/T 10125-2021《人造气氛腐蚀试验盐雾试验》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 3325-2017《金属家具通用技术条件》，外观性能要求金属件：管材、焊接件、冲压件、喷涂层单项评价合格，理化性能要求：金属喷漆（塑）涂层硬度≥3H，冲击强度单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥200h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性等级宛氏拟青霉达到0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB/T 3325-2017《金属家具通用技术条件》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547541458953",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB28481-2012\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB 18584-2024",
+            "basicNumber": " 家具中有害物质限量",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=1BD5B9878E5F2FCEE06397BE0A0A10CC"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB 28481-2012《塑料家具中有害物质限量》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB 18584-2024\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 40,
+            "end": 66,
+            "pid": "t011-r101-c003-p001",
+            "pidText": "1.3、★功能椅：检测和判定依据：GB/T 16799-2018《家具用皮革》；GB 28481-2012《塑料家具中有害物质限量》；GB/T 32487-2016《塑料家具通用技术条件》；GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB 18401-2010《国家纺织产品基本安全技术规范》；GB/T 1741-2020《漆膜耐霉菌性测定法》，摩擦色牢度干擦、湿擦、碱性汗液单项评价合格，涂层粘着牢度N/10mm≥7，耐折牢度（50000次）无裂纹单项评价合格，耐磨性（CS-10,500g，500r）单项评价合格，撕裂力N≥75，气味≤2级，PH≥5，游离甲醛mg/kg为未检出，挥发性有机物（VOC）mg/kg为未检出，可萃取重金属铅（Pb）mg/kg为未检出、镉（Cd）mg/kg为未检出，禁用偶氮染料：4-氨基联苯、联苯胺、4-氯邻甲苯胺、2-萘胺、邻氨基偶氮甲苯、2-氨基-4-硝基甲苯、对氯苯胺、2，4-二氨基苯甲醚、4，4’-二氨基二苯甲烷、3，3’-二氯联苯胺、3，3’-二甲氧基联苯胺、3，3’-二甲基联苯胺、3，3’-二甲基-4，4’-二氨基二苯甲烷、3-氨基对甲苯甲醚（ρ-克利酊）、4，4’-次甲基-双-（2-氯苯胺）、4，4’-二氨基二苯醚、4，4’-二氨基二苯硫醚、邻甲苯胺、2，4-二氨基甲苯、2，4，5-三甲基苯胺、邻甲氧基苯胺（邻氨基苯甲醚）、2，4-二甲基苯胺、2，6-二甲基苯胺均为未检出，感官要求：两侧表皮、裂缝、气孔、气味、污染、色泽均单项评价合格，物理力学性能：75%压缩永久变形%≤3，回弹率%≥40，拉伸强度KPa≥120，伸长率%≥180，撕裂强度N/cm≥5，干热老化后拉伸强度KPa≥110，湿热老化后拉伸强度KPa≥105，邻苯二甲酸酯/%：邻苯二甲酸二丁酯（DBP）、邻苯二甲酸丁酯苄酯（BBP）、邻苯二甲酸-2-乙基己基酯（DEHP）、邻苯二甲酸二正辛酯（DNOP)、邻苯二甲酸二异壬酯（DINP）、邻苯二甲酸二异癸酯（DIDP）均为未检出，重金属可溶性铅、可溶性镉、可溶性铬、可溶性汞mg/kg均≤3，多环芳烃苯并〔α〕芘、16种多环方烃（PAH）总量均为未检出，多溴联苯（PBB）、多溴二苯醚（PBDE）均为未检出，塑料材料耐老化性单项评价合格，冲击强度J/㎡≥15000，外观、其他外观、塑料件外观单项评价合格，塑料件硬度邵氏D硬度≥HD63，耐冷热循环单项评价合格，甲醛含量未检出，PH值在5-7，染色牢度：耐水（变色、沾色）、耐酸汗渍（变色、沾色）、耐碱汗渍（变色、沾色）、耐干摩擦、耐唾液（变色、沾色）、异味单项评价合格，可分解致癌芳香胺染料未检出，耐霉菌性等级链格孢为0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.04、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.75、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.力学性能：抗拉强度Rm/MPa≥790，断后伸长率A/%≥55，规定塑性延伸强度Rpo.2/MPa≥300.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB 28481-2012《塑料家具中有害物质限量》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547537264644",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "检测标准\"HJ571\"不符合检测标准命名规范，可能导致检测标准引用不完整、不合规。",
+        "legalBasicSourceList": [
+          {
+            "source": "工标网",
+            "basicIssue": " HJ 571-2010",
+            "basicNumber": " 环境标志产品技术要求 人造板及其制品",
+            "basicDesc": "",
+            "sourceLink": "http://www.csres.com/detail/210671.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "HJ 571-2010《环境标志产品技术要求 人造板及其制品》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "按照检测标准命名规范补充完整，确保引用的检测标准准确、合规。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 19,
+            "end": 50,
+            "pid": "t011-r116-c003-p001",
+            "pidText": "1.3、★水曲柳切片胶合板：检验依据：HJ 571-2010《环境标志产品技术要求 人造板及其制品》、GB/T 9846-2015《普通胶合板》、GB 8624-2012《建筑材料及制品燃烧性能分级》，胶合强度、浸渍剥离、静曲强度检测合格，燃烧性能等级（B1)：燃烧增长速率指数≤140W/s、600s内总热释放量≤15MJ、火焰横向蔓延长度、燃烧长度、燃烧滴落物检测合格，附加等级（GB 8624）：烟气生成速率/600s内总烟气生成量达到s1级、燃烧滴落物/微粒等级达到d0级，甲醛释放量（HJ 571）（mg/m³）为未检出。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "HJ 571-2010《环境标志产品技术要求 人造板及其制品》"
+          },
+          {
+            "start": 241,
+            "end": 265,
+            "pid": "t011-r116-c003-p001",
+            "pidText": "1.3、★水曲柳切片胶合板：检验依据：HJ 571-2010《环境标志产品技术要求 人造板及其制品》、GB/T 9846-2015《普通胶合板》、GB 8624-2012《建筑材料及制品燃烧性能分级》，胶合强度、浸渍剥离、静曲强度检测合格，燃烧性能等级（B1)：燃烧增长速率指数≤140W/s、600s内总热释放量≤15MJ、火焰横向蔓延长度、燃烧长度、燃烧滴落物检测合格，附加等级（GB 8624）：烟气生成速率/600s内总烟气生成量达到s1级、燃烧滴落物/微粒等级达到d0级，甲醛释放量（HJ 571）（mg/m³）为未检出。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "甲醛释放量（HJ 571）（mg/m³）为未检出"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547528876033",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "检测标准\"GB8624\"不符合检测标准命名规范，可能导致检测标准引用不完整、不合规。",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB 8624-2012",
+            "basicNumber": " 建筑材料及制品燃烧性能分级",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D7E840D3A7E05397BE0A0AB82A"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB 8624",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "按照检测标准命名规范补充完整，确保引用的检测标准准确、合规。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 73,
+            "end": 80,
+            "pid": "t011-r116-c003-p001",
+            "pidText": "1.3、★水曲柳切片胶合板：检验依据：HJ 571-2010《环境标志产品技术要求 人造板及其制品》、GB/T 9846-2015《普通胶合板》、GB 8624-2012《建筑材料及制品燃烧性能分级》，胶合强度、浸渍剥离、静曲强度检测合格，燃烧性能等级（B1)：燃烧增长速率指数≤140W/s、600s内总热释放量≤15MJ、火焰横向蔓延长度、燃烧长度、燃烧滴落物检测合格，附加等级（GB 8624）：烟气生成速率/600s内总烟气生成量达到s1级、燃烧滴落物/微粒等级达到d0级，甲醛释放量（HJ 571）（mg/m³）为未检出。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB 8624"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547595984898",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "124",
+        "sceneDesc": "不得使用无效的检测标准",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文件中要求的\"GB/T3325-2017\"已经失效",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB/T 3325-2024",
+            "basicNumber": " 金属家具通用技术条件",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=25940C3CEF148A9AE06397BE0A0A525A"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB/T3325-2017《金属家具通用技术条件》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "更换为现行有效的标准\"GB/T 3325-2024\"。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 104,
+            "end": 129,
+            "pid": "t011-r142-c003-p001",
+            "pidText": "1.3、▲不锈钢制连接件：检测和判定依据：GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T3280-2015《不锈钢冷轧钢板和钢带》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T3325-2017《金属家具通用技术条件》，金属件外观性能单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥240h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性等级可可毛球二孢达到0级，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.045、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.55、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB/T3325-2017《金属家具通用技术条件》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547528876035",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "89",
+        "sceneDesc": "检测标准一致性审查",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文中设定的\"GB/T11253-2019 《碳素结构钢冷扎钢板及钢带》\"与对应的GB/T 11253-2019不一致，标准名称不完整或有误，期望完整名称为'碳素结构钢冷轧钢板及钢带'。",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB/T 11253-2019",
+            "basicNumber": " 碳素结构钢冷轧钢板及钢带",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=95A47695C4F64F2CE05397BE0A0AB3E0"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB/T11253-2019《碳素结构钢冷扎钢板及钢带》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "请及时更正采购文件中的标准名称或检测标准，确保技术要求与国家检测标准保持一致。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 41,
+            "end": 69,
+            "pid": "t011-r067-c003-p001",
+            "pidText": "1.4、▲缓冲铰链，检验依据：QB/T 2189-2013《家具五金杯状暗铰链》，GB/T11253-2019《碳素结构钢冷扎钢板及钢带》，GB/T1741-2020《漆膜耐霉菌性测定法》检测合格：过载垂直静载荷、水平静载荷，实测结果符合；耐久性试验次数30万次或以上，功能无损坏，安装B型试验门时，下沉量≤1mm；耐腐蚀试验时间:150h，无锈点，耐霉菌性：桔青霉、可可毛球二孢耐霉菌性等级达到0级，化学成分（质量分数）/%：C≤0.03、Si≤0.02，Mn≤0.2，P≤0.015，S≤0.01，力学性能：抗拉强度MPa在400-500，断后伸长率/%≥45.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB/T11253-2019《碳素结构钢冷扎钢板及钢带》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547520487428",
+        "reviewItemName": "需求合规性",
+        "reviewItemCode": "req_fairness",
+        "sceneId": "89",
+        "sceneDesc": "检测标准一致性审查",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "文中设定的\"GB 18580-2017 《室内装饰装修材料人造板及其制品中甲醛释放量》\"与对应的GB 18580-2017不一致，标准名称不完整或有误，期望完整名称为'室内装饰装修材料 人造板及其制品中甲醛释放限量'。",
+        "legalBasicSourceList": [
+          {
+            "source": "全国标准信息公共服务平台",
+            "basicIssue": " GB 18580-2017",
+            "basicNumber": " 室内装饰装修材料 人造板及其制品中甲醛释放限量",
+            "basicDesc": "",
+            "sourceLink": "https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D81AFCD3A7E05397BE0A0AB82A"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放量》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "请及时更正采购文件中的标准名称或检测标准，确保技术要求与国家检测标准保持一致。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 185,
+            "end": 221,
+            "pid": "t011-r098-c003-p001",
+            "pidText": "1.3、★展示柜：检测和判定依据：GB/T 4897-2015《刨花板》；GB/T 15102-2017《浸渍胶膜纸饰面纤维板和刨花板》；GB/T 3280-2015《不锈钢冷轧钢板和钢带》；GB/T 10125-2021《人造气氛腐蚀试验 盐雾试验》；GB/T 1741-2020《漆膜耐霉菌性测定法》；GB/T 39600-2021《人造板及其制品甲醛释放量分级》；GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放量》；GB 20286-2006《公共场所阻燃制品及组件燃烧性能要求和标识》，理化性能板内密度偏差%达到±2以内、含水率%8-10、静曲强度（MOR)MPa≥35，弹性模量（MOE)MPa≥5200，内胶合强度MPa≥1.5，表面胶合强度MPa≥2，24h吸水厚度膨胀率%≤3，握螺钉力板面N≥1500，板边N≥1000，防潮性能（沸水煮后内胶合强度）MPa≥1，密度g/cm³达到0.8-0.9，表面耐冷热循环、表面耐划痕单项评价合格，表面耐磨磨耗值mg/100r≤10，表面情况：素色磨350r以后无露底现象单项评价合格，表面耐香烟灼烧、表面耐干热、表面耐污染腐蚀、表面耐龟裂、表面耐水蒸气均达到5级或以上（单项评价合格），耐光色牢度单项评价合格，铜加速乙酸盐雾试验（CASS)连续喷雾≥240h，镀（涂）层对基体的保护等级检测结果达到10级或以上、镀（涂）层本身耐腐蚀等级检测结果达到10级或以上，耐霉菌性产黄青霉达到0级，甲醛释放量（1m³气候箱法）甲醛含量检测结果未检出，公共场所阻燃家具及组件的燃烧性能阻燃1级（家具/组件）KW热释放速率峰值≤20kW,5min内放出的总能量≤2MJ，最大烟密度≤20%，化学成分（质量分数）/%，碳（C）wt.%≤0.05、锰（Mn）wt.%≤1.5、磷（P)wt.%≤0.045、硫（S）wt.%≤0.01、硅（Si）wt.%≤0.5、铬（Cr）wt.%达到18-19、镍（Ni）wt.%达到8-9.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB 18580-2017《室内装饰装修材料人造板及其制品中甲醛释放量》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547604373511",
+        "reviewItemName": "评审规则合规性",
+        "reviewItemCode": "rule_fairness",
+        "sceneId": "131",
+        "sceneDesc": "含有GB（不含GB/T）或国家强制性标准的描述中需含有★号",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中存在国家强制性标准相关描述，但未按照规定标注“★”号标识，可能导致合规性风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "深财购〔2024〕19号",
+            "basicNumber": "",
+            "basicDesc": "3.合理设置实质性条款或者核心参数。招标文件应结合项目特点和实际需求，科学、合理设置实质性条款（“一票否决”项）、重要参数（重点扣分项）以及一般参数（一般扣分项）。招标文件应当将涉及采购标的核心功能、国家强制性标准等参数设置为实质性条款，不得设置为重要参数或者一般参数。",
+            "sourceLink": null
+          },
+          {
+            "source": "《政府采购货物和服务招标投标管理办法》",
+            "basicIssue": "财政部令第87号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构应当根据采购项目的特点和采购需求编制招标文件。招标文件应当包括以下主要内容：……\r\n对于不允许偏离的实质性要求和条件，采购人或者采购代理机构应当在招标文件中规定，并以醒目的方式标明。",
+            "sourceLink": "https://www.gov.cn/gongbao/content/2017/content_5241918.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB 17927.1-2011《软体家具 床垫和沙发抗引燃特性的评定 第1部分：阴燃的香烟》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "在描述中明确标识并加上“★”号标识。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 15,
+            "end": 61,
+            "pid": "t011-r013-c003-p001",
+            "pidText": "1.3、高回弹海绵：检验依据：GB 17927.1-2011《软体家具 床垫和沙发抗引燃特性的评定 第1部分：阴燃的香烟》、GB/T24128-2018《塑料 塑料防霉剂的防霉效果评估》，等级≥151N，25%压陷硬度≥180N、75%压缩永久变形≤6%、回弹率≥58%、拉伸强度≥155kPa、伸长率≥120%、撕裂强度≥3.0N/cm；恒定负荷反复压陷疲劳性能≤20%；抗引燃特性-阴燃的香烟：进行试验和检查时，未观察到试样表面或内部出现任何续燃、阴燃现象，阻燃Ⅰ级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗菌性能值≥99.5%。投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB 17927.1-2011《软体家具 床垫和沙发抗引燃特性的评定 第1部分：阴燃的香烟》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547604373512",
+        "reviewItemName": "评审规则合规性",
+        "reviewItemCode": "rule_fairness",
+        "sceneId": "131",
+        "sceneDesc": "含有GB（不含GB/T）或国家强制性标准的描述中需含有★号",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中存在国家强制性标准相关描述，但未按照规定标注“★”号标识，可能导致合规性风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "深财购〔2024〕19号",
+            "basicNumber": "",
+            "basicDesc": "3.合理设置实质性条款或者核心参数。招标文件应结合项目特点和实际需求，科学、合理设置实质性条款（“一票否决”项）、重要参数（重点扣分项）以及一般参数（一般扣分项）。招标文件应当将涉及采购标的核心功能、国家强制性标准等参数设置为实质性条款，不得设置为重要参数或者一般参数。",
+            "sourceLink": null
+          },
+          {
+            "source": "《政府采购货物和服务招标投标管理办法》",
+            "basicIssue": "财政部令第87号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构应当根据采购项目的特点和采购需求编制招标文件。招标文件应当包括以下主要内容：……\r\n对于不允许偏离的实质性要求和条件，采购人或者采购代理机构应当在招标文件中规定，并以醒目的方式标明。",
+            "sourceLink": "https://www.gov.cn/gongbao/content/2017/content_5241918.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB18581-2020《木器涂料中有害物质限量》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "在描述中明确标识并加上“★”号标识。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 19,
+            "end": 44,
+            "pid": "t011-r108-c003-p001",
+            "pidText": "1.3、▲水性油漆（底漆）：检测依据：GB18581-2020《木器涂料中有害物质限量》、GB/T23993-2009《水性涂料中甲醛含量的测定乙酰丙酮分光光度法》、GB/T31414-2015《水性涂料表面活性剂的测定烷基酚聚氧乙烯醚》、GB/T1741-2020《漆膜耐霉菌性测定法》、GB/T21866-2008《抗菌涂料（漆膜）抗菌性测定法和抗菌效果》VOC含量未检出、甲醛含量未检出、乙二醇醚及醚酯总和含量(限乙二醇甲醚、乙二醇甲醚醋酸酯、乙二醇乙醚、乙二醇乙醚醋酸酯、乙二醇二甲醚、乙二醇二乙醚、二乙二醇二甲醚、三乙二醇二甲醚)未检出，苯系物总和含量[限苯、甲苯、二甲苯(含乙苯)]未检出，烷基酚聚氧乙烯醚总和含量{限辛基酚聚氧乙烯醚[C8H17-C6H4-(OC2H4)nOH，简称OPnEO]和壬基酚聚氧乙烯醚[C9H19-C6H4-(OC2H4)nOH,简称NPnEO],n=2～16}未检出，耐霉菌性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB18581-2020《木器涂料中有害物质限量》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547604373513",
+        "reviewItemName": "评审规则合规性",
+        "reviewItemCode": "rule_fairness",
+        "sceneId": "131",
+        "sceneDesc": "含有GB（不含GB/T）或国家强制性标准的描述中需含有★号",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "条款中存在国家强制性标准相关描述，但未按照规定标注“★”号标识，可能导致合规性风险。",
+        "legalBasicSourceList": [
+          {
+            "source": "《深圳市财政局关于印发《政府采购招标文件编制易发问题案例及规范指引（2024年版）》的通知》",
+            "basicIssue": "深财购〔2024〕19号",
+            "basicNumber": "",
+            "basicDesc": "3.合理设置实质性条款或者核心参数。招标文件应结合项目特点和实际需求，科学、合理设置实质性条款（“一票否决”项）、重要参数（重点扣分项）以及一般参数（一般扣分项）。招标文件应当将涉及采购标的核心功能、国家强制性标准等参数设置为实质性条款，不得设置为重要参数或者一般参数。",
+            "sourceLink": null
+          },
+          {
+            "source": "《政府采购货物和服务招标投标管理办法》",
+            "basicIssue": "财政部令第87号",
+            "basicNumber": "第二十条",
+            "basicDesc": "采购人或者采购代理机构应当根据采购项目的特点和采购需求编制招标文件。招标文件应当包括以下主要内容：……\r\n对于不允许偏离的实质性要求和条件，采购人或者采购代理机构应当在招标文件中规定，并以醒目的方式标明。",
+            "sourceLink": "https://www.gov.cn/gongbao/content/2017/content_5241918.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "GB18581-2020《木器涂料中有害物质限量》",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "在描述中明确标识并加上“★”号标识。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 19,
+            "end": 44,
+            "pid": "t011-r109-c003-p001",
+            "pidText": "1.4、▲水性油漆（面漆）：检测依据：GB18581-2020《木器涂料中有害物质限量》、GB/T23993-2009《水性涂料中甲醛含量的测定乙酰丙酮分光光度法》、GB/T31414-2015《水性涂料表面活性剂的测定烷基酚聚氧乙烯醚》、GB/T1741-2020《漆膜耐霉菌性测定法》、GB/T21866-2008《抗菌涂料（漆膜）抗菌性测定法和抗菌效果》VOC含量未检出、甲醛含量未检出、乙二醇醚及醚酯总和含量(限乙二醇甲醚、乙二醇甲醚醋酸酯、乙二醇乙醚、乙二醇乙醚醋酸酯、乙二醇二甲醚、乙二醇二乙醚、二乙二醇二甲醚、三乙二醇二甲醚)未检出，苯系物总和含量[限苯、甲苯、二甲苯(含乙苯)]未检出，烷基酚聚氧乙烯醚总和含量{限辛基酚聚氧乙烯醚[C8H17-C6H4-(OC2H4)nOH，简称OPnEO]和壬基酚聚氧乙烯醚[C9H19-C6H4-(OC2H4)nOH,简称NPnEO],n=2～16}未检出，耐霉菌性能：桔青霉、可可毛球二孢防霉等级达到0级，抗菌性能：表皮葡萄球菌、白色假丝酵母抗细菌率≥99%.投标人须提供 2021 年 1 月 1 日至本项目投标截止日之前第三方检测机构出具的具有 CMA 或 CNAS 标识的检测报告扫描件（检测报告须包含并符合本项参数的全部内容，原件备查，及全国认证认可信息公共服务平台网站http://cx.cnca.cn/CertECloud/qts/qts/qtsPage ）查询信息截图。",
+            "text": "GB18581-2020《木器涂料中有害物质限量》"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547520487429",
+        "reviewItemName": "内容规范性",
+        "reviewItemCode": "content_standar",
+        "sceneId": "18",
+        "sceneDesc": "不得设定最低限价",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "采用综合评分法评标的，中标（成交）结果信息公示内容仅公示候选中标供应商名单，不公示得分和排名。违反《政府采购货物和服务招标投标管理办法》第五十一条规定，建议补充公示得分和排名要求",
+        "legalBasicSourceList": [
+          {
+            "source": "《政府采购货物和服务招标投标管理办法》",
+            "basicIssue": "",
+            "basicNumber": "第十二条",
+            "basicDesc": "采购人根据价格测算情况，可以在采购预算额度内合理设定最高限价，但不得设定最低限价。",
+            "sourceLink": "https://www.gov.cn/gongbao/content/2017/content_5241918.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": " | 定标方法 | ☑ 非评定分离□ 评定分离本项目推荐的候选中标供应商不进行排名，且中标（成交）结果信息公示内容仅公示候选中标供应商名单，不公示得分和排名。",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "调整为\"中标（成交）结果信息公示内容应公示候选中标供应商名单、得分及排名情况。\"",
+        "handleStatus": 1,
+        "acceptStatus": 1,
+        "acceptText": "调整为\"中标（成交）结果信息公示内容应公示候选中标供应商名单、得分及排名情况。\"",
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 0,
+            "end": 69,
+            "pid": "t006-r013-c003-p001",
+            "pidText": "☑ 非评定分离□ 评定分离本项目推荐的候选中标供应商不进行排名，且中标（成交）结果信息公示内容仅公示候选中标供应商名单，不公示得分和排名。",
+            "text": "☑ 非评定分离□ 评定分离本项目推荐的候选中标供应商不进行排名，且中标（成交）结果信息公示内容仅公示候选中标供应商名单，不公示得分和排名。"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547520487426",
+        "reviewItemName": "内容规范性",
+        "reviewItemCode": "content_standar",
+        "sceneId": "135",
+        "sceneDesc": "必须设定采购项目预算金额",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "该项目未设定采购预算金额，违反相关法规要求。",
+        "legalBasicSourceList": [
+          {
+            "source": "《政府采购竞争性磋商采购方式管理暂行办法》",
+            "basicIssue": "（财库﹝2014﹞214号）",
+            "basicNumber": "第九条",
+            "basicDesc": " 磋商文件应当包括供应商资格条件、采购邀请、采购方式、采购预算、采购需求、政府采购政策要求、评审程序、评审方法、评审标准、价格构成或者报价要求、响应文件编制要求、保证金交纳数额和形式以及不予退还保证金的情形、磋商过程中可能实质性变动的内容、响应文件提交的截止时间、开启时间及地点以及合同草案条款等",
+            "sourceLink": "https://www.gov.cn/gongbao/content/2015/content_2843785.htm"
+          },
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "中华人民共和国国务院令第658号",
+            "basicNumber": "第十条",
+            "basicDesc": "采购人或者采购代理机构应当在招标文件、谈判文件、询价通知书中公开采购项目预算金额。",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": "预算金额（元）",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "补充项目采购预算金额。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 0,
+            "end": 7,
+            "pid": "t008-r001-c004-p001",
+            "pidText": "预算金额（元）",
+            "text": "预算金额（元）"
+          }
+        ]
+      },
+      {
+        "uniqueId": "1981174547604373514",
+        "reviewItemName": "资格公平性",
+        "reviewItemCode": "qual_fairness",
+        "sceneId": "10",
+        "sceneDesc": "不得收取没有法律依据的保证金及超过规定比例的保证金",
+        "result": 1,
+        "riskTip": null,
+        "showRiskTip": "采购文件中设定的\"履约担保\"超出法定范围，可能存在不合规要求。",
+        "legalBasicSourceList": [
+          {
+            "source": "《中华人民共和国政府采购法实施条例》",
+            "basicIssue": "（中华人民共和国国务院令第658号）",
+            "basicNumber": "第四十八条",
+            "basicDesc": "采购文件要求中标或者成交供应商提交履约保证金的，供应商应当以支票、汇票、本票或者金融机构、担保机构出具的保函等非现金形式提交。覆约保证金的数额不得超过政府采购合同金额的10%。",
+            "sourceLink": "https://www.gov.cn/zhengce/content/2015-02/27/content_9504.htm"
+          },
+          {
+            "source": "《深圳经济特区政府采购条例实施细则》",
+            "basicIssue": "",
+            "basicNumber": "第三十一条 ",
+            "basicDesc": "采购文件可以规定投标人交纳投标保证金，投标保证金不得超过预算金额的百分之一，但最低金额不得少于一万元。投标保证金应当采用非现金形式交纳。",
+            "sourceLink": "https://www.gd.gov.cn/zwgk/wjk/zcfgk/content/post_2928736.html"
+          }
+        ],
+        "likeNum": 0,
+        "dislikeNum": 0,
+        "fileText": " | 履约担保 | □ 不需要□ 需要，合同金额的 %，投标供应商自主选择以支票、汇票、本票、保函等非现金形式缴纳或提交。履约保证金在中标人履行完成合同约定权利义务事项在合同期满之日起 日内按原方式退还，不计利息。采购人逾期退还履约保证金的，向中标人每日偿付履约保证金的0.5‰的利息。因中标人原因而未能达到本项目验收标准或验收不通过的，履约保证金不予退还。",
+        "page": 1,
+        "position": [],
+        "revisionSuggestion": "删除设定的超出法定范围的不合理保证金。",
+        "handleStatus": 0,
+        "acceptStatus": 0,
+        "acceptText": null,
+        "spanLocate": true,
+        "spanList": [
+          {
+            "start": 0,
+            "end": 169,
+            "pid": "t006-r014-c003-p001",
+            "pidText": "□ 不需要□ 需要，合同金额的 %，投标供应商自主选择以支票、汇票、本票、保函等非现金形式缴纳或提交。履约保证金在中标人履行完成合同约定权利义务事项在合同期满之日起 日内按原方式退还，不计利息。采购人逾期退还履约保证金的，向中标人每日偿付履约保证金的0.5‰的利息。因中标人原因而未能达到本项目验收标准或验收不通过的，履约保证金不予退还。",
+            "text": "□ 不需要□ 需要，合同金额的 %，投标供应商自主选择以支票、汇票、本票、保函等非现金形式缴纳或提交。履约保证金在中标人履行完成合同约定权利义务事项在合同期满之日起 日内按原方式退还，不计利息。采购人逾期退还履约保证金的，向中标人每日偿付履约保证金的0.5‰的利息。因中标人原因而未能达到本项目验收标准或验收不通过的，履约保证金不予退还。"
+          }
+        ]
+      }
+    ],
+    "analysisFinishTime": "2025-10-23 09:40:52"
+  }
+}

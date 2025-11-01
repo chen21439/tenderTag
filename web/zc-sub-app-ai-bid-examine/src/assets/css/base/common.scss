@@ -1,0 +1,231 @@
+// 宋体
+@font-face {
+  font-family: SongtiGb2312;
+  src: url("../../font/customer/GB2312.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: SourceHanSerifC;
+  src: url("../../font/customer/SourceHanSerifCN-Regular.otf") format("truetype");
+}
+html,
+body,
+.com-app-wrap {
+  height: 100%;
+  color: var(--text-5);
+}
+svg {
+  outline: none;
+}
+body {
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+input[aria-hidden=true]{
+  display: none !important;
+}
+div[aria-hidden=true]{
+  display: none !important;
+}
+/* 修改自动填充时的背景颜色 */
+input:-internal-autofill-previewed,
+input:-internal-autofill-selected {
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+::-webkit-scrollbar {
+  background-color: transparent;
+  width: 6px;
+}
+
+:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--fill-rgb-12), 0.2);
+  border-radius: var(--border-radius-5);
+}
+
+// 
+.base-font {
+  font-family: Source Han Sans;
+  font-weight: normal;
+  line-height: normal;
+}
+// 失效
+.base-invalid-tag {
+  font-size: var(--font-12);
+  font-weight: normal;
+  color: var(--error-6);
+  border-radius: var(--border-radius-4);
+  padding: 0 8px;
+  background: var(--fill-1);
+  box-sizing: border-box;
+  border: 1px solid var(--error-4);
+  height: 20px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+// 按钮
+.base-btn-gradient {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 16px; 
+  height: 32px;
+  border-radius: 4px;
+  color: var(--text-0);
+  white-space: nowrap;
+  cursor: pointer;
+  background: linear-gradient(107deg, #3B66F5 0%, #133CE8 100%);
+  &:hover {
+    background: linear-gradient(107deg, #668FFF 0%, #3B66F5 100%);
+  }
+  &:active,&:focus {
+    background: linear-gradient(107deg, #133CE8 0%, #0625C2 100%);
+  }
+  &.disabled{
+    background: linear-gradient(90deg, #C2C2C2 0%, #D4D4D4 100%);
+  }
+  .icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+  }
+}
+.base-btn-default {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 15px; 
+  height: 32px;
+  border-radius: 4px;
+  box-sizing: border-box;
+  cursor: pointer;
+  background: var(--fill-0);
+  color: var(--text-5);
+  border: 1px solid var(--line-4);
+  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.03),0px 1px 6px -1px rgba(0, 0, 0, 0.02),0px 2px 4px 0px rgba(0, 0, 0, 0.02);
+  &:hover {
+    color: var(--main-5);
+    border-color: var(--main-5);
+  }
+  &:active,&:focus {
+    color: var(--main-7);
+    border-color: var(--main-7);
+  }
+  &.disabled{
+    color: var(--text-1);
+    border-color: var(--text-1);
+  }
+  .icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+  }
+}
+// 删除气泡框样式
+.base-delete-confirm-popover {
+  .ant-popover-content {
+    padding: 0;
+  }
+
+  .ant-popover-inner {
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
+                0 3px 6px -4px rgba(0, 0, 0, 0.12),
+                0 9px 28px 8px rgba(0, 0, 0, 0.05);
+    min-width: 320px;
+    max-width: 400px;
+  }
+  .delete-confirm-content {
+    .main-box {
+      display: flex;
+      margin-bottom: 8px; 
+    }
+    .warning-icon { 
+      flex-shrink: 0;
+      margin:4px 8px 0 0; 
+    }
+
+    .delete-message {  
+      flex:1;
+      min-width: 0;
+      line-height: 22px;
+      color: rgba(0, 0, 0, 0.88); 
+    }
+
+    .delete-dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+
+      .ant-btn {   
+        font-size: 12px;
+        &[type="primary"] {
+          &.ant-btn-dangerous {
+            background-color: #F5222D;
+            border-color: #F5222D; 
+            &:hover {
+              background-color: var(--error-5, #ff7875);
+              border-color: var(--error-5, #ff7875);
+            }
+          }
+        }
+      }
+    }
+  }
+
+}
+// 基础表格样式
+.basic-normal-table.ant-table-wrapper {  
+  .btns {
+    display: flex;
+    gap:16px;
+    .ant-btn {
+      width: min-content;
+      border: none;
+      box-shadow: none;
+      padding:0;
+      &:hover {
+        background: transparent;
+      }
+    }
+  }
+  .ant-table-cell{
+    color: #000;  
+  }
+  th.ant-table-cell{
+    font-weight: normal;
+    color: #374151; 
+    padding:8px;
+  } 
+  .ant-table-tbody >tr >td {
+    padding:16px 8px;
+  }
+}
+// 审查详情导出下拉菜单样式
+.export-dropdown-content {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 4px 4px 12px 4px;
+  min-width: 200px;
+
+  .export-options { 
+    .export-option {
+      padding: 5px 12px; 
+      border-radius: 4px;
+      .ant-checkbox-wrapper { 
+        color: #000000E0; 
+      }
+       &:hover {
+          background-color: #0000000A;
+        }
+    }
+  }
+
+  .export-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 8px 0 0; 
+  }
+}
