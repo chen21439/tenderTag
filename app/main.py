@@ -12,6 +12,16 @@ def _maybe_include_classify(app: FastAPI):
         # 没有该路由文件或导入失败时，仍可启动
         pass
 
+def _maybe_include_pdf_process(app: FastAPI):
+    """注册 PDF 处理路由"""
+    try:
+        from app.routers.pdf_process import router as pdf_router
+        app.include_router(pdf_router, prefix="/api/pdf", tags=["PDF处理"])
+        print("[启动] PDF处理路由已加载")
+    except Exception as e:
+        print(f"[警告] PDF处理路由加载失败: {e}")
+        pass
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Tender Tagger",
@@ -34,6 +44,7 @@ def create_app() -> FastAPI:
         ...
 
     _maybe_include_classify(app)
+    _maybe_include_pdf_process(app)  # 注册 PDF 处理路由
     return app
 
 def _health(app: FastAPI):
