@@ -218,8 +218,10 @@ defineOptions({
 const router = useRouter()
 const route = useRoute()
 
-// 判断是否为开发环境
-const isDev = config.isDev
+/* 使用 Vite 的开发环境变量判断
+   - 本地开发（vite --mode dev / 默认 development）为 true
+   - 仅调整判断，不改现有业务逻辑与数据加载 URL */
+const isDev = import.meta.env.DEV === true || import.meta.env.MODE === 'dev'
 
 //是否存在风险
 const existRisk = ref(true)
@@ -1096,7 +1098,7 @@ const loadJsonFiles = async (taskId: string) => {
   try {
     // 根据环境选择基础 URL
     const baseUrl = isDev
-      ? `http://localhost:3000/api/task/${taskId}`
+      ? `/task/${taskId}`
       : `${config.env.VITE_APP_PUBLIC_URL}/task/${taskId}`
 
     console.log('📦 开始加载 JSON 文件，taskId:', taskId)
@@ -1149,7 +1151,7 @@ const getFile = async () => {
   if (reviewListData.value && taskId.value) {
     // 根据环境选择 PDF 路径
     pdfData.pdfUrl = isDev
-      ? `http://localhost:3000/api/task/${taskId.value}/${taskId.value}_highlighted.pdf`
+      ? `/task/${taskId.value}/${taskId.value}_highlighted.pdf`
       : `${config.env.VITE_APP_PUBLIC_URL}/task/${taskId.value}/${taskId.value}_highlighted.pdf`
     console.log('使用 PDF 文件:', pdfData.pdfUrl)
     return
