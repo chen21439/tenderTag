@@ -546,76 +546,25 @@ class PDFContentExtractor:
                 try:
                     # 兼容两种运行方式：包导入和脚本直接运行
                     try:
-                        from ..db.milvus import MilvusUtil
-                        from ..db.qdrant import get_embedding_util
+                        from ..persistence import MilvusPersistence
                     except ImportError:
                         import sys
                         from pathlib import Path as ImportPath
-                        # 添加项目根目录到 sys.path
                         project_root = ImportPath(__file__).resolve().parent.parent.parent.parent
                         if str(project_root) not in sys.path:
                             sys.path.insert(0, str(project_root))
-                        from app.utils.db.milvus import MilvusUtil
-                        from app.utils.db.qdrant import get_embedding_util
+                        from app.utils.persistence import MilvusPersistence
 
-                    import torch
-
-                    print(f"\n[向量库] 准备写入 Milvus...")
-
-                    # 1. 初始化 Milvus
-                    milvus = MilvusUtil(host="localhost", port="19530")
-
-                    # 2. 创建集合 (使用固定集合名 "pdf")
-                    collection_name = "pdf"
-                    success = milvus.create_collection(
-                        collection_name=collection_name,
-                        dim=1024,  # bge-m3 维度
-                        drop_old=False  # 不删除旧集合，追加数据
-                    )
-
-                    if not success:
-                        print("[向量库] ✗ 创建集合失败")
-                    else:
-                        # 3. 初始化向量化模型
-                        device = "cuda" if torch.cuda.is_available() else "cpu"
-                        embedding_util = get_embedding_util(
-                            model_name='BAAI/bge-m3',
-                            use_fp16=True,
-                            device=device
-                        )
-
-                        # 4. 准备 chunks (将 cells 转换为 Milvus 格式)
-                        chunks = []
-                        for cell in cells:
-                            chunks.append({
-                                "chunk_type": "table_cell",
-                                "content": cell.get("cell_value_with_context", cell.get("cell_value_norm", "")),
-                                "page": cell.get("page", 1)
-                            })
-
-                        # 5. 向量化
-                        print(f"[向量库] 正在向量化 {len(chunks)} 个单元格...")
-                        texts = [chunk["content"] for chunk in chunks]
-                        vectors = embedding_util.encode_batch(texts, use_cache=False)
-                        embeddings = [dense_vec for dense_vec, _, _ in vectors]
-
-                        # 6. 写入 Milvus
-                        count = milvus.insert_data(
-                            doc_id=doc_id,
-                            chunks=chunks,
-                            embeddings=embeddings
-                        )
-
-                        if count > 0:
-                            print(f"[向量库] ✓ 成功写入 {count} 条数据到 Milvus")
-
-                            # 查询统计
-                            stats = milvus.get_stats()
-                            print(f"[向量库] 集合统计: {stats.get('num_entities')} 条记录")
-                        else:
-                            print("[向量库] ✗ 写入失败")
-
-                        milvus.close()
+                    # 使用 MilvusPersistence 类进行持久化
+                    with MilvusPersistence(
+                        host="localhost",
+                        port="19530",
+                        collection_name="pdf",
+                        embedding_model="BAAI/bge-m3",
+                        vector_dim=1024,
+                        device="auto"
+                    ) as persistence:
+                        persistence.save_cells(doc_id=doc_id, cells=cells, drop_old=False)
 
                 except Exception as vec_error:
                     print(f"[向量库] ✗ 向量化写入失败: {vec_error}")
