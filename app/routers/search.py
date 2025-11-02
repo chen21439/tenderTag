@@ -125,6 +125,7 @@ async def search_by_keywords(request: SearchRequest):
             "params": {"nprobe": 10}
         }
 
+
         # 如果指定了 taskId，添加过滤表达式
         filter_expr = None
         if request.taskId:

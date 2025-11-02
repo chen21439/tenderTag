@@ -518,9 +518,8 @@ class PDFContentExtractor:
 
                 print(f"\n[单元格转换] 将表格转换为单元格结构...")
                 converter = TableToCellsConverter()
-                # 使用相同的时间戳构建 doc_id (确保一个批次使用同一个时间戳)
-                base_doc_id = task_id if task_id else self.pdf_path.stem
-                doc_id = f"{base_doc_id}_{timestamp}"
+                # 直接使用 task_id，不添加时间戳
+                doc_id = task_id if task_id else f"{self.pdf_path.stem}_{timestamp}"
                 cells = converter.convert_tables_to_cells(tables, doc_id)
 
                 print(f"[单元格转换] ✓ 转换完成: {len(cells)} 个单元格")

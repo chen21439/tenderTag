@@ -46,7 +46,7 @@ class ComplianceService:
 
     def create_task_from_pdf(
         self,
-        pdf_path: str,
+        pdf_path: Optional[str] = None,
         file_id: Optional[str] = None,
         project_name: Optional[str] = None,
         project_code: Optional[str] = None,
@@ -61,7 +61,7 @@ class ComplianceService:
         接收 PDF 文件并创建审查任务
 
         Args:
-            pdf_path: PDF 文件路径
+            pdf_path: PDF 文件路径（可选，如果为None则稍后更新）
             file_id: 文件ID (可选, 如不提供则自动生成)
             project_name: 项目名称
             project_code: 项目编号
@@ -76,7 +76,6 @@ class ComplianceService:
             创建的任务对象
 
         Raises:
-            FileNotFoundError: PDF 文件不存在
             Exception: 数据库插入失败
 
         示例:
@@ -90,18 +89,19 @@ class ComplianceService:
             )
             print(f"任务创建成功, ID: {task.id}")
         """
-        # 1. 验证 PDF 文件存在
-        pdf_file = Path(pdf_path)
-        if not pdf_file.exists():
-            raise FileNotFoundError(f"PDF 文件不存在: {pdf_path}")
+        # 1. 验证 PDF 文件存在（如果提供了路径）
+        file_name = None
+        if pdf_path:
+            pdf_file = Path(pdf_path)
+            if not pdf_file.exists():
+                raise FileNotFoundError(f"PDF 文件不存在: {pdf_path}")
+            # 3. 获取文件名
+            file_name = pdf_file.name
 
         # 2. 生成任务ID和文件ID
         task_id = self.generate_task_id()
         if not file_id:
             file_id = self.generate_task_id()
-
-        # 3. 获取文件名
-        file_name = pdf_file.name
 
         # 4. 创建任务对象
         task = ComplianceFileTask(

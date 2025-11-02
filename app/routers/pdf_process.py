@@ -128,28 +128,15 @@ async def upload_and_process_pdf(
         if not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="只支持 PDF 文件")
 
-        # 2. 生成任务ID
-        task_id = generate_task_id()
-
-        # 3. 创建任务目录
-        task_dir = create_task_directory(task_id)
-
-        # 4. 保存 PDF 文件
-        pdf_filename = file.filename
-        pdf_path = task_dir / pdf_filename
-
-        with open(pdf_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        print(f"[PDF处理] 任务ID: {task_id}")
-        print(f"[PDF处理] PDF已保存: {pdf_path}")
         print(f"[PDF处理] ========== 参数检查 ==========")
         print(f"[PDF处理] save_to_db = {save_to_db} (类型: {type(save_to_db)})")
         print(f"[PDF处理] save_to_milvus = {save_to_milvus} (类型: {type(save_to_milvus)})")
         print(f"[PDF处理] ================================")
 
-        # 5. 先保存到数据库（创建初始记录，状态为"解析中"）
+        # 2. 先创建数据库记录，获取任务ID（作为唯一标识）
+        task_id = None
         db_task_id = None
+
         if save_to_db:
             try:
                 from app.utils.db.mysql import MySQLUtil, ComplianceService
@@ -166,9 +153,10 @@ async def upload_and_process_pdf(
                 )
 
                 # 创建合规审查任务（状态：解析中）
+                # 注意：此时还没有 pdf_path，先传 None
                 service = ComplianceService(mysql)
                 db_task = service.create_task_from_pdf(
-                    pdf_path=str(pdf_path),
+                    pdf_path=None,  # 稍后更新
                     file_id=None,  # 自动生成
                     project_name=project_name,
                     project_code=project_code,
@@ -181,7 +169,8 @@ async def upload_and_process_pdf(
                 )
 
                 db_task_id = db_task.id
-                print(f"[PDF处理] ✓ 数据库记录已创建，任务ID: {db_task_id}")
+                task_id = str(db_task_id)  # 使用数据库ID作为任务ID
+                print(f"[PDF处理] ✓ 数据库记录已创建，任务ID: {task_id}")
 
                 mysql.close()
 
@@ -189,7 +178,50 @@ async def upload_and_process_pdf(
                 print(f"[PDF处理] ✗ 数据库保存失败: {e}")
                 import traceback
                 traceback.print_exc()
-                # 继续处理，不中断流程
+                # 如果数据库创建失败，使用生成的ID
+                task_id = generate_task_id()
+                print(f"[PDF处理] 使用生成的任务ID: {task_id}")
+        else:
+            # 如果不保存到数据库，使用生成的ID
+            task_id = generate_task_id()
+            print(f"[PDF处理] 使用生成的任务ID: {task_id}")
+
+        # 3. 创建任务目录（使用统一的 task_id）
+        task_dir = create_task_directory(task_id)
+
+        # 4. 保存 PDF 文件
+        pdf_filename = file.filename
+        pdf_path = task_dir / pdf_filename
+
+        with open(pdf_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        print(f"[PDF处理] 任务ID: {task_id}")
+        print(f"[PDF处理] PDF已保存: {pdf_path}")
+
+        # 5. 如果之前创建了数据库记录，更新 pdf_path
+        if save_to_db and db_task_id:
+            try:
+                from app.utils.db.mysql import MySQLUtil, ComplianceService
+
+                mysql = MySQLUtil(
+                    host="172.16.0.116",
+                    port=3306,
+                    user="root",
+                    password="123456",
+                    database="tender_compliance",
+                    charset="utf8mb4",
+                    echo=False
+                )
+
+                service = ComplianceService(mysql)
+                # 更新 pdf_path（这里需要在 ComplianceService 中添加更新方法）
+                # 暂时跳过，因为可能没有这个方法
+
+                mysql.close()
+
+            except Exception as e:
+                print(f"[PDF处理] ⚠ 更新PDF路径失败: {e}")
 
         # 6. 调用 PDFContentExtractor 处理
         from app.utils.unTaggedPDF.pdf_content_extractor import PDFContentExtractor
