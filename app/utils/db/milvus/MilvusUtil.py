@@ -29,28 +29,33 @@ class MilvusUtil:
     def create_collection(self,
                          collection_name: str = "tender_test",
                          dim: int = 1024,
-                         drop_old: bool = True) -> bool:
+                         drop_old: bool = False) -> bool:
         """
         创建集合
 
         Args:
             collection_name: 集合名称
             dim: 向量维度 (bge-m3: 1024维)
-            drop_old: 是否删除旧集合
+            drop_old: 是否删除旧集合 (默认 False，使用已存在的集合)
 
         Returns:
             是否成功
         """
         try:
-            # 删除旧集合
-            if drop_old and utility.has_collection(collection_name):
-                print(f"[Milvus] 删除旧集合: {collection_name}")
-                utility.drop_collection(collection_name)
+            # 检查集合是否已存在
+            if utility.has_collection(collection_name):
+                if drop_old:
+                    print(f"[Milvus] 删除旧集合: {collection_name}")
+                    utility.drop_collection(collection_name)
+                else:
+                    print(f"[Milvus] 集合 '{collection_name}' 已存在，直接使用")
+                    self.collection = Collection(collection_name)
+                    return True
 
             # 定义字段
             fields = [
                 FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-                FieldSchema(name="doc_id", dtype=DataType.VARCHAR, max_length=200),
+                FieldSchema(name="task_id", dtype=DataType.VARCHAR, max_length=200),
                 FieldSchema(name="chunk_type", dtype=DataType.VARCHAR, max_length=50),
                 FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=5000),
                 FieldSchema(name="page", dtype=DataType.INT64),
@@ -83,14 +88,14 @@ class MilvusUtil:
             return False
 
     def insert_data(self,
-                   doc_id: str,
+                   task_id: str,
                    chunks: List[Dict[str, Any]],
                    embeddings: List[List[float]]) -> int:
         """
-        插入数据
+        插入数据（自动适配集合 schema）
 
         Args:
-            doc_id: 文档ID
+            task_id: 任务ID
             chunks: chunk 列表 [{"chunk_type": "paragraph", "content": "...", "page": 1}, ...]
             embeddings: 向量列表 [[...], [...], ...]
 
@@ -110,18 +115,27 @@ class MilvusUtil:
             import time
             current_time_ms = int(time.time() * 1000)
 
-            # 准备数据
-            entities = [
-                [doc_id] * len(chunks),  # doc_id
-                [chunk["chunk_type"] for chunk in chunks],  # chunk_type
-                [chunk["content"][:5000] for chunk in chunks],  # content (截断到5000字符)
-                [chunk["page"] for chunk in chunks],  # page
-                [current_time_ms] * len(chunks),  # insert_time (所有数据使用同一个时间戳)
-                embeddings  # embedding
-            ]
+            # 获取集合的 schema，动态构建插入数据
+            schema_fields = [f.name for f in self.collection.schema.fields if not f.auto_id]
+
+            # 准备数据字典
+            data_dict = {
+                "task_id": [task_id] * len(chunks),
+                "chunk_type": [chunk["chunk_type"] for chunk in chunks],
+                "content": [chunk["content"][:5000] for chunk in chunks],
+                "page": [chunk["page"] for chunk in chunks],
+                "embedding": embeddings
+            }
+
+            # 如果 schema 中有 insert_time 字段，添加它
+            if "insert_time" in schema_fields:
+                data_dict["insert_time"] = [current_time_ms] * len(chunks)
+
+            # 按 schema 顺序构建 entities 列表
+            entities = [data_dict[field] for field in schema_fields if field in data_dict]
 
             # 插入数据
-            print(f"[Milvus] 插入 {len(chunks)} 条数据...")
+            print(f"[Milvus] 插入 {len(chunks)} 条数据 (匹配 {len(schema_fields)} 个字段)...")
             insert_result = self.collection.insert(entities)
 
             # 刷新
@@ -132,6 +146,7 @@ class MilvusUtil:
 
         except Exception as e:
             print(f"[Milvus] FAILED 插入失败: {e}")
+            print(f"[Milvus] Schema 字段: {[f.name for f in self.collection.schema.fields]}")
             import traceback
             traceback.print_exc()
             return 0
@@ -163,6 +178,10 @@ class MilvusUtil:
                 "params": {"nprobe": 10}
             }
 
+            # 动态获取可查询的字段（排除主键和向量字段）
+            schema_fields = [f.name for f in self.collection.schema.fields
+                           if f.name not in ["id", "embedding"]]
+
             # 执行搜索
             print(f"[Milvus] 搜索 Top-{top_k}...")
             results = self.collection.search(
@@ -170,22 +189,28 @@ class MilvusUtil:
                 anns_field="embedding",
                 param=search_params,
                 limit=top_k,
-                output_fields=["doc_id", "chunk_type", "content", "page", "insert_time"]
+                output_fields=schema_fields
             )
 
             # 格式化结果
             formatted_results = []
             for hits in results:
                 for hit in hits:
-                    formatted_results.append({
+                    result_item = {
                         "id": hit.id,
                         "distance": hit.distance,
-                        "doc_id": hit.entity.get("doc_id"),
+                        "task_id": hit.entity.get("task_id"),
                         "chunk_type": hit.entity.get("chunk_type"),
                         "content": hit.entity.get("content"),
                         "page": hit.entity.get("page"),
-                        "insert_time": hit.entity.get("insert_time")
-                    })
+                    }
+                    # insert_time 可能不存在（兼容旧数据）
+                    if "insert_time" in schema_fields:
+                        result_item["insert_time"] = hit.entity.get("insert_time", 0)
+                    else:
+                        result_item["insert_time"] = 0  # 默认值
+
+                    formatted_results.append(result_item)
 
             print(f"[Milvus] OK 找到 {len(formatted_results)} 条结果")
             return formatted_results
@@ -287,7 +312,7 @@ def quick_test():
 
     # 4. 插入数据
     count = milvus.insert_data(
-        doc_id="ORDOS-TEST-001",
+        task_id="ORDOS-TEST-001",
         chunks=chunks,
         embeddings=embeddings
     )

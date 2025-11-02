@@ -162,14 +162,14 @@ class MilvusPersistence:
         return chunks
 
     def save_cells(self,
-                   doc_id: str,
+                   task_id: str,
                    cells: List[Dict[str, Any]],
                    drop_old: bool = False) -> int:
         """
         将单元格数据保存到 Milvus
 
         Args:
-            doc_id: 文档ID (如 task_id)
+            task_id: 任务ID
             cells: 单元格数据列表
             drop_old: 是否删除旧集合并重新创建 (默认 False，追加数据)
 
@@ -182,7 +182,7 @@ class MilvusPersistence:
 
         try:
             print(f"\n[向量库] 准备写入 Milvus...")
-            print(f"[向量库]   文档ID: {doc_id}")
+            print(f"[向量库]   任务ID: {task_id}")
             print(f"[向量库]   单元格数: {len(cells)}")
 
             # 1. 初始化 Milvus
@@ -211,7 +211,7 @@ class MilvusPersistence:
             # 6. 写入 Milvus
             print(f"[向量库] 正在写入数据...")
             count = self.milvus.insert_data(
-                doc_id=doc_id,
+                task_id=task_id,
                 chunks=chunks,
                 embeddings=embeddings
             )

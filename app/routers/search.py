@@ -17,14 +17,19 @@ class SearchRequest(BaseModel):
     """搜索请求"""
     keywords: List[str] = Field(..., description="关键字数组", min_items=1, example=["项目", "预算", "网站"])
     top_k: int = Field(default=5, description="返回结果数量", ge=1, le=100)
+    taskId: Optional[str] = Field(default=None, description="任务ID，只搜索指定任务的数据")
     collection_name: Optional[str] = Field(default="pdf", description="集合名称")
+
+    class Config:
+        # 自动将数字转换为字符串
+        coerce_numbers_to_str = True
 
 
 class SearchResultItem(BaseModel):
     """搜索结果项"""
     id: int = Field(..., description="记录ID")
     distance: float = Field(..., description="相似度距离（越小越相似）")
-    doc_id: str = Field(..., description="文档ID")
+    task_id: str = Field(..., description="任务ID")
     chunk_type: str = Field(..., description="内容类型")
     content: str = Field(..., description="内容文本")
     page: int = Field(..., description="页码")
@@ -109,20 +114,61 @@ async def search_by_keywords(request: SearchRequest):
         from app.utils.db.qdrant import get_embedding_util
         embedding_util = get_embedding_util()
 
-        # 4. 执行搜索
-        results = milvus.search_by_keywords(
-            keywords=request.keywords,
-            top_k=request.top_k,
-            embedding_util=embedding_util
+        # 4. 向量化查询文本
+        query_text = " ".join(request.keywords)
+        vectors = embedding_util.encode_batch([query_text])
+        query_embedding, _, _ = vectors[0]  # 只使用稠密向量
+
+        # 5. 构建 Milvus 搜索表达式（在数据库层面过滤）
+        search_params = {
+            "metric_type": "COSINE",
+            "params": {"nprobe": 10}
+        }
+
+        # 如果指定了 taskId，添加过滤表达式
+        filter_expr = None
+        if request.taskId:
+            filter_expr = f'task_id == "{request.taskId}"'
+            print(f"[Search API] 过滤表达式: {filter_expr}")
+
+        # 6. 动态获取输出字段（检查哪些字段存在）
+        schema_field_names = [f.name for f in milvus.collection.schema.fields if f.name not in ["id", "embedding"]]
+        output_fields = ["task_id", "chunk_type", "content", "page"]
+        if "insert_time" in schema_field_names:
+            output_fields.append("insert_time")
+
+        # 7. 执行搜索
+        milvus.collection.load()
+        search_results_raw = milvus.collection.search(
+            data=[query_embedding],
+            anns_field="embedding",
+            param=search_params,
+            limit=request.top_k,
+            expr=filter_expr,  # 数据库层面过滤
+            output_fields=output_fields
         )
 
-        # 5. 构造响应
+        # 8. 格式化结果
+        results = []
+        for hits in search_results_raw:
+            for hit in hits:
+                results.append({
+                    "id": hit.id,
+                    "distance": hit.distance,
+                    "task_id": hit.entity.get("task_id"),
+                    "chunk_type": hit.entity.get("chunk_type"),
+                    "content": hit.entity.get("content"),
+                    "page": hit.entity.get("page"),
+                    "insert_time": hit.entity.get("insert_time", 0)  # 不存在时默认0
+                })
+
+        # 6. 构造响应
         query_text = " ".join(request.keywords)
         search_results = [
             SearchResultItem(
                 id=r["id"],
                 distance=r["distance"],
-                doc_id=r["doc_id"],
+                task_id=r["task_id"],
                 chunk_type=r["chunk_type"],
                 content=r["content"],
                 page=r["page"],

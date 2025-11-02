@@ -568,7 +568,7 @@ class PDFContentExtractor:
                         vector_dim=1024,
                         device="auto"
                     ) as persistence:
-                        persistence.save_cells(doc_id=doc_id, cells=cells, drop_old=False)
+                        persistence.save_cells(task_id=doc_id, cells=cells, drop_old=False)
 
                 except Exception as vec_error:
                     print(f"[向量库] ✗ 向量化写入失败: {vec_error}")

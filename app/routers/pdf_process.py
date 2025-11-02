@@ -38,6 +38,29 @@ class TaskStatusResponse(BaseModel):
     created_at: Optional[str] = None
 
 
+class PageRequest(BaseModel):
+    """分页请求"""
+    pageNum: int = 1
+    pageSize: int = 10
+
+
+class PageDataResponse(BaseModel):
+    """分页数据响应"""
+    total: str
+    pageSize: str
+    pageTotal: str
+    pageNum: str
+    dataList: list
+
+
+class PageResponse(BaseModel):
+    """分页响应"""
+    success: bool
+    errCode: Optional[str] = None
+    errMsg: Optional[str] = None
+    data: PageDataResponse
+
+
 # ==================== 辅助函数 ====================
 
 def generate_task_id() -> str:
@@ -81,8 +104,8 @@ async def upload_and_process_pdf(
     app_id: Optional[str] = Form(None, description="租户ID"),
     create_user: Optional[str] = Form(None, description="创建用户ID"),
     create_user_name: Optional[str] = Form(None, description="创建用户名称"),
-    save_to_db: Optional[bool] = Form(None, description="是否保存到数据库"),
-    save_to_milvus: Optional[bool] = Form(None, description="是否保存到Milvus向量库")
+    save_to_db: bool = Form(True, description="是否保存到数据库，默认True"),
+    save_to_milvus: bool = Form(True, description="是否保存到Milvus向量库，默认True")
 ):
     """
     上传并处理 PDF 文件
@@ -120,39 +143,12 @@ async def upload_and_process_pdf(
 
         print(f"[PDF处理] 任务ID: {task_id}")
         print(f"[PDF处理] PDF已保存: {pdf_path}")
+        print(f"[PDF处理] ========== 参数检查 ==========")
+        print(f"[PDF处理] save_to_db = {save_to_db} (类型: {type(save_to_db)})")
+        print(f"[PDF处理] save_to_milvus = {save_to_milvus} (类型: {type(save_to_milvus)})")
+        print(f"[PDF处理] ================================")
 
-        # 5. 调用 PDFContentExtractor 处理
-        from app.utils.unTaggedPDF.pdf_content_extractor import PDFContentExtractor
-
-        extractor = PDFContentExtractor(
-            pdf_path=str(pdf_path),
-            enable_cross_page_merge=True,
-            enable_cell_merge=False,
-            enable_ai_row_classification=False,
-            verbose=False
-        )
-
-        # 6. 提取并保存 JSON (保存到任务目录)
-        result_paths = extractor.save_to_json(
-            output_dir=str(task_dir),
-            include_paragraphs=False,  # 只保存表格
-            task_id=task_id,
-            save_cells=True  # 保存单元格数据并写入 Milvus
-        )
-
-        print(f"[PDF处理] JSON已生成:")
-        for key, path in result_paths.items():
-            print(f"  - {key}: {path}")
-
-        # 7. 生成 doc_id (从 cells JSON 中读取)
-        doc_id = task_id
-        if "cells" in result_paths:
-            import json
-            with open(result_paths["cells"], "r", encoding="utf-8") as f:
-                cells_data = json.load(f)
-                doc_id = cells_data.get("doc_id", task_id)
-
-        # 8. 保存到数据库 (如果启用)
+        # 5. 先保存到数据库（创建初始记录，状态为"解析中"）
         db_task_id = None
         if save_to_db:
             try:
@@ -169,7 +165,7 @@ async def upload_and_process_pdf(
                     echo=False
                 )
 
-                # 创建合规审查任务
+                # 创建合规审查任务（状态：解析中）
                 service = ComplianceService(mysql)
                 db_task = service.create_task_from_pdf(
                     pdf_path=str(pdf_path),
@@ -185,15 +181,80 @@ async def upload_and_process_pdf(
                 )
 
                 db_task_id = db_task.id
-                print(f"[PDF处理] 数据库任务ID: {db_task_id}")
+                print(f"[PDF处理] ✓ 数据库记录已创建，任务ID: {db_task_id}")
 
                 mysql.close()
 
             except Exception as e:
-                print(f"[PDF处理] 数据库保存失败: {e}")
-                # 不中断流程,继续返回结果
+                print(f"[PDF处理] ✗ 数据库保存失败: {e}")
+                import traceback
+                traceback.print_exc()
+                # 继续处理，不中断流程
 
-        # 9. 构建响应
+        # 6. 调用 PDFContentExtractor 处理
+        from app.utils.unTaggedPDF.pdf_content_extractor import PDFContentExtractor
+
+        extractor = PDFContentExtractor(
+            pdf_path=str(pdf_path),
+            enable_cross_page_merge=True,
+            enable_cell_merge=False,
+            enable_ai_row_classification=False,
+            verbose=False
+        )
+
+        # 7. 提取并保存 JSON (保存到任务目录)
+        # 注意：save_cells=save_to_milvus，根据参数决定是否写入向量库
+        result_paths = extractor.save_to_json(
+            output_dir=str(task_dir),
+            include_paragraphs=False,  # 只保存表格
+            task_id=task_id,
+            save_cells=save_to_milvus if save_to_milvus else False  # 根据参数决定
+        )
+
+        print(f"[PDF处理] JSON已生成:")
+        for key, path in result_paths.items():
+            print(f"  - {key}: {path}")
+
+        # 8. 生成 doc_id (从 cells JSON 中读取)
+        doc_id = task_id
+        if "cells" in result_paths:
+            import json
+            with open(result_paths["cells"], "r", encoding="utf-8") as f:
+                cells_data = json.load(f)
+                doc_id = cells_data.get("doc_id", task_id)
+
+        # 9. 更新数据库状态（如果向量库入库成功，将状态改为2：审查结束）
+        if save_to_db and db_task_id and save_to_milvus and "cells" in result_paths:
+            try:
+                from app.utils.db.mysql import MySQLUtil, ComplianceService
+
+                mysql = MySQLUtil(
+                    host="172.16.0.116",
+                    port=3306,
+                    user="root",
+                    password="123456",
+                    database="tender_compliance",
+                    charset="utf8mb4",
+                    echo=False
+                )
+
+                service = ComplianceService(mysql)
+                service.update_task_status(
+                    task_id=db_task_id,
+                    review_status=2,  # 2: 审查结束
+                    review_result=None,  # 暂不设置审查结果
+                    update_user=create_user
+                )
+
+                print(f"[PDF处理] ✓ 数据库状态已更新为：审查结束 (review_status=2)")
+                mysql.close()
+
+            except Exception as e:
+                print(f"[PDF处理] ✗ 更新数据库状态失败: {e}")
+                import traceback
+                traceback.print_exc()
+
+        # 10. 构建响应
         response_data = {
             "task_id": task_id,
             "doc_id": doc_id,
@@ -389,3 +450,122 @@ async def list_tasks(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+
+@router.post("/page", response_model=PageResponse, summary="分页查询任务列表")
+async def get_tasks_by_page(request: PageRequest):
+    """
+    分页查询任务列表
+
+    Args:
+        request: 分页请求参数
+            - pageNum: 页码（从1开始）
+            - pageSize: 每页数量
+
+    Returns:
+        分页数据
+
+    示例:
+        POST /api/pdf/page
+        {
+            "pageNum": 1,
+            "pageSize": 5
+        }
+    """
+    try:
+        import time
+        start_time = time.time()
+
+        from app.utils.db.mysql import MySQLUtil
+        from app.utils.db.mysql.models import ComplianceFileTask
+        from sqlalchemy import func, text
+
+        # 参数验证
+        page_num = max(1, request.pageNum)
+        page_size = min(max(1, request.pageSize), 100)  # 限制最大100条
+
+        t1 = time.time()
+        # 初始化数据库连接
+        mysql = MySQLUtil(
+            host="172.16.0.116",
+            port=3306,
+            user="root",
+            password="123456",
+            database="tender_compliance",
+            charset="utf8mb4",
+            echo=False
+        )
+        print(f"[分页查询] 数据库连接耗时: {(time.time() - t1)*1000:.2f}ms")
+
+        # 使用 get_session() 进行查询
+        with mysql.get_session() as session:
+            t2 = time.time()
+            # 优化：只在第一页或明确需要时才查询总数
+            # 使用原生SQL的 SQL_CALC_FOUND_ROWS 或者直接估算
+            # 这里使用快速估算方法：只查询数据，不查总数
+
+            # 分页查询（多查1条用于判断是否有下一页）
+            offset = (page_num - 1) * page_size
+            tasks = session.query(ComplianceFileTask)\
+                .order_by(ComplianceFileTask.create_time.desc())\
+                .limit(page_size + 1)\
+                .offset(offset)\
+                .all()
+            print(f"[分页查询] SELECT查询耗时: {(time.time() - t2)*1000:.2f}ms")
+
+            # 判断是否有更多数据
+            has_more = len(tasks) > page_size
+            if has_more:
+                tasks = tasks[:page_size]  # 只返回请求的数量
+
+            # 快速估算总数（只在第一页时才计算）
+            if page_num == 1:
+                t3 = time.time()
+                # 直接使用精确COUNT（但使用索引优化）
+                total = session.query(func.count(ComplianceFileTask.id)).scalar()
+                print(f"[分页查询] COUNT查询耗时: {(time.time() - t3)*1000:.2f}ms")
+            else:
+                # 非首页使用估算值（避免COUNT）
+                total = (page_num - 1) * page_size + (page_size if has_more else len(tasks))
+
+            # 计算总页数
+            pages = (total + page_size - 1) // page_size if total > 0 else 1
+
+            # 转换为字典列表（在session关闭前，使用驼峰命名）
+            data_list = []
+            for task in tasks:
+                # 计算审查进度（根据 review_status 判断）
+                review_progress = 100 if task.review_status == 2 else 0
+
+                data_list.append({
+                    "taskId": task.id,
+                    "fileId": task.file_id,
+                    "fileName": task.file_name,
+                    "projectName": task.project_name,
+                    "projectCode": task.project_code,
+                    "reviewStatus": task.review_status,
+                    "reviewResult": task.review_result,
+                    "createTime": task.create_time.strftime("%Y-%m-%d %H:%M:%S") if task.create_time else None,
+                    "createUserName": task.create_user_name,
+                    "reviewProgress": review_progress
+                })
+
+        mysql.close()
+
+        return PageResponse(
+            success=True,
+            errCode=None,
+            errMsg=None,
+            data=PageDataResponse(
+                total=str(total),
+                pageSize=str(page_size),
+                pageTotal=str(pages),
+                pageNum=str(page_num),
+                dataList=data_list
+            )
+        )
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"分页查询失败: {str(e)}")
