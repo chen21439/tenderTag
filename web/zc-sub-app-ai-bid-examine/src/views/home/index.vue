@@ -1,5 +1,6 @@
 <template>
   <div class="home home-upload-container">
+    <LeftSideActions />
     <!-- 主容器卡片 -->
     <div class="main-card">
       <!-- 标题区域 -->
@@ -13,16 +14,18 @@
         <upload-file
           ref="uploadFileRef"
           v-model:files="fileList"
-          accept=".docx"
+          accept=".docx,.pdf"
           accept-tip="文件格式不正确，请选择.docx文件"
           :show-upload-list="false"
+          :auto-upload="false"
           @change="doChange">
           <div class="upload-area">
             <img class="upload-icon" src="@/assets/images/bid-examine/upload-circle.png" alt="上传"> 
             <!-- 上传文字 -->
             <div class="upload-text-main">上传采购文件</div>
-            <div class="upload-text-sub">仅支持 .docx 格式文档，单个文档大小不超过 20MB</div> 
+            <div class="upload-text-sub">仅支持 .docx/.pdf 格式文档，单个文档大小不超过 20MB</div> 
             <div class="upload-text-hint">或将文件拖拽到此处</div>
+
           </div>
         </upload-file>
       </div>
@@ -38,7 +41,9 @@
               <svg-icon icon="icon-tishi" class="icon" />
               <span>采用AI辅助审查，最终结果需人工核对</span>
             </div>
-            <a-button type="primary" class="start-button" :class="{ disabled: !doneCount }" @click="handleStartReview">
+
+
+            <a-button type="primary" class="start-button" :loading="uploading" @click="handleStartReview">
               开始审查
             </a-button>
           </div>
@@ -209,6 +214,7 @@ import { getFileIcon, getStatusIcon } from '@/views/hooks/examine'
 import { usePolling } from '@/hooks/use-polling'
 import { riskOptions,getStatusStyle,getRiskStyle, TABLE_COLUMNS } from '@/views/hooks/examine'
 import UploadFile from '@/components/UploadFile/index.vue'
+import LeftSideActions from '@/components/LeftSideActions/index.vue'
 
 interface FileItem {
   uid: string
@@ -222,8 +228,24 @@ const router = useRouter()
 const fileList = ref<FileItem[]>([])
 const uploadFileRef = ref()
 
+onMounted(() => {
+  try {
+    if (sessionStorage.getItem('clearHomeUpload')) {
+      fileList.value = []
+      selectedPdfFile.value = null
+      sessionStorage.removeItem('clearHomeUpload')
+    }
+  } catch {}
+})
+
 function doChange(files:any) { 
-  fileList.value = [...files] 
+  fileList.value = [...files]
+  const f = files && files[0]
+  // 兼容不同上传实现，尽量取到原始 File
+  // 常见字段：originFileObj（antd）、raw（element）、file/自身为 File
+  // 若 UploadFile 组件直接给原生 File 数组，这里也可正常识别
+  // @ts-ignore
+  selectedPdfFile.value = (f && (f.originFileObj || f.raw || f.file || f)) || null
 }
 
 // 计算是否可以开始审查
@@ -243,27 +265,57 @@ async function handleRetryUpload(file: FileItem) {
   await uploadFileRef.value?.handleRetry(file) 
 }
 const isStarting = ref(false)
+const pdfUploadInputRef = ref<HTMLInputElement | null>(null)
+const selectedPdfFile = ref<File | null>(null)
+const uploading = ref(false)
+
+const handleAddPdfClick = () => {
+  pdfUploadInputRef.value?.click()
+}
+const onPdfSelected = (e: Event) => {
+  const input = e.target as HTMLInputElement
+  selectedPdfFile.value = input.files?.[0] || null
+  if (selectedPdfFile.value) {
+    message.success('已选择文件：' + selectedPdfFile.value.name)
+  }
+}
+
 async function handleStartReview() {
-  if (!doneCount.value || isStarting.value) return  
-  const fileIdList = fileList.value
-    .filter((item: any) => item.status === 'done')
-    .map((item: any) => item.response?.fileId)
-  isStarting.value = true
-  hasOtherRequest.value = true
-  const {err,data} = await apiTaskCreate({fileIdList})
-  isStarting.value = false
-  hasOtherRequest.value = false
-  if (err) return
-  fileList.value = fileList.value.filter((item: any) => item.status !== 'done')
-  restart()
-  // if(!data?.taskIdList?.length) {
-  //   message.error('审查失败') 
-  //   return
-  // }
-  // router.push({
-  //   name: 'ComplianceReview',
-  //   query: { taskId:data.taskIdList[0] }
-  // })
+  if (uploading.value) return
+  if (!selectedPdfFile.value) {
+    message.info('请先添加PDF文件')
+    return
+  }
+  try {
+    uploading.value = true
+    const form = new FormData()
+    form.append('file', selectedPdfFile.value)
+    // 可选字段按需附加：
+    // form.append('project_name', '示例项目')
+    // form.append('save_to_db', 'true')
+    // form.append('save_to_milvus', 'true')
+
+    const resp = await fetch('/python/api/pdf/upload_pdf', {
+      method: 'POST',
+      body: form
+    })
+    const json = await resp.json().catch(() => ({}))
+    if (resp.ok && (json?.success !== false)) {
+      message.success('PDF上传成功')
+      restart()
+      // 如需跳转审查页：
+      // if (json?.task_id) router.push({ name: 'ComplianceReview', query: { taskId: json.task_id } })
+    } else {
+      message.error('PDF上传失败')
+    }
+  } catch (err) {
+    console.error(err)
+    message.error('PDF上传失败')
+  } finally {
+    uploading.value = false
+    selectedPdfFile.value = null
+    if (pdfUploadInputRef.value) pdfUploadInputRef.value.value = ''
+  }
 } 
 // 表格 
 const { state,getTableData, refresh } = useTable({
@@ -466,6 +518,7 @@ start()
   .upload-area {
     width: 100%;
     height: 246px;
+    position: relative;
     background: #F7F8FA;
     border: 1px solid #E5E6EB;
     border-radius: 16px;

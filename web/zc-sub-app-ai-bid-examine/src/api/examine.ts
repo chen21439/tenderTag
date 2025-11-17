@@ -76,7 +76,7 @@ export const apiTaskList = (
     reviewResult?: number
   }
 ) => http({
-  url: '/compliance/v1/task/page',
+  url: '/python/api/pdf/page',
   method: 'post',
   data
 })

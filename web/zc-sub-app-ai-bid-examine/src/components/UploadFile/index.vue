@@ -90,6 +90,7 @@ interface Props {
   showUploadList?: boolean | object
   data?: object
   enableDragEffect?: boolean  // 是否启用全屏拖拽效果
+  autoUpload?: boolean        // 是否自动上传（false 表示只选择不上传）
 }
 
 interface UploadConfig {
@@ -118,7 +119,8 @@ const props = withDefaults(defineProps<Props>(), {
   maxSize: 20,
   showUploadList: true,
   data: () => ({}),
-  enableDragEffect: true
+  enableDragEffect: true,
+  autoUpload: true
 })
 
 const emit = defineEmits(['update:files', 'change', 'success', 'error'])
@@ -383,14 +385,25 @@ const customRequest = async (options: CustomRequestOptions) => {
     name: file.name,
     type: file.name?.split('.').pop()?.toUpperCase() || '',
     size: formatFileSize(file.size),
-    status: 'uploading',
-    percent: 0,
+    status: props.autoUpload ? 'uploading' : 'done',
+    percent: props.autoUpload ? 0 : 100,
     originFileObj: file as any // 保存原始文件对象，用于重试上传
   }
 
   try {
     // 立即将文件添加到列表
     updateFileList([...fileList.value, uploadFile])
+
+    // 支持“只选不传”模式：autoUpload=false 时，不发网络请求
+    const controller = new AbortController()
+    if (!props.autoUpload) {
+      onSuccess({ selectedOnly: true })
+      emit('success', uploadFile)
+      return {
+        abort: () => controller.abort()
+      }
+    }
+
     const formData = new FormData()
     formData.append('file', file)
 
@@ -402,7 +415,8 @@ const customRequest = async (options: CustomRequestOptions) => {
     }
 
     // 创建上传配置
-    const controller = new AbortController()
+    // controller 已在上方创建（或在 autoUpload=false 分支提前返回）
+    // 这里不再重复创建
     const config: UploadConfig = {
       signal: controller.signal,
       onUploadProgress: (progressEvent: ProgressEvent) => {
@@ -443,6 +457,10 @@ const customRequest = async (options: CustomRequestOptions) => {
 
 // ==================== 重试上传模块 ====================
 const handleRetry = async (file: UploadFile) => {
+  // 只选不传模式下，无需重试上传
+  if (!props.autoUpload) {
+    return true
+  }
   try {
     // 检查是否有原始文件对象
     if (!file.originFileObj) {

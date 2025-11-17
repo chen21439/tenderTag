@@ -5,12 +5,6 @@
     <div class="header-section">
       <div class="breadcrumb-area">
         <div class="nav-buttons">
-          <a-button type="text" class="nav-btn back-btn" @click="goHome">
-            <template #icon>
-              <CornerUpLeft class="icon" :size="16" />
-            </template>
-            返回首页
-          </a-button>
           <a-button type="text" class="nav-btn history-btn" @click="showHistoryFiles">
             <template #icon>
               <Clock8 class="icon" :size="16" />
@@ -68,13 +62,16 @@
               </div>
             </template>
           </a-dropdown>
-          <!-- 模式切换 + 关键词查询（移除上传PDF） -->
-          <a-radio-group v-model:value="viewMode" button-style="solid">
-            <a-radio-button value="result">审查结果</a-radio-button>
-            <a-radio-button value="search">实时搜索</a-radio-button>
-          </a-radio-group>
-
-
+          <!-- 关键词查询与上传PDF（最小接入后端接口） -->
+          <a-input
+            v-model:value="searchKeyword"
+            placeholder="输入关键词（可用空格分隔多个）"
+            style="width: 220px"
+            :disabled="searchLoading"
+          />
+          <a-button :loading="searchLoading" @click="handleSearch">查询</a-button>
+          <a-button :loading="uploading" @click="handleUploadClick">上传PDF</a-button>
+          <input ref="uploadInputRef" type="file" accept="application/pdf" style="display: none" @change="onFileSelected" />
           <a-button type="primary" @click="showCheckList">查看审查清单</a-button>
         </div>
       </div>
@@ -93,34 +90,8 @@
         <BaseEmpty v-else description="暂无文档" />
       </div>
 
-      <!-- 实时搜索面板（红框区域） -->
-      <div v-if="viewMode === 'search'" class="review-panel search-panel" style="padding: 16px;">
-        <div class="search-bar" style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
-          <a-input
-            v-model:value="searchKeyword"
-            placeholder="输入关键词（可用空格分隔多个）"
-            style="width: 320px"
-            :disabled="searchLoading"
-            @pressEnter="handleSearch"
-          />
-          <a-button type="primary" :loading="searchLoading" @click="handleSearch">查询</a-button>
-        </div>
-        <div class="search-results">
-          <a-spin v-if="searchLoading" />
-          <div v-else-if="searchResults.length">
-            <a-list :data-source="searchResults">
-              <template #renderItem="{ item }">
-                <a-list-item class="search-item">
-                  <div class="result-text">{{ item.text || item.content || JSON.stringify(item) }}</div>
-                </a-list-item>
-              </template>
-            </a-list>
-          </div>
-          <BaseEmpty v-else description="暂无数据" />
-        </div>
-      </div>
       <!-- 审查结果面板 -->
-      <div v-if="viewMode === 'result'" class="review-panel" ref="review-panel">
+      <div class="review-panel" ref="review-panel">
         <div class="panel-header">
           <span class="shrink-0 mr-[4px]">审查结果</span>
           <div class="statistics">
@@ -242,7 +213,7 @@ import { DownOutlined } from '@ant-design/icons-vue'
 import { CornerUpLeft, Clock8, Calendar1, Download, ClockFading } from 'lucide-vue-next'
 import { SKELETON_CONFIG, createFilterTabs, DEFAULT_REVIEW_RESULT, exportOptionsList } from '@/views/hooks/examine'
 import { useExport } from '@/views/hooks/use-export'
-import { getTaskReview, reviewTipList } from '@/api/examine'
+import { getTaskReview, apiGetFile, reviewTipList, getLocalTaskList } from '@/api/examine'
 import { BaseDialog } from '@/components/BaseDialog'
 import PdfViewer from '@/views/pdf/PdfViewer.vue'
 import BaseEmpty from '@/components/BaseEmpty/index.vue'
@@ -259,34 +230,22 @@ defineOptions({
 const router = useRouter()
 const route = useRoute()
 
-/* 使用 Vite 的开发环境变量判断
-   - 本地开发（vite --mode dev / 默认 development）为 true
-   - 仅调整判断，不改现有业务逻辑与数据加载 URL */
 const isDev = import.meta.env.DEV === true || import.meta.env.MODE === 'dev'
 
 //是否存在风险
 const existRisk = ref(true)
-// 获取任务ID（初始为空，在 onMounted 中从 taskList.json 加载第一个）
-const taskId = ref((route.query.taskId as string) || '')
- // 视图模式切换：result | search
-const viewMode = ref<'result' | 'search'>('result')
-// 开发模式（显示未匹配数据）
+const taskId = ref('')
 const isDevMode = ref(false)
-// 未匹配的数据
 const unmatchedData = ref<any[]>([])
-// 展开/收起状态（使用 reviewItemCode 作为 key）
 const expandedState = reactive<Record<string, boolean>>({})
-// 页面状态管理
 const state = reactive({
   loading: false,
   activeFilter: 1 as number | null,
   checkListVisible: false,
   historyFilesVisible: false
 })
-// 批注提示信息
 const markList = ref<any[]>([])
 const getMarkList = async () => {
-  // 开发/测试模式下，使用本地数据，不调用接口
   if (isDev || config.isTest) {
     console.log('开发/测试模式：跳过 getMarkList 接口调用')
     markList.value = []
@@ -311,20 +270,15 @@ const getMarkList = async () => {
   })
   pdfData.highlightRects = [...markList.value]
 }
-// 统计数据
 const statsData = ref<Record<string, any>>({})
 
-// PDF相关数据
 const pdfData = reactive({
   pdfUrl: '',
   currentPage: 1,
   highlightRects: [] as any[]
 })
 
-// 审查结果数据
 const resultData = reactive<Record<string, any>>({ ...DEFAULT_REVIEW_RESULT })
-
-// 当前选中的审查项
 const activeItem = ref<Record<string, any>>({})
 
 const resultBarWidth = computed(() => {
@@ -334,12 +288,9 @@ const resultBarWidth = computed(() => {
   } else return '0%'
 })
 
-// 筛选标签
 const filterTabs = computed(() => createFilterTabs(statsData.value))
 
-// 过滤后的审查项目
 const filteredItems = computed(() => {
-  // 开发模式：显示未匹配数据
   if (isDevMode.value) {
     return [{
       reviewItemCode: 'dev_unmatched',
@@ -354,14 +305,12 @@ const filteredItems = computed(() => {
         spanList: [{
           pid: item.span.pid,
           text: item.span.targetText,
-          // PDF中找到的最接近批注（用于第一个按钮）
           pdfAnnotations: item.bestMatch ? [{
             pageNum: item.bestMatch.pageNum,
             rect: item.bestMatch.rect,
             quadPoints: item.bestMatch.quadPoints
           }] : []
         }],
-        // 保存原始span数据（用于第二个按钮：显示annotation.json期望的位置）
         _originalSpan: {
           page: item.span.page,
           quadPoints: item.span.quadPoints,
@@ -372,12 +321,11 @@ const filteredItems = computed(() => {
                      `最接近PDF批注: ${item.bestMatch ? `page=${item.bestMatch.pageNum}, IOU=${item.matchInfo.iou}, 文本相似度=${item.matchInfo.textSim}` : '无'}`,
         acceptStatus: 0,
         handleStatus: 0,
-        _isDevMode: true // 标记为开发模式数据
+        _isDevMode: true
       }))
     }]
   }
 
-  // 正常模式
   const dataList = resultData.dataList || []
 
   console.log('过滤后的审查项:', {
@@ -385,7 +333,6 @@ const filteredItems = computed(() => {
     匹配数: dataList.filter((item: any) => item.spanList?.some((span: any) => span.pdfAnnotations?.length > 0)).length
   })
 
-  // 按 reviewItemCode 分类
   const grouped = dataList.reduce((acc, item) => {
     let group = acc.find(group => group.reviewItemCode === item.reviewItemCode)
     if (!group) {
@@ -400,12 +347,10 @@ const filteredItems = computed(() => {
     return acc
   }, [] as { reviewItemCode: string; reviewItemName: string; children: any[] }[])
 
-  // 处理相同审查依据的项目，重复的显示"同上"
   grouped.forEach(group => {
     const seenLegalBasis = new Map()
     group.children.forEach(item => {
       if (!item.legalBasicSourceList?.length) return
-      // 生成审查依据的唯一标识
       const legalBasisKey = item.legalBasicSourceList
         .map(
           basis =>
@@ -415,7 +360,6 @@ const filteredItems = computed(() => {
         .join('|')
 
       if (seenLegalBasis.has(legalBasisKey)) {
-        // 重复的审查依据显示"同上"
         item.legalBasicHide = true
       } else {
         seenLegalBasis.set(legalBasisKey, true)
@@ -426,7 +370,6 @@ const filteredItems = computed(() => {
   return grouped
 })
 
-// 点击审查项处理
 const pdfReaderRef = ref<InstanceType<typeof PdfViewer>>()
 const handleReviewItemClick = async (item: any) => {
   if (!item) return
@@ -438,30 +381,26 @@ const handleReviewItemClick = async (item: any) => {
     hasPdfAnnotations: item.spanList?.some((s: any) => s.pdfAnnotations?.length > 0)
   })
 
-  // 优先使用 PDF 批注数据进行跳转
   const spanList = item.spanList ?? []
   let targetPage = -1
   let highlightRects: any[] = []
 
   if (spanList.length > 0) {
-    // 遍历所有 span，查找有 pdfAnnotations 的
     spanList.forEach((span: any) => {
       const pdfAnns = span.pdfAnnotations ?? []
       if (pdfAnns.length > 0) {
-        // 使用第一个批注的位置信息
         const firstAnn = pdfAnns[0]
         if (targetPage === -1) {
           targetPage = firstAnn.pageNum
         }
 
-        // 将所有批注的位置添加到高亮列表
         pdfAnns.forEach((ann: any) => {
           console.log('添加高亮区域:', ann)
           highlightRects.push({
-            pageNum: ann.pageNum,  // 使用 pageNum 而不是 page
+            pageNum: ann.pageNum,
             quadPoints: ann.quadPoints,
             rect: ann.rect,
-            jump: true, // 可滚动到对应的选区
+            jump: true,
             annotations: item.acceptStatus === 1 && item.acceptText
               ? [{ content: item.acceptText }]
               : []
@@ -471,7 +410,6 @@ const handleReviewItemClick = async (item: any) => {
     })
   }
 
-  // 如果没有 PDF 批注数据，回退到原有的 position 逻辑
   if (targetPage === -1) {
     const position = item.position ?? []
     const annotations =
@@ -492,19 +430,14 @@ const handleReviewItemClick = async (item: any) => {
     }
   }
 
-  // 更新 PDF 显示
   pdfData.highlightRects = highlightRects
 
-  // 只有在有效页码时才跳转（页码必须 >= 1）
   if (targetPage > 0 && highlightRects.length > 0) {
-    // 使用第一个高亮区域进行跳转
     const firstHighlight = highlightRects[0]
 
-    // 方法1: 使用 PdfViewer 的 scrollToAnnotation 方法（推荐）
     if (pdfReaderRef.value?.scrollToAnnotation) {
       await pdfReaderRef.value.scrollToAnnotation(firstHighlight)
     } else {
-      // 方法2: 回退到简单的页面跳转
       pdfData.currentPage = -1
       await nextTick()
       pdfData.currentPage = targetPage
@@ -526,15 +459,11 @@ const handleReviewItemClick = async (item: any) => {
   }
 }
 
-// 开发模式：定位到最接近的PDF批注
 const handleShowBestMatch = async (item: any) => {
   console.log('定位到最接近的PDF批注:', item)
-
-  // 直接使用现有逻辑（与 handleReviewItemClick 相同）
   await handleReviewItemClick(item)
 }
 
-// 开发模式：定位到annotation.json的原始位置
 const handleShowOriginalSpan = async (item: any) => {
   console.log('定位到annotation.json的原始位置:', item)
 
@@ -546,18 +475,15 @@ const handleShowOriginalSpan = async (item: any) => {
   const originalSpan = item._originalSpan
   const targetPage = originalSpan.page
 
-  // 构造高亮区域（使用annotation.json中的quadPoints）
   const highlightRects = [{
     pageNum: targetPage,
     quadPoints: originalSpan.quadPoints,
-    rect: null,  // 可以不提供rect，使用quadPoints
+    rect: null,
     jump: true
   }]
 
-  // 更新 PDF 显示
   pdfData.highlightRects = highlightRects
 
-  // 跳转到对应位置
   if (pdfReaderRef.value?.scrollToAnnotation) {
     await pdfReaderRef.value.scrollToAnnotation(highlightRects[0])
   } else {
@@ -573,13 +499,11 @@ const handleShowOriginalSpan = async (item: any) => {
   })
 }
 
-// 获取审查数据
 const isOnlyReviewData = ref(false)
 const getData = async () => {
   state.loading = true
   Object.assign(resultData, DEFAULT_REVIEW_RESULT)
 
-  // 优先使用本地 JSON 文件数据
   if (reviewListData.value) {
     console.log('使用本地 JSON 数据渲染列表')
     const data = reviewListData.value
@@ -599,7 +523,6 @@ const getData = async () => {
     }
     Object.assign(resultData, DEFAULT_REVIEW_RESULT, data)
 
-    //如果审查结果没有存在风险项，切换至全部，默认在发现风险标签下
     if (!statsData.value.resultNum && existRisk.value) {
       existRisk.value = false
       setActiveFilter(null)
@@ -607,8 +530,6 @@ const getData = async () => {
     return
   }
 
-  // 如果没有本地数据，使用接口数据
-  // 开发/测试模式下，跳过接口调用
   if (isDev || config.isTest) {
     console.log('开发/测试模式：跳过 getTaskReview 接口调用，无本地数据')
     state.loading = false
@@ -635,23 +556,16 @@ const getData = async () => {
   }
   Object.assign(resultData, DEFAULT_REVIEW_RESULT, data)
 
-  //如果审查结果没有存在风险项，切换至全部，默认在发现风险标签下
   if (!statsData.value.resultNum && existRisk.value) {
     existRisk.value = false
     setActiveFilter(null)
   }
 }
-// ==================== 业务方法 ====================
 
-// 导航方法
 const goHome = () => {
-  try {
-    sessionStorage.setItem('clearHomeUpload', '1')
-  } catch {}
   router.push({ name: 'HomeIndex' })
 }
 
-// 左侧悬浮菜单跳转
 const goToReview = () => {
   router.push({ name: 'ComplianceReview' })
 }
@@ -659,8 +573,6 @@ const goToDemo = () => {
   router.push('/review')
 }
 
-// ========== 上传与查询（最小接入） ==========
-// 上传PDF
 const uploadInputRef = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
 const handleUploadClick = () => {
@@ -674,7 +586,6 @@ const onFileSelected = async (e: Event) => {
     uploading.value = true
     const form = new FormData()
     form.append('file', file)
-    // 如需附加任务ID等字段，可按需追加：form.append('taskId', taskId.value)
     const resp = await fetch('/python/api/pdf/upload_pdf', {
       method: 'POST',
       body: form
@@ -695,7 +606,6 @@ const onFileSelected = async (e: Event) => {
   }
 }
 
-// 关键词查询
 const searchKeyword = ref('')
 const searchLoading = ref(false)
 const searchResults = ref<any[]>([])
@@ -708,13 +618,10 @@ const handleSearch = async () => {
   const keywords = raw.split(/\s+/).filter(Boolean)
   try {
     searchLoading.value = true
-    // 后端查询接口（app/routers/search.py）
-    const currentTaskId = String((route.query.taskId as string) || taskId.value || '')
-    const url = `/python/api/search${currentTaskId ? `?taskId=${encodeURIComponent(currentTaskId)}` : ''}`
-    const resp = await fetch(url, {
+    const resp = await fetch('/python/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keywords, top_k: 5, collection_name: 'pdf', taskId: currentTaskId || undefined })
+      body: JSON.stringify({ keywords, top_k: 5, collection_name: 'pdf' })
     })
     const json = await resp.json()
     if (json.success) {
@@ -732,25 +639,17 @@ const handleSearch = async () => {
   }
 }
 
-// 切换开发模式
 const toggleDevMode = () => {
   isDevMode.value = !isDevMode.value
   console.log('开发模式:', isDevMode.value ? '开启' : '关闭')
 }
 
-// PDF 批注数据
 const pdfAnnotationsData = ref<any>(null)
 const reviewListData = ref<any>(null)
-const pdfAnnotations = ref<any[]>([]) // 从 PDF 中提取的批注
+const pdfAnnotations = ref<any[]>([])
 
-/**
- * 计算两个矩形的重叠度（IOU - Intersection over Union）
- */
 const calculateIOU = (quad1: number[], quad2: number[]) => {
   if (!quad1 || !quad2 || quad1.length < 8 || quad2.length < 8) return 0
-
-  // quadPoints 格式: [x1,y1, x2,y2, x3,y3, x4,y4] - 4个顶点坐标
-  // 简化计算：提取边界框
   const getBBox = (quad: number[]) => {
     const xs = [quad[0], quad[2], quad[4], quad[6]]
     const ys = [quad[1], quad[3], quad[5], quad[7]]
@@ -761,42 +660,30 @@ const calculateIOU = (quad1: number[], quad2: number[]) => {
       y2: Math.max(...ys)
     }
   }
-
   const box1 = getBBox(quad1)
   const box2 = getBBox(quad2)
-
-  // 计算交集
   const x1 = Math.max(box1.x1, box2.x1)
   const y1 = Math.max(box1.y1, box2.y1)
   const x2 = Math.min(box1.x2, box2.x2)
   const y2 = Math.min(box1.y2, box2.y2)
 
-  if (x2 < x1 || y2 < y1) return 0 // 无交集
-
+  if (x2 < x1 || y2 < y1) return 0
   const intersection = (x2 - x1) * (y2 - y1)
   const area1 = (box1.x2 - box1.x1) * (box1.y2 - box1.y1)
   const area2 = (box2.x2 - box2.x1) * (box2.y2 - box2.y1)
   const union = area1 + area2 - intersection
-
   return intersection / union
 }
 
-/**
- * 文本相似度计算（简单的包含关系检查）
- */
 const textSimilarity = (text1: string, text2: string) => {
   if (!text1 || !text2) return 0
   const t1 = text1.trim().toLowerCase()
   const t2 = text2.trim().toLowerCase()
-
   if (t1 === t2) return 1
   if (t1.includes(t2) || t2.includes(t1)) return 0.8
-
-  // 计算最长公共子串比例
   const longer = t1.length > t2.length ? t1 : t2
   const shorter = t1.length > t2.length ? t2 : t1
   let maxMatch = 0
-
   for (let i = 0; i < shorter.length; i++) {
     for (let j = i + 1; j <= shorter.length; j++) {
       const substr = shorter.substring(i, j)
@@ -805,60 +692,13 @@ const textSimilarity = (text1: string, text2: string) => {
       }
     }
   }
-
   return maxMatch / longer.length
 }
 
-/**
- * ═══════════════════════════════════════════════════════════════════
- * 核心匹配逻辑 - 三方数据关联
- * ═══════════════════════════════════════════════════════════════════
- *
- * 数据源：
- * 1. annotation.json (来自后端) - 包含 uniqueId 和 span 位置信息
- *    结构: { annotations: [{ uniqueId, spanList: [{ page, quadPoints, targetText, pid }] }] }
- *
- * 2. PDF.js 批注数据 (从 PDF 文件提取) - 包含真实的批注位置和内容
- *    结构: [{ id, pageNum, quadPoints, rect, contents, 原始数据.contentsObj.str }]
- *
- * 3. 右侧列表数据 (reviewListData.dataList) - 包含审查项详情
- *    结构: [{ uniqueId, spanList: [{ pid, start, end, text }] }]
- *
- * 匹配流程：
- * Step 1: annotation.json 的 span ←→ PDF.js 批注数据
- *         通过 (page/pageNum + quadPoints IOU + targetText 相似度) 进行匹配
- *         得到: span.pdfAnnotations = [批注数据]
- *
- * Step 2: 使用 uniqueId 将匹配结果写入右侧列表
- *         annotation.uniqueId → reviewListData.dataList 中找到对应 item
- *         span.pid → item.spanList 中找到对应 reviewSpan
- *         写入: reviewSpan.pdfAnnotations = [批注数据 (含 pageNum, rect, quadPoints)]
- *
- * Step 3: 点击右侧列表项时
- *         读取 item.spanList[].pdfAnnotations
- *         使用 pageNum + rect 调用 scrollToAnnotation() 跳转到 PDF 位置
- *
- * 问题诊断：
- * - 如果右侧列表无法跳转，可能原因：
- *   ✓ Step1 匹配率过低 (IOU < 0.5 或文本相似度低)
- *   ✓ Step2 uniqueId 无法在 reviewListData 中找到 (数据源不一致)
- *   ✓ Step2 pid 无法在 spanList 中找到 (pid 不匹配)
- *   ✓ pdfAnnotations 中缺少 pageNum 或 rect
- *
- * 匹配策略（基于行业最佳实践）：
- * 1. 按页码分组 - 减少匹配范围
- * 2. 使用 quadPoints IOU (Intersection over Union) - 计算区域重叠度
- * 3. 使用 targetText 相似度 - 文本验证
- * 4. 综合得分 = IOU * 0.6 + 文本相似度 * 0.4
- * 5. 阈值 > 0.5 才建立映射
- * ═══════════════════════════════════════════════════════════════════
- */
 const matchAnnotations = () => {
   console.log('开始匹配 Span 和 PDF 批注...')
-
   const annotationJson = pdfAnnotationsData.value?.annotations || []
   const pdfAnns = pdfAnnotations.value || []
-
   if (!annotationJson.length || !pdfAnns.length) {
     console.warn('数据不完整，无法匹配', {
       annotationJsonCount: annotationJson.length,
@@ -867,15 +707,8 @@ const matchAnnotations = () => {
     return
   }
 
-  console.log('数据概览:', {
-    'annotation.json 数量': annotationJson.length,
-    'PDF.js 批注数量': pdfAnns.length,
-    '右侧列表数据数量': reviewListData.value?.dataList?.length || 0
-  })
-
-  // 1. 按页码分组 PDF 批注
   const pdfAnnsByPage = new Map<number, any[]>()
-  const matchedPdfAnnIds = new Set<string>() // 记录已匹配的 PDF 批注
+  const matchedPdfAnnIds = new Set<string>()
   pdfAnns.forEach(ann => {
     if (!pdfAnnsByPage.has(ann.pageNum)) {
       pdfAnnsByPage.set(ann.pageNum, [])
@@ -885,9 +718,8 @@ const matchAnnotations = () => {
 
   let matchCount = 0
   let totalSpans = 0
-  const unmatchedSpans: any[] = [] // 未匹配的 span
+  const unmatchedSpans: any[] = []
 
-  // 2. 遍历每个 annotation 的 spanList
   annotationJson.forEach(annotation => {
     annotation.spanList?.forEach((span: any) => {
       totalSpans++
@@ -895,7 +727,6 @@ const matchAnnotations = () => {
       const quadPoints = span.quadPoints
       const targetText = span.targetText
 
-      // 获取同页的 PDF 批注
       const samePage = pdfAnnsByPage.get(page) || []
       if (!samePage.length) {
         unmatchedSpans.push({
@@ -906,78 +737,48 @@ const matchAnnotations = () => {
         return
       }
 
-      // 3. 寻找最佳匹配
       let bestMatch: any = null
       let bestScore = 0
 
       samePage.forEach(pdfAnn => {
-        // 计算 IOU
         const iou = calculateIOU(quadPoints, pdfAnn.quadPoints)
-
-        // 计算文本相似度
         const textSim = textSimilarity(targetText, pdfAnn.原始数据?.contentsObj?.str || pdfAnn.contents)
-
-        // 综合得分：IOU 权重 0.6，文本相似度权重 0.4
         const score = iou * 0.6 + textSim * 0.4
-
         if (score > bestScore) {
           bestScore = score
           bestMatch = pdfAnn
         }
       })
 
-      // 4. 如果匹配度超过阈值，建立映射
       if (bestMatch && bestScore > 0.5) {
-        // 计算匹配详情
         const iou = calculateIOU(quadPoints, bestMatch.quadPoints)
         const textSim = textSimilarity(targetText, bestMatch.原始数据?.contentsObj?.str || bestMatch.contents)
 
-        // PDF.js 跳转和高亮所需的最小数据集
         const matchInfo = {
-          // 基本标识
           id: bestMatch.id,
           pdfAnnotationId: bestMatch.pdfAnnotationId,
-
-          // 跳转定位数据（必需）
-          pageNum: bestMatch.pageNum,                    // 页码
-          rect: Array.from(bestMatch.rect || []),        // 矩形边界 [x1, y1, x2, y2]
-          quadPoints: Array.from(bestMatch.quadPoints || []), // 精确四边形坐标（8个点）
-
-          // 高亮显示数据（可选）
-          subtype: bestMatch.subtype,                    // "Highlight" 等
-          color: bestMatch.color ? Array.from(bestMatch.color) : null, // RGB 颜色
-          opacity: bestMatch.opacity,                    // 透明度
-
-          // 匹配信息（调试用）
+          pageNum: bestMatch.pageNum,
+          rect: Array.from(bestMatch.rect || []),
+          quadPoints: Array.from(bestMatch.quadPoints || []),
+          subtype: bestMatch.subtype,
+          color: bestMatch.color ? Array.from(bestMatch.color) : null,
+          opacity: bestMatch.opacity,
           score: bestScore.toFixed(3),
           iou: iou.toFixed(3),
           textSim: textSim.toFixed(3)
         }
 
-        // 在 annotation.json 的 span 中添加批注引用
         if (!span.pdfAnnotations) {
           span.pdfAnnotations = []
         }
         span.pdfAnnotations.push(matchInfo)
 
-        // ═══════════════════════════════════════════════════════
-        // Step 2: 同时写入右侧列表数据的 spanList 中
-        // ═══════════════════════════════════════════════════════
-        // 逻辑：
-        // 1. 遍历 reviewListData.dataList (右侧列表数据)
-        // 2. 通过 item.uniqueId === annotation.uniqueId 找到父类 item
-        // 3. 遍历 item.spanList，通过 reviewSpan.pid === span.pid 找到子类 span
-        // 4. 将 PDF 批注数据写入 reviewSpan.pdfAnnotations
-        // 5. 右侧列表点击时，从 reviewSpan.pdfAnnotations 读取跳转数据
-        // ═══════════════════════════════════════════════════════
         let foundInReviewList = false
         let foundSpan = false
         if (reviewListData.value?.dataList) {
           reviewListData.value.dataList.forEach((item: any) => {
             if (item.uniqueId === annotation.uniqueId) {
               foundInReviewList = true
-
-              // 记录 spanList 中所有的 pid，用于诊断
               const availablePids = item.spanList?.map((s: any) => s.pid) || []
 
               item.spanList?.forEach((reviewSpan: any) => {
@@ -995,7 +796,6 @@ const matchAnnotations = () => {
                 }
               })
 
-              // 如果 pid 匹配失败，输出详细的诊断信息
               if (!foundSpan) {
                 console.warn(`    ⚠️ Step2 失败: pid 不匹配`, {
                   uniqueId: annotation.uniqueId,
@@ -1009,7 +809,6 @@ const matchAnnotations = () => {
           })
         }
 
-        // Step 2 失败诊断
         if (!foundInReviewList) {
           console.warn(`    ⚠️ Step2 失败: uniqueId 在 reviewListData 中未找到`, {
             uniqueId: annotation.uniqueId,
@@ -1020,17 +819,8 @@ const matchAnnotations = () => {
         matchedPdfAnnIds.add(bestMatch.id)
         matchCount++
 
-        console.log(`✓ 匹配成功 [${matchCount}]: page=${page}, score=${bestScore.toFixed(3)}`, {
-          uniqueId: annotation.uniqueId,
-          pid: span.pid,
-          spanText: targetText?.substring(0, 30),
-          pdfText: (bestMatch.原始数据?.contentsObj?.str || bestMatch.contents)?.substring(0, 30),
-          iou: calculateIOU(quadPoints, bestMatch.quadPoints).toFixed(3)
-        })
       } else {
-        // 简化：直接说哪个字段没匹配
         let failureReasons = []
-
         if (!bestMatch) {
           failureReasons.push('page字段：同页无PDF批注')
         } else {
@@ -1059,77 +849,15 @@ const matchAnnotations = () => {
           span,
           annotation,
           bestMatch,
-          bestScore,
-          details: {
-            hasQuadPoints: !!quadPoints && quadPoints.length > 0,
-            hasTargetText: !!targetText && targetText.trim() !== '',
-            iou: bestMatch ? calculateIOU(quadPoints, bestMatch.quadPoints).toFixed(3) : 'N/A',
-            textSim: bestMatch ? textSimilarity(targetText, bestMatch.原始数据?.contentsObj?.str || bestMatch.contents).toFixed(3) : 'N/A'
-          }
+          bestScore
         })
       }
     })
   })
 
-  // 找出未匹配的 PDF 批注
   const unmatchedPdfAnns = pdfAnns.filter(ann => !matchedPdfAnnIds.has(ann.id))
+  console.log('未匹配 PDF 批注数量:', unmatchedPdfAnns.length)
 
-  console.log(`
-═══════════════════════════════════════════════════════
-    匹配完成
-    总 Span 数: ${totalSpans}
-    成功匹配: ${matchCount}
-    未匹配 Span: ${unmatchedSpans.length}
-    未匹配 PDF 批注: ${unmatchedPdfAnns.length}
-    匹配率: ${((matchCount / totalSpans) * 100).toFixed(2)}%
-═══════════════════════════════════════════════════════
-`)
-
-  // 打印未匹配的 Span
-  if (unmatchedSpans.length > 0) {
-    console.log('\n❌ 未匹配的 Span:')
-    unmatchedSpans.forEach((item, index) => {
-      console.log(`[${index + 1}] ${item.reason}`)
-      console.log('  annotation.json数据:', {
-        uniqueId: item.annotation.uniqueId,
-        page: item.span.page,
-        pid: item.span.pid,
-        targetText: item.span.targetText?.substring(0, 50),
-        quadPoints: item.span.quadPoints?.slice(0, 8)
-      })
-
-      if (item.bestMatch) {
-        console.log('  最接近的PDF批注:', {
-          id: item.bestMatch.id,
-          pageNum: item.bestMatch.pageNum,
-          text: item.bestMatch.原始数据?.contentsObj?.str?.substring(0, 50),
-          quadPoints: item.bestMatch.quadPoints?.slice(0, 8),
-          iou: item.details.iou,
-          textSim: item.details.textSim
-        })
-      } else {
-        console.log('  最接近的PDF批注: 无')
-      }
-    })
-  }
-
-  // 打印未匹配的 PDF 批注
-  if (unmatchedPdfAnns.length > 0) {
-    console.log('\n❌ 未匹配的 PDF 批注:')
-    unmatchedPdfAnns.forEach((ann, index) => {
-      console.log(`[${index + 1}]`, {
-        id: ann.id,
-        pageNum: ann.pageNum,
-        name: ann.name,
-        subtype: ann.subtype,
-        contents: ann.contents?.substring(0, 50),
-        contentsObjStr: ann.原始数据?.contentsObj?.str?.substring(0, 50),
-        quadPoints: ann.quadPoints
-      })
-    })
-  }
-
-  // 保存未匹配数据（供开发模式使用）
   unmatchedData.value = unmatchedSpans.map(item => ({
     uniqueId: item.annotation.uniqueId,
     reason: item.reason,
@@ -1146,72 +874,14 @@ const matchAnnotations = () => {
       quadPoints: item.bestMatch.quadPoints,
       rect: item.bestMatch.rect
     } : null,
-    matchInfo: {
-      iou: item.details?.iou,
-      textSim: item.details?.textSim
-    }
+    matchInfo: {}
   }))
-
-  console.log('保存未匹配数据:', unmatchedData.value.length, '条')
-
-  // ═══════════════════════════════════════════════════════
-  // 统计右侧列表中未匹配的项
-  // ═══════════════════════════════════════════════════════
-  if (reviewListData.value?.dataList) {
-    let totalReviewItems = 0
-    let matchedReviewItems = 0
-    let unmatchedReviewItems: any[] = []
-
-    reviewListData.value.dataList.forEach((item: any) => {
-      totalReviewItems++
-
-      // 检查该项是否有任何 span 匹配到了 PDF 批注
-      const hasMatch = item.spanList?.some((span: any) => span.pdfAnnotations?.length > 0)
-
-      if (hasMatch) {
-        matchedReviewItems++
-      } else {
-        unmatchedReviewItems.push({
-          uniqueId: item.uniqueId,
-          sceneDesc: item.sceneDesc,
-          spanList: item.spanList
-        })
-      }
-    })
-
-    console.log(`
-═══════════════════════════════════════════════════════
-    右侧列表匹配统计
-    总项数: ${totalReviewItems}
-    已匹配: ${matchedReviewItems}
-    未匹配: ${unmatchedReviewItems.length}
-    匹配率: ${((matchedReviewItems / totalReviewItems) * 100).toFixed(2)}%
-═══════════════════════════════════════════════════════
-`)
-
-    if (unmatchedReviewItems.length > 0) {
-      console.log('\n❌ 右侧列表中未匹配的项:')
-      unmatchedReviewItems.forEach((item, index) => {
-        console.log(`[${index + 1}] uniqueId: ${item.uniqueId}`)
-        console.log(`    场景描述: ${item.sceneDesc}`)
-        console.log(`    spanList:`, item.spanList?.map((s: any) => ({
-          pid: s.pid,
-          text: s.text?.substring(0, 30)
-        })))
-      })
-    }
-  }
-
-  // 更新数据
-  pdfAnnotationsData.value = { annotations: annotationJson }
 }
 
-// 处理 PDF 批注加载完成
 const handleAnnotationsLoaded = (annotations: any[]) => {
   console.log('📄 PDF.js 批注提取完成:', annotations?.length, '条')
   pdfAnnotations.value = annotations
 
-  // 如果 annotation.json 已经加载，立即进行匹配
   if (pdfAnnotationsData.value?.annotations) {
     console.log('✅ annotation.json 已就绪，触发匹配')
     matchAnnotations()
@@ -1220,24 +890,20 @@ const handleAnnotationsLoaded = (annotations: any[]) => {
   }
 }
 
-// 读取 JSON 文件（根据环境模式选择接口）
 const loadJsonFiles = async (taskId: string) => {
   try {
-    // 根据环境选择基础 URL
     const baseUrl = isDev
       ? `/task/${taskId}`
       : `${config.env.VITE_APP_PUBLIC_URL}/task/${taskId}`
 
     console.log('📦 开始加载 JSON 文件，taskId:', taskId)
 
-    // 读取 PDF 批注数据
     const annotationsUrl = `${baseUrl}/${taskId}_pdf_annotations.json`
     const annotationsResponse = await fetch(annotationsUrl)
     if (annotationsResponse.ok) {
       pdfAnnotationsData.value = await annotationsResponse.json()
       console.log('✅ annotation.json 加载完成:', pdfAnnotationsData.value?.annotations?.length, '条')
 
-      // 如果 PDF 批注已经提取完成，立即进行匹配
       if (pdfAnnotations.value?.length) {
         console.log('✅ PDF 批注已存在，触发匹配')
         matchAnnotations()
@@ -1248,14 +914,11 @@ const loadJsonFiles = async (taskId: string) => {
       console.warn('❌ 未找到PDF批注文件:', annotationsUrl)
     }
 
-    // 读取审查列表数据
     const reviewDataUrl = `${baseUrl}/${taskId}.json`
     const reviewDataResponse = await fetch(reviewDataUrl)
     if (reviewDataResponse.ok) {
       const jsonData = await reviewDataResponse.json()
       console.log('✅ 审查列表数据加载完成')
-
-      // 提取 data 字段（JSON 结构是 {success: true, data: {...}}）
       reviewListData.value = jsonData.data || jsonData
       console.log('提取后的数据:', reviewListData.value)
     } else {
@@ -1268,23 +931,36 @@ const loadJsonFiles = async (taskId: string) => {
   }
 }
 
-// 获取文件URL
 const getFile = async () => {
   pdfData.currentPage = 1
   pdfData.highlightRects = []
   pdfData.pdfUrl = ''
 
-  if (!taskId.value) {
-    message.info('缺少任务ID')
+  if (reviewListData.value && taskId.value) {
+    pdfData.pdfUrl = isDev
+      ? `/task/${taskId.value}/${taskId.value}_highlighted.pdf`
+      : `${config.env.VITE_APP_PUBLIC_URL}/task/${taskId.value}/${taskId.value}_highlighted.pdf`
+    console.log('使用 PDF 文件:', pdfData.pdfUrl)
     return
   }
 
-  // 统一从后端读取 PDF
-  pdfData.pdfUrl = `/python/api/pdf/task/${encodeURIComponent(taskId.value)}/pdf`
-  console.log('使用后端PDF接口:', pdfData.pdfUrl)
+  if (isDev || config.isTest) {
+    console.log('开发/测试模式：跳过 apiGetFile 接口调用，无本地数据')
+    return
+  }
+
+  const finalFileId = statsData.value.finalFileId
+  if (!finalFileId) {
+    message.info('缺少文件ID')
+    return
+  }
+
+  const { data, err } = await apiGetFile(finalFileId)
+  if (err) return
+  console.log('apiGetFile 返回数据:', data)
+  pdfData.pdfUrl = data.pdfUrl || data.fileUrl
 }
 
-// ==================== 导出相关方法 ====================
 const {
   state: exportState,
   hasSelectedOptions,
@@ -1294,66 +970,52 @@ const {
 } = useExport(exportOptionsList, taskId.value)
 const handleExportDropdownChange = (open: boolean) => {
   if (open) {
-    showExport() // 打开时重置为全选
+    showExport()
   }
 }
-// ==================== 弹窗控制方法 ====================
 
-// 显示审查清单
 const showCheckList = () => {
   state.checkListVisible = true
 }
 
-// 显示历史文件
 const showHistoryFiles = () => {
   state.historyFilesVisible = true
 }
 
-// 文件预览处理
 const handleFilePreview = (file: any) => {
   console.log('📂 切换任务:', file.fileName, file.taskId)
   taskId.value = file.taskId
   refreshData()
-  // 关闭历史文件抽屉
   state.historyFilesVisible = false
 }
 
-// 切换项目展开/收缩
 const toggleItemExpand = (reviewItemCode: string) => {
-  // 如果未设置，默认为 true（展开），所以点击后设为 false（收起）
-  // 如果已经是 false（收起），点击后设为 true（展开）
   const currentState = expandedState[reviewItemCode]
   expandedState[reviewItemCode] = currentState === false ? true : false
 }
 
-// 设置筛选条件
 const setActiveFilter = (filterKey: number | null) => {
   state.activeFilter = filterKey
   getData()
 }
-// 刷新数据的方法
+
 const refreshData = async () => {
   console.log('🔄 开始刷新数据，taskId:', taskId.value)
-
-  // 清空旧数据，防止使用上一个任务的数据
   pdfAnnotationsData.value = null
   pdfAnnotations.value = []
   reviewListData.value = null
 
-  // 先加载 JSON 文件，再获取审查数据
   if (taskId.value) {
     await loadJsonFiles(taskId.value)
   }
   await getData()
   await getFile()
   await getMarkList()
-
   console.log('✅ 数据刷新完成')
 }
-// 页面离开确认弹窗
+
 const leaveConfirmVisible = ref(false)
 const nextRoute = ref<any>(null)
-// 确认离开页面
 const confirmLeave = () => {
   leaveConfirmVisible.value = false
   if (nextRoute.value) {
@@ -1361,16 +1023,23 @@ const confirmLeave = () => {
   }
 }
 
-// 页面挂载后初始化数据
 onMounted(async () => {
-  // 仅使用地址栏中的 taskId，不再从 taskList.json 回退
-  taskId.value = (route.query.taskId as string) || ''
+  try {
+    const taskList = await getLocalTaskList()
+    if (taskList && taskList.length > 0) {
+      taskId.value = taskList[0].taskId
+      console.log('📋 加载第一个任务:', taskList[0].fileName, taskList[0].taskId)
+    } else {
+      console.error('❌ taskList 为空')
+    }
+  } catch (error) {
+    console.error('❌ 加载 taskList 失败:', error)
+  }
+
   refreshData()
 })
 
-// 监听路由离开
 onBeforeRouteLeave((to, from, next) => {
-  // 检查是否正在下载
   if (exportState.loading) {
     nextRoute.value = { to, from, next }
     leaveConfirmVisible.value = true
@@ -1378,7 +1047,6 @@ onBeforeRouteLeave((to, from, next) => {
   }
   next()
 })
-// 页面卸载时清理
 onBeforeUnmount(() => {
   nextRoute.value = null
 })
@@ -1482,7 +1150,6 @@ onBeforeUnmount(() => {
 .review-panel {
   position: relative;
   flex: 1;
-  // max-width: 632px;
   max-width: 832px;
   overflow-y: auto;
   display: flex;
@@ -1590,7 +1257,6 @@ onBeforeUnmount(() => {
         min-width: 20px;
       }
 
-      // 特定tab的颜色样式（适用于正常状态和骨架状态）
       &:nth-child(2) {
         .tab-count,
         .skeleton-count {
@@ -1611,7 +1277,6 @@ onBeforeUnmount(() => {
         background: var(--fill-0);
       }
 
-      // 骨架tab样式
       &.skeleton-tab {
         cursor: default;
 
@@ -1633,7 +1298,6 @@ onBeforeUnmount(() => {
           }
         }
 
-        // 骨架状态下保持特定颜色，但降低透明度
         &:nth-child(2) {
           .skeleton-count {
             background: rgba(254, 226, 226, 0.7);
@@ -1707,7 +1371,6 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
-// 骨架屏样式
 .skeleton-container {
   .skeleton-item-group {
     margin-bottom: 24px;
@@ -1782,6 +1445,4 @@ onBeforeUnmount(() => {
   text-align: left;
   padding: 0 8px;
 }
-
 </style>
-

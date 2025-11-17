@@ -2,7 +2,7 @@ import type { RouteRecordRaw, RouteLocationNormalizedGeneric } from 'vue-router'
 // import config from '@/config'
 // import {  getUserBusModuleCodes, saltConvert  } from '@/api/login'
 import  { useMenusStore } from '@/store'
-import { dynamicRoutesMap, fallbackRoutes } from './routes'
+
 import Layout from '@/layout/index.vue'
 import ParentView from '@/layout/parent-view.vue'
 import IframeView from '@/layout/iframe-view.vue'
@@ -46,7 +46,6 @@ export const ensureRoutesData = async (router: any) => {
     menusStore.setDynamicMenus(menuTree)
     // 路由处理逻辑保持不变
     const routes: RouteRecordRaw[] = useDynamicsRoutes([])
-    routes.push(fallbackRoutes[0])
     routes.forEach((item: any) => {
       if (!router.hasRoute(item?.name)) {
         router.addRoute(item)
