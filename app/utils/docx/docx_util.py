@@ -95,6 +95,8 @@ class DocxBlockExtractor:
 
     def _extract_paragraph_block(self, para, block_id: int) -> Optional[Dict]:
         """提取单个段落的块信息"""
+        import uuid
+
         text = para.text.strip()
         if not text:
             return None
@@ -103,6 +105,7 @@ class DocxBlockExtractor:
 
         return {
             "block_id": f"D001_{block_id:04d}",
+            "uuid": str(uuid.uuid4()),  # 生成 UUID 用于后续 AI 请求
             "page_index": 0,  # docx 没有明确的页面概念，统一设为 0
             "order": block_id,
             "text": text,

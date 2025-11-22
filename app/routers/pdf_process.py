@@ -5,12 +5,14 @@ PDF 处理路由
 """
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from pathlib import Path
 import uuid
 from datetime import datetime
 import shutil
+import os
 
 # 创建路由
 router = APIRouter(tags=["PDF处理"])
@@ -601,3 +603,52 @@ async def get_tasks_by_page(request: PageRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"分页查询失败: {str(e)}")
+
+
+@router.get("/task/{task_id}/pdf", summary="下载任务PDF文件")
+async def download_task_pdf(task_id: str):
+    """
+    根据任务ID下载对应的PDF文件
+
+    Args:
+        task_id: 任务ID
+
+    Returns:
+        PDF 文件流
+
+    示例:
+        GET /api/pdf/task/25110214431528850637/pdf
+    """
+    try:
+        # 1. 构建任务目录路径
+        task_dir = Path("file") / task_id
+
+        # 2. 检查目录是否存在
+        if not task_dir.exists():
+            raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+
+        # 3. 查找目录中的 PDF 文件
+        pdf_files = list(task_dir.glob("*.pdf"))
+
+        if not pdf_files:
+            raise HTTPException(status_code=404, detail=f"任务 {task_id} 没有PDF文件")
+
+        if len(pdf_files) > 1:
+            # 如果有多个PDF，返回第一个（通常只有一个）
+            print(f"[PDF下载] ⚠ 任务 {task_id} 有多个PDF文件，返回第一个: {pdf_files[0].name}")
+
+        pdf_path = pdf_files[0]
+
+        # 4. 返回文件
+        return FileResponse(
+            path=str(pdf_path),
+            filename=pdf_path.name,
+            media_type="application/pdf"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"下载失败: {str(e)}")

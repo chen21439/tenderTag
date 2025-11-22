@@ -2,8 +2,9 @@
 Phase A: H1 全局探测提示词
 用于识别文档中的一级标题（H1）候选
 """
+from typing import List
 
-SYSTEM_PROMPT = """你是文档结构化专家。请根据给定的"分块文本 + 相对版式特征"判断本篇文档的一级标题（H1）候选。你的任务仅输出 JSON，严禁任何解释性文字。
+SYSTEM_PROMPT = """你是文档结构化专家。请根据给定的"分块文本 + 相对版式特征"判断本篇文档级标题候选。你的任务仅输出 JSON，严禁任何解释性文字。
 
 **输入格式**
 每个 block 包含：
@@ -69,16 +70,22 @@ USER_PROMPT_TEMPLATE = """请分析以下文档块，识别一级标题（H1）�
 请严格按照 JSON 格式输出结果，不要有任何解释。"""
 
 
-def generate_h1_detection_prompt(blocks_data: dict) -> tuple[str, str, dict]:
+def generate_h1_detection_prompt(
+    blocks_data: dict,
+    use_batching: bool = False,
+    batch_manager=None
+) -> tuple[str, str, dict] | List[tuple[str, str, dict]]:
     """
     生成 H1 探测的完整提示词
 
     Args:
         blocks_data: 包含 blocks 列表的字典
+        use_batching: 是否启用智能分批（基于 token 限制）
+        batch_manager: BatchManager 实例（可选，use_batching=True 时使用）
 
     Returns:
-        (system_prompt, user_prompt, uuid_mapping) 元组
-        uuid_mapping: {uuid -> original_block_id} 的映射
+        如果 use_batching=False: (system_prompt, user_prompt, uuid_mapping) 元组
+        如果 use_batching=True: [(system_prompt, user_prompt, uuid_mapping), ...] 列表
     """
     import json
     import uuid
@@ -96,9 +103,14 @@ def generate_h1_detection_prompt(blocks_data: dict) -> tuple[str, str, dict]:
             features.get("font_size_rank_pct", 0) < 0.3):
             continue
 
-        # 生成 UUID 并保存映射
+        # 使用 JSON 中已有的 UUID，如果没有则生成一个
         original_block_id = block.get("block_id")
-        block_uuid = str(uuid.uuid4())
+        block_uuid = block.get("uuid")
+
+        if not block_uuid:
+            # 如果 JSON 中没有 uuid 字段，则生成一个（兼容旧数据）
+            block_uuid = str(uuid.uuid4())
+
         uuid_mapping[block_uuid] = original_block_id
 
         # 创建新的 block，使用 UUID 替换 block_id
@@ -107,27 +119,69 @@ def generate_h1_detection_prompt(blocks_data: dict) -> tuple[str, str, dict]:
 
         filtered_blocks.append(new_block)
 
-    # 如果过滤后还是太多，可以进一步限制
-    if len(filtered_blocks) > 100:
-        # 只保留字号较大的前 100 个
-        filtered_blocks.sort(
-            key=lambda x: x.get("features", {}).get("font_size_rank_pct", 0),
-            reverse=True
-        )
-        # 同时更新 uuid_mapping，移除被过滤掉的
-        kept_uuids = {block["block_id"] for block in filtered_blocks[:100]}
-        uuid_mapping = {k: v for k, v in uuid_mapping.items() if k in kept_uuids}
-        filtered_blocks = filtered_blocks[:100]
+    print(f"[generate_h1_detection_prompt] 过滤后的候选块数量: {len(filtered_blocks)}")
 
-    blocks_json = json.dumps(
-        {"blocks": filtered_blocks},
-        ensure_ascii=False,
-        indent=2
+    # 如果不使用分批，使用简单的截断策略
+    if not use_batching:
+        if len(filtered_blocks) > 100:
+            print(f"[generate_h1_detection_prompt] 候选块过多，只保留字号最大的前 100 个")
+            # 只保留字号较大的前 100 个
+            filtered_blocks.sort(
+                key=lambda x: x.get("features", {}).get("font_size_rank_pct", 0),
+                reverse=True
+            )
+            # 同时更新 uuid_mapping，移除被过滤掉的
+            kept_uuids = {block["block_id"] for block in filtered_blocks[:100]}
+            uuid_mapping = {k: v for k, v in uuid_mapping.items() if k in kept_uuids}
+            filtered_blocks = filtered_blocks[:100]
+
+        blocks_json = json.dumps(
+            {"blocks": filtered_blocks},
+            ensure_ascii=False,
+            indent=2
+        )
+
+        user_prompt = USER_PROMPT_TEMPLATE.format(blocks_json=blocks_json)
+        return SYSTEM_PROMPT, user_prompt, uuid_mapping
+
+    # 使用智能分批
+    if batch_manager is None:
+        from app.utils.request import get_default_batch_manager
+        batch_manager = get_default_batch_manager()
+
+    def build_block_content(block):
+        """构建单个 block 的 JSON 内容"""
+        return json.dumps(block, ensure_ascii=False, indent=2)
+
+    # 分批
+    batches = batch_manager.split_items_by_tokens(
+        filtered_blocks,
+        SYSTEM_PROMPT,
+        build_block_content,
+        prompt_header='请分析以下文档块，识别一级标题（H1）候选：\n\n```json\n{"blocks": [\n',
+        prompt_footer='\n]}\n```\n\n请严格按照 JSON 格式输出结果，不要有任何解释。'
     )
 
-    user_prompt = USER_PROMPT_TEMPLATE.format(blocks_json=blocks_json)
+    # 为每个批次生成提示词
+    result_batches = []
+    for batch_idx, batch in enumerate(batches, 1):
+        # 为这个批次创建 uuid_mapping
+        batch_uuid_mapping = {
+            block["block_id"]: uuid_mapping[block["block_id"]]
+            for block in batch
+        }
 
-    return SYSTEM_PROMPT, user_prompt, uuid_mapping
+        blocks_json = json.dumps(
+            {"blocks": batch},
+            ensure_ascii=False,
+            indent=2
+        )
+        user_prompt = USER_PROMPT_TEMPLATE.format(blocks_json=blocks_json)
+
+        result_batches.append((SYSTEM_PROMPT, user_prompt, batch_uuid_mapping))
+        print(f"[generate_h1_detection_prompt] 批次 {batch_idx}: {len(batch)} 个块")
+
+    return result_batches
 
 
 # 用于解析 AI 返回的 JSON 响应
@@ -216,111 +270,197 @@ def parse_h1_response(
         raise ValueError(f"无法解析 AI 返回的 JSON: {e}\n提取的文本: {json_str[:200]}...")
 
 
+def process_h1_detection_with_batching(
+    blocks_data: dict,
+    ai_client=None,
+    use_batching: bool = True,
+    batch_manager=None,
+    batch_processor=None,
+    verbose: bool = True,
+    **request_params
+) -> dict:
+    """
+    完整的 H1 检测流程（支持智能分批）
+
+    Args:
+        blocks_data: 包含 blocks 列表的字典
+        ai_client: AIClient 实例（如果为 None，将创建默认客户端）
+        use_batching: 是否启用智能分批
+        batch_manager: BatchManager 实例（可选）
+        batch_processor: BatchProcessor 实例（可选）
+        verbose: 是否打印详细信息
+        **request_params: 传递给 AIClient.send_request 的参数（如 temperature, max_tokens 等）
+
+    Returns:
+        合并后的结果字典，包含:
+        - h1_candidates: 所有批次的 H1 候选（已去重）
+        - style_notes: 风格说明（合并自所有批次）
+        - batch_count: 批次数量
+        - total_candidates: 总候选数（去重前）
+        - unique_candidates: 去重后的候选数
+    """
+    from app.utils.request import (
+        AIClient,
+        BatchProcessor,
+        get_default_batch_processor
+    )
+
+    # 初始化 AI 客户端
+    if ai_client is None:
+        ai_client = AIClient(
+            temperature=0.1,  # H1 检测需要较低的温度
+            max_tokens=4096
+        )
+
+    # 初始化批量处理器
+    if batch_processor is None:
+        batch_processor = get_default_batch_processor(
+            ai_client=ai_client,
+            batch_manager=batch_manager,
+            verbose=verbose
+        )
+
+    # 生成提示词（可能返回单个或批次列表）
+    prompt_result = generate_h1_detection_prompt(
+        blocks_data,
+        use_batching=use_batching,
+        batch_manager=batch_manager
+    )
+
+    # 判断是单个还是批次列表
+    if use_batching and isinstance(prompt_result, list):
+        batches = prompt_result
+    else:
+        # 单个批次，包装成列表
+        batches = [prompt_result]
+
+    # 定义解析函数（业务相关）
+    def parse_func(response_text: str, context: dict) -> dict:
+        """解析单个批次的响应"""
+        uuid_mapping = context  # context 就是 uuid_mapping
+        return parse_h1_response(
+            response_text,
+            blocks_data=blocks_data,
+            uuid_mapping=uuid_mapping
+        )
+
+    # 定义合并函数（业务相关）
+    def merge_func(all_results: List[dict]) -> dict:
+        """合并多个批次的结果"""
+        all_candidates = []
+        all_style_notes = []
+
+        # 收集所有候选和风格说明
+        for batch_idx, result in enumerate(all_results, 1):
+            candidates = result.get("h1_candidates", [])
+            all_candidates.extend(candidates)
+
+            style_note = result.get("style_notes", "")
+            if style_note:
+                all_style_notes.append(f"批次{batch_idx}: {style_note}")
+
+        # 去重（基于 block_id）
+        seen_ids = set()
+        unique_candidates = []
+
+        for candidate in all_candidates:
+            block_id = candidate.get("block_id")
+            if block_id not in seen_ids:
+                seen_ids.add(block_id)
+                unique_candidates.append(candidate)
+            elif verbose:
+                print(f"[去重] 跳过重复的 block_id: {block_id}")
+
+        if verbose:
+            print(f"\n[合并] 去重前: {len(all_candidates)} 个候选，去重后: {len(unique_candidates)} 个候选")
+
+        # 按 score 降序排序
+        unique_candidates.sort(key=lambda x: x.get("score", 0), reverse=True)
+
+        return {
+            "h1_candidates": unique_candidates,
+            "style_notes": " | ".join(all_style_notes) if all_style_notes else "",
+            "total_candidates": len(all_candidates),
+            "unique_candidates": len(unique_candidates)
+        }
+
+    # 使用通用的批量处理器
+    result = batch_processor.process_batches(
+        batches=batches,
+        parse_response_func=parse_func,
+        merge_results_func=merge_func,
+        **request_params
+    )
+
+    # 添加批次数量
+    result["batch_count"] = len(batches)
+
+    if verbose:
+        print(f"\n{'=' * 80}")
+        print(f"[完成] H1 检测完成")
+        print(f"  - 批次数: {result['batch_count']}")
+        print(f"  - 总候选数: {result['total_candidates']}")
+        print(f"  - 去重后: {result['unique_candidates']}")
+        if result['h1_candidates']:
+            print(f"  - 最高分: {result['h1_candidates'][0].get('score', 0)}")
+        print(f"{'=' * 80}\n")
+
+    return result
+
+
 if __name__ == "__main__":
     import sys
+    import json
     from pathlib import Path
 
     # 添加项目根目录到路径
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-    from app.utils.request import AIClient
+    # 读取真实的 JSON 文件
+    json_file_path = r"E:\models\data\深圳市中医院实验类家具采购1030.json"
 
-    # 测试示例
-    sample_blocks = {
-        "blocks": [
-            {
-                "block_id": "D001_0001",
-                "text": "第一章 项目概述",
-                "features": {
-                    "font_size_rank_pct": 0.95,
-                    "is_bold": True,
-                    "is_centered": True,
-                    "indent_level_norm": 0.0,
-                    "upper_blank_ratio": 0.9,
-                    "lower_blank_ratio": 0.85,
-                    "line_len": 9,
-                    "numbering_tag": "第一章"
-                }
-            },
-            {
-                "block_id": "D001_0002",
-                "text": "本项目旨在采购实验室家具，包括实验台、通风柜等设备。采购总预算为 500 万元人民币。",
-                "features": {
-                    "font_size_rank_pct": 0.45,
-                    "is_bold": False,
-                    "is_centered": False,
-                    "indent_level_norm": 0.3,
-                    "upper_blank_ratio": 0.2,
-                    "lower_blank_ratio": 0.2,
-                    "line_len": 42,
-                    "numbering_tag": None
-                }
-            },
-            {
-                "block_id": "D001_0003",
-                "text": "第二章 技术规格",
-                "features": {
-                    "font_size_rank_pct": 0.95,
-                    "is_bold": True,
-                    "is_centered": True,
-                    "indent_level_norm": 0.0,
-                    "upper_blank_ratio": 0.9,
-                    "lower_blank_ratio": 0.85,
-                    "line_len": 8,
-                    "numbering_tag": "第二章"
-                }
-            }
-        ]
-    }
+    print(f"读取文件: {json_file_path}")
+    with open(json_file_path, 'r', encoding='utf-8') as f:
+        blocks_data = json.load(f)
 
-    # 生成提示词（返回包含 uuid_mapping）
-    system_prompt, user_prompt, uuid_mapping = generate_h1_detection_prompt(sample_blocks)
+    print(f"加载完成，共 {len(blocks_data.get('blocks', []))} 个 blocks\n")
 
-    print("=== System Prompt (前200字) ===")
-    print(system_prompt[:200] + "...")
-    print("\n=== User Prompt (前500字) ===")
-    print(user_prompt[:500] + "...")
-    print(f"\n总 tokens 估算: ~{(len(system_prompt) + len(user_prompt)) // 4}")
-    print(f"\nUUID 映射数量: {len(uuid_mapping)}")
-
-    # 使用 AIClient 发送请求
-    print("\n" + "=" * 80)
-    print("使用 AIClient 发送请求示例")
+    # 使用完整流程（支持智能分批和自动合并）
+    print("=" * 80)
+    print("开始 H1 检测（智能分批）")
     print("=" * 80)
 
     try:
-        # 初始化客户端
-        client = AIClient(
-            temperature=0.1,  # H1 检测需要较低的温度以保证稳定性
+        result = process_h1_detection_with_batching(
+            blocks_data=blocks_data,
+            use_batching=True,  # 启用智能分批
+            verbose=True,
+            temperature=0.1,
             max_tokens=4096
         )
 
-        # 发送请求
-        response_text = client.send_request(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            verbose=True
-        )
-
-        # 解析结果（传入 blocks_data 和 uuid_mapping）
+        # 输出结果
         print("\n" + "=" * 80)
-        print("解析 H1 检测结果")
+        print("H1 检测结果")
         print("=" * 80)
-        result = parse_h1_response(
-            response_text,
-            blocks_data=sample_blocks,
-            uuid_mapping=uuid_mapping
-        )
+        print(f"批次数: {result['batch_count']}")
+        print(f"总候选数: {result['total_candidates']}")
+        print(f"去重后: {result['unique_candidates']}")
+        print(f"\n找到 {len(result['h1_candidates'])} 个 H1 候选:\n")
 
-        print(f"\n找到 {len(result.get('h1_candidates', []))} 个 H1 候选:")
-        for candidate in result.get('h1_candidates', []):
-            print(f"\n  Block ID: {candidate['block_id']}")
-            print(f"  Text: {candidate.get('text', 'N/A')}")
-            print(f"  Score: {candidate['score']}")
-            print(f"  理由: {', '.join(candidate['rationale_bullets'])}")
+        for idx, candidate in enumerate(result['h1_candidates'], 1):
+            print(f"{idx}. Block ID: {candidate['block_id']}")
+            print(f"   Text: {candidate.get('text', 'N/A')}")
+            print(f"   Score: {candidate['score']}")
+            print(f"   理由: {', '.join(candidate['rationale_bullets'])}")
+            print()
 
-        print(f"\n风格说明: {result.get('style_notes', 'N/A')}")
+        if result.get('style_notes'):
+            print(f"风格说明: {result['style_notes']}")
 
     except Exception as e:
-        print(f"\n请求失败: {e}")
+        import traceback
+        print(f"\n处理失败: {e}")
+        print("\n完整错误信息:")
+        traceback.print_exc()
         print("\n提示：如果API不可用，可以将提示词复制到其他AI平台测试")
