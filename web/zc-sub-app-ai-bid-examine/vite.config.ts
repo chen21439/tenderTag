@@ -91,6 +91,12 @@ export default defineConfig(env => {
         '/static-resources': {
           target: 'https://sppgpttest.gcycloud.cn',
           changeOrigin: true
+        },
+        // 本地Python后端代理（开发环境）
+        '/python': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+          rewrite: pathStr => pathStr.replace(/^\/python/, '')
         }
       }
     },

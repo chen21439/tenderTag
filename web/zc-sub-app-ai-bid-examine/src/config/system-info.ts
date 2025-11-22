@@ -2,7 +2,7 @@
 import antTheme from './ant-theme'
 export const SystemInfo: Record<string,any> = {
   default: {
-    htmlTitle: '合规审查系统',
+    htmlTitle: 'AI智能文档',
     htmlLogo: `${import.meta.env.VITE_APP_PUBLIC_URL}/logo.png`,
     title: 'Hi，我是数采小招',
     footerVersion: '内容由大模型生成，不代表我们的态度或观点',
