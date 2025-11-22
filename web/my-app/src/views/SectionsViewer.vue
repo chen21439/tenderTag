@@ -209,7 +209,7 @@ onMounted(async () => {
                         <th v-for="col in block.columns" :key="col.id">{{ col.label }}</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody v-if="block.rows && block.rows.length">
                       <tr v-for="row in block.rows" :key="row.id">
                         <td v-for="cell in row.cells" :key="cell.id" :title="cell.id">
                           {{ cell.text }}

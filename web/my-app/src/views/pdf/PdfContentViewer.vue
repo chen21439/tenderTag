@@ -79,11 +79,9 @@
     <div class="main-content">
       <div class="content-list" ref="contentContainer">
         <a-spin :spinning="loading" tip="加载中...">
-          <div v-if="error" class="error-message">
-            <a-alert :message="error" type="error" show-icon />
-          </div>
 
-          <div v-else-if="!tableData && !paragraphData" class="empty-state">
+
+          <div v-if="!tableData && !paragraphData" class="empty-state">
             <a-empty description="请加载 JSON 文件">
               <template #image>
                 <FileOutlined style="font-size: 48px; color: #bfbfbf;" />
@@ -621,8 +619,8 @@ const loadJsonFromUrl = async (url, type = 'table') => {
       console.log(`✅ 成功加载 ${data.total_paragraphs} 个段落`)
     }
   } catch (err) {
-    console.error(`加载 ${type} JSON 失败:`, err)
-    throw err
+    // 静默失败：不设置错误、不抛出异常，保持空态
+    return null
   }
 }
 
@@ -645,9 +643,7 @@ const loadDefaultJsonFiles = async () => {
     await nextTick()
     scrollToTop()
   } catch (err) {
-    error.value = `加载默认文件失败: ${err.message}`
-    message.warning('加载默认文件失败，请手动上传 JSON 文件')
-    console.error('加载默认文件错误:', err)
+    // 静默失败：不提示不报错，保持空态
   } finally {
     loading.value = false
   }

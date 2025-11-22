@@ -22,19 +22,20 @@ export const genRoute = (): Router => {
 export async function setupRouter(app: App) {
   const router = genRoute()
 
-  // 动态注入“演示文件查看”路由，避免 routes.ts 缺失导致无法新增页面
-  router.addRoute({
-    path: '/review',
-    name: 'DemoReview',
-    meta: { title: '演示文件查看' },
-    component: () => import('@/views/review/index.vue')
-  })
-  // 动态注入“文件审查”主页面，保证左侧菜单的跳转可用
+  // 动态注入"文件审查"主页面，保证左侧菜单的跳转可用
   router.addRoute({
     path: '/compliance-review',
     name: 'ComplianceReview',
     meta: { title: '文件审查' },
     component: () => import('@/views/compliance-review/index.vue')
+  })
+
+  // 知识图谱配置页面
+  router.addRoute({
+    path: '/knowledge-graph-config',
+    name: 'KnowledgeGraphConfig',
+    meta: { title: '知识图谱配置' },
+    component: () => import('@/views/knowledge-graph-config/index.vue')
   })
 
   // 兼容 PPT 演示页，不参与兜底重定向

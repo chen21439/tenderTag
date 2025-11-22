@@ -39,13 +39,13 @@ export const getStatusStyle = (status: number) => {
       text: '审查中',
       icon: RefreshCw
     },
-    2: { // 审查完成
+    2: { // 分析完成
       style: {
         backgroundColor: 'rgba(78, 171, 12, 0.1)',
         borderColor: 'rgba(78, 171, 12, 0.2)',
         color: '#4EAB0C'
       },
-      text: '审查完成',
+      text: '分析完成',
       icon: CheckCircle2
     },
     3: { // 解析中
@@ -200,13 +200,8 @@ export const TABLE_COLUMNS = [
   //   width: 80,
   //   customRender: (row: any) => row.index + 1
   // },
-  {
-    title: '采购项目名称/编号',
-    dataIndex: 'projectInfo',
-    ellipsis: true
-  },
   { title: '文件名称', dataIndex: 'fileName', ellipsis: true },
-  { title: '审查结果', dataIndex: 'reviewStatus', width: '20%'},
+  { title: '分析结果', dataIndex: 'reviewStatus', width: '20%'},
   { title: '创建人', dataIndex: 'createUserName', width: '10%' ,minWidth: 130},
   { title: '创建时间', dataIndex: 'createTime', width: 200},
   { title: '操作', dataIndex: 'handle', width: '10%', minWidth: 100, fixed: 'right' }

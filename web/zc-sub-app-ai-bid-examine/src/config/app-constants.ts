@@ -7,6 +7,6 @@ export const AppConstants = {
     kafka: 'kafka',
     sse: 'sse'
   },
-  appName: '合规审查系统',
-  bosssoftCookieName: 'bosssoft_examine_ai_v3' 
+  appName: 'AI智能文档',
+  bosssoftCookieName: 'bosssoft_examine_ai_v3'
 }

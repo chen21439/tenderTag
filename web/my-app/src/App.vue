@@ -11,9 +11,11 @@ import { RouterLink, RouterView } from 'vue-router'
           <span class="logo-text">文档分析系统</span>
         </div>
         <nav class="nav">
+          <RouterLink to="/tree" class="nav-link">论文结构树</RouterLink>
           <RouterLink to="/" class="nav-link">PDF 内容解析</RouterLink>
           <RouterLink to="/pdf-viewer" class="nav-link">PDF 查看器</RouterLink>
           <RouterLink to="/sections" class="nav-link">Sections 分析</RouterLink>
+          <RouterLink to="/section-header-preview" class="nav-link">sectionHeaderPreview</RouterLink>
         </nav>
       </div>
     </header>

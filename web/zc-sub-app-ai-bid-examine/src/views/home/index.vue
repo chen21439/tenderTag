@@ -4,9 +4,9 @@
     <!-- 主容器卡片 -->
     <div class="main-card">
       <!-- 标题区域 -->
-      <div class="header-section"> 
+      <div class="header-section">
           <img class="welcome-icon" src="@/assets/images/bid-examine/home-welcome.png" alt="欢迎图标">
-          <span class="title-text">您好，欢迎使用采购文件合规性审查</span> 
+          <span class="title-text">您好，欢迎使用AI 智能文档</span>
       </div>
 
       <!-- 上传区域 -->
@@ -22,8 +22,8 @@
           <div class="upload-area">
             <img class="upload-icon" src="@/assets/images/bid-examine/upload-circle.png" alt="上传"> 
             <!-- 上传文字 -->
-            <div class="upload-text-main">上传采购文件</div>
-            <div class="upload-text-sub">仅支持 .docx/.pdf 格式文档，单个文档大小不超过 20MB</div> 
+            <div class="upload-text-main">上传文件</div>
+            <div class="upload-text-sub">仅支持 .docx/.pdf 格式文档，单个文档大小不超过 20MB</div>
             <div class="upload-text-hint">或将文件拖拽到此处</div>
 
           </div>
@@ -36,15 +36,9 @@
         <div class="file-list-header">
           <div class="file-count-text" v-if="fileList.length > 0">已上传文件 ({{ fileList.filter(item=>item.status === 'done').length }}/{{ Math.max(0, fileList.length) }})</div>
           <div class="file-count-text" v-else></div>
-          <div class="header-actions"> 
-            <div class="tip">
-              <svg-icon icon="icon-tishi" class="icon" />
-              <span>采用AI辅助审查，最终结果需人工核对</span>
-            </div>
-
-
+          <div class="header-actions">
             <a-button type="primary" class="start-button" :loading="uploading" @click="handleStartReview">
-              开始审查
+              运行分析
             </a-button>
           </div>
         </div>
@@ -78,10 +72,10 @@
         </div>
       </div> 
     </div>
-    <!-- 最近添加的审查 -->
+    <!-- 最近添加的文件 -->
     <div class="main-card mt-[24px]" v-if="state.dataSource.length    ">
       <div class="flex justify-between items-center mb-[24px]">
-        <span class="font-medium text-[24px]">最近添加的审查</span>
+        <span class="font-medium text-[24px]">最近添加的文件</span>
         <a-button  @click="router.push({ name: 'LibraryIndex' })">查看完整列表</a-button>
       </div>
       <a-table
@@ -208,7 +202,7 @@ import { Trash,  FileSearch, ArrowDownToLine, CircleAlert } from 'lucide-vue-nex
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useTable } from '@/hooks/use-table'
-import {apiTaskCreate, apiTaskList ,apiTaskDelete} from '@/api/examine'
+import {apiTaskCreate, apiTaskDelete} from '@/api/examine'
 import { customDocumentBundleExport } from '@/api/download'
 import { getFileIcon, getStatusIcon } from '@/views/hooks/examine'
 import { usePolling } from '@/hooks/use-polling'
@@ -317,7 +311,7 @@ async function handleStartReview() {
     if (pdfUploadInputRef.value) pdfUploadInputRef.value.value = ''
   }
 } 
-// 表格 
+// 表格
 const { state,getTableData, refresh } = useTable({
   // 初始查询参数
   params: {
@@ -326,9 +320,12 @@ const { state,getTableData, refresh } = useTable({
   },
 
   // API 函数
-  getList: apiTaskList, 
+  getList: async () => {
+    const response = await fetch(`${import.meta.env.BASE_URL}hrdoc/page.json`)
+    return await response.json()
+  },
   // 启用功能
-  usePagination: false,  
+  usePagination: false,
   // 数据字段映射
   dataFields: {
     list: 'dataList',
@@ -449,6 +446,7 @@ start()
   flex-direction: column;
   align-items: center;
   padding: 32px;
+  padding-left: 80px; /* 给侧边栏留出空间 48px + 32px */
   box-sizing: border-box; 
   .main-card {     
     width: 100%;

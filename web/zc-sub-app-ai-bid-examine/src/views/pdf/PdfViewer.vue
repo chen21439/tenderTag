@@ -37,20 +37,6 @@
         <a-button @click="resetZoom">
           <SyncOutlined /> 重置
         </a-button>
-
-        <a-divider type="vertical" />
-
-        <a-checkbox v-model:checked="showAnnotationsInPdf" @change="handleAnnotationsToggle">
-          高亮所有风险点
-        </a-checkbox>
-
-        <!-- 只在 dev 模式显示全量/分页切换按钮 -->
-        <template v-if="config.isDev">
-          <a-divider type="vertical" />
-          <a-button @click="toggleViewMode" :type="isAllPagesMode ? 'primary' : 'default'">
-            {{ isAllPagesMode ? '分页显示' : '全量显示' }}
-          </a-button>
-        </template>
       </a-space>
     </div>
 
@@ -524,11 +510,12 @@ const handleAnnotationsToggle = () => {
 const scrollToAnnotation = async (annotationData: any) => {
   if (!annotationData || !pdfDoc.value) return
 
-  const { pageNum: targetPageNum, rect } = annotationData
+  let { pageNum: targetPageNum, rect, quadPoints, needsConversion } = annotationData
 
-  console.log('scrollToAnnotation 调用:', {
+  console.log('📍 scrollToAnnotation 调用:', {
     targetPageNum,
     rect,
+    needsConversion,
     currentPage: pageNum.value,
     isAllPagesMode: isAllPagesMode.value
   })
@@ -536,6 +523,65 @@ const scrollToAnnotation = async (annotationData: any) => {
   if (!targetPageNum) {
     console.warn('目标页码为空，无法跳转')
     return
+  }
+
+  // 如果标记了需要坐标转换（屏幕坐标 → PDF坐标）
+  if (needsConversion && rect && rect.length === 4) {
+    try {
+      const page = await pdfDoc.value.getPage(targetPageNum)
+      const viewport = page.getViewport({ scale: 1.0 })
+      const pageHeight = viewport.height
+
+      console.log('🔄 坐标转换: 屏幕坐标 → PDF坐标')
+      console.log('  原始坐标 (屏幕):', rect)
+      console.log('  页面高度:', pageHeight)
+
+      // 屏幕坐标转PDF坐标
+      const pdfRect = [
+        rect[0],              // x1 不变
+        pageHeight - rect[3], // y1 = pageHeight - screenY2
+        rect[2],              // x2 不变
+        pageHeight - rect[1]  // y2 = pageHeight - screenY1
+      ]
+
+      console.log('  转换后 (PDF):', pdfRect)
+
+      // 更新坐标
+      rect = pdfRect
+      annotationData.rect = pdfRect
+
+      // 同时更新 quadPoints（支持多个矩形）
+      if (quadPoints && quadPoints.length >= 8 && quadPoints.length % 8 === 0) {
+        const convertedQuadPoints: number[] = []
+
+        // 每8个点代表一个矩形，分别转换
+        for (let i = 0; i < quadPoints.length; i += 8) {
+          const boxQuadPoints = quadPoints.slice(i, i + 8)
+          // 提取原始屏幕坐标的 box
+          const screenX1 = boxQuadPoints[0]
+          const screenY1 = boxQuadPoints[1]
+          const screenX2 = boxQuadPoints[4]
+          const screenY2 = boxQuadPoints[5]
+
+          // 转换为 PDF 坐标
+          const pdfY1 = pageHeight - screenY2
+          const pdfY2 = pageHeight - screenY1
+
+          // 添加转换后的 quadPoints
+          convertedQuadPoints.push(
+            screenX1, pdfY2,  // 左上
+            screenX2, pdfY2,  // 右上
+            screenX2, pdfY1,  // 右下
+            screenX1, pdfY1   // 左下
+          )
+        }
+
+        annotationData.quadPoints = convertedQuadPoints
+        console.log('🔄 转换了', quadPoints.length / 8, '个矩形的坐标')
+      }
+    } catch (error) {
+      console.error('❌ 坐标转换失败:', error)
+    }
   }
 
   // 全量模式：平滑滚动到对应页面

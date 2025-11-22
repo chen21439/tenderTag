@@ -1,88 +1,26 @@
 <template>
   <div class="compliance-review-container">
-    <LeftSideActions />
-    <!-- 顶部导航区域 -->
-    <div class="header-section">
-      <div class="breadcrumb-area">
-        <div class="nav-buttons">
-          <a-button type="text" class="nav-btn back-btn" @click="goHome">
-            <template #icon>
-              <CornerUpLeft class="icon" :size="16" />
-            </template>
-            返回首页
-          </a-button>
-          <a-button type="text" class="nav-btn history-btn" @click="showHistoryFiles">
-            <template #icon>
-              <Clock8 class="icon" :size="16" />
-            </template>
-            历史文件
-          </a-button>
-        </div>
-        <div class="file-name">{{ statsData.fileName }}</div>
-      </div>
-
-      <div class="info-actions">
-        <div class="review-time">
-          <ClockFading class="icon" :size="16" />
-          <span>解析完成时间：{{ statsData.analysisFinishTime || '-' }}</span>
-        </div>
-        <div class="review-time">
-          <Calendar1 class="icon" :size="16" />
-          <span>审查时间：{{ statsData.reviewTime || '-' }}</span>
-        </div>
-        <div class="action-buttons">
-          <a-dropdown
-            v-model:open="exportState.visible"
-            :trigger="['click']"
-            @openChange="handleExportDropdownChange"
-            placement="bottomRight"
-          >
-            <a-button class="export-btn">
-              <template #icon>
-                <Download class="icon" :size="16" />
-              </template>
-              导出
-              <DownOutlined />
-            </a-button>
-            <template #overlay>
-              <div class="export-dropdown-content">
-                <div class="export-options">
-                  <div v-for="option in exportOptionsList" :key="option.key" class="export-option">
-                    <a-checkbox v-model:checked="exportState.options[option.key]">
-                      {{ option.label }}
-                    </a-checkbox>
-                  </div>
-                </div>
-                <div class="export-actions">
-                  <a-button size="small" @click="cancelExport">取消</a-button>
-                  <a-button
-                    type="primary"
-                    size="small"
-                    :loading="exportState.loading"
-                    :disabled="!hasSelectedOptions"
-                    @click="confirmExport"
-                  >
-                    导出
-                  </a-button>
-                </div>
-              </div>
-            </template>
-          </a-dropdown>
-          <!-- 模式切换 + 关键词查询（移除上传PDF） -->
-          <a-radio-group v-model:value="viewMode" button-style="solid">
-            <a-radio-button value="result">审查结果</a-radio-button>
-            <a-radio-button value="search">实时搜索</a-radio-button>
-          </a-radio-group>
-
-
-          <a-button type="primary" @click="showCheckList">查看审查清单</a-button>
-        </div>
-      </div>
-    </div>
     <!-- 主体内容区域 -->
     <div class="main-content">
       <!-- PDF阅读器区域 -->
       <div class="pdf-reader-wrapper">
+        <div class="pdf-header-controls">
+          <div class="nav-buttons">
+            <a-button type="text" class="nav-btn back-btn" @click="goHome">
+              <template #icon>
+                <CornerUpLeft class="icon" :size="16" />
+              </template>
+              返回首页
+            </a-button>
+            <!-- <a-button type="text" class="nav-btn history-btn" @click="showHistoryFiles">
+              <template #icon>
+                <Clock8 class="icon" :size="16" />
+              </template>
+              历史文件
+            </a-button> -->
+          </div>
+          <div class="file-name">{{ statsData.fileName }}</div>
+        </div>
         <PdfViewer
           v-if="pdfData.pdfUrl"
           ref="pdfReaderRef"
@@ -94,8 +32,8 @@
       </div>
 
       <!-- 实时搜索面板（红框区域） -->
-      <div v-if="viewMode === 'search'" class="review-panel search-panel" style="padding: 16px;">
-        <div class="search-bar" style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
+      <div v-if="viewMode === 'search'" class="review-panel search-panel" style="padding: 16px">
+        <div class="search-bar" style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px">
           <a-input
             v-model:value="searchKeyword"
             placeholder="输入关键词（可用空格分隔多个）"
@@ -122,96 +60,102 @@
       <!-- 审查结果面板 -->
       <div v-if="viewMode === 'result'" class="review-panel" ref="review-panel">
         <div class="panel-header">
-          <span class="shrink-0 mr-[4px]">审查结果</span>
-          <div class="statistics">
-            本次审查共
-            <span class="num">{{ statsData.sceneNum || 0 }}</span>
-            个审查场景、
-            <span class="num">{{ statsData.detailedSceneNum || 0 }}</span>
-            个审查点，发现风险
-            <span class="num error">{{ statsData.resultNum || 0 }}</span>
-            个
-          </div>
-          <a-button v-if="isDev" size="small" @click="toggleDevMode" :type="isDevMode ? 'primary' : 'default'">
-            {{ isDevMode ? '用户模式' : '开发模式' }}
-          </a-button>
-        </div>
-        <!-- 筛选标签 - 加载时显示骨架 -->
-        <div class="filter-tabs">
-          <div
-            v-for="tab in filterTabs"
-            :key="tab.key + '1'"
-            :class="['filter-tab', tab.key, { active: state.activeFilter === tab.key }]"
-            @click="setActiveFilter(tab.key)"
-          >
-            <span class="tab-label">{{ tab.label }}</span>
-            <span class="tab-count" :class="[{ active: state.activeFilter === tab.key }]">{{ tab.count || 0 }}</span>
+          <span class="shrink-0 mr-[4px]">文档结构</span>
+          <div style="margin-left: auto; display: flex; gap: 12px; align-items: center">
+            <!-- <a-checkbox v-model:checked="debugMode" size="small">调试模式</a-checkbox> -->
+            <a-radio-group v-model:value="treeGroupMode" size="middle" button-style="solid">
+              <a-radio-button value="label">业务语义结构树</a-radio-button>
+              <a-radio-button value="original">采购标签图谱</a-radio-button>
+            </a-radio-group>
           </div>
         </div>
 
-        <!-- 审查项目列表 -->
-        <div class="review-items">
-          <!-- 骨架屏状态 -->
-          <div v-if="state.loading" class="skeleton-container">
-            <div v-for="(category, index) in SKELETON_CONFIG.categories" :key="index" class="skeleton-item-group">
-              <div class="skeleton-title-bar">
-                <span class="item-index"></span>
-                <span class="item-title">{{ category.name }}</span>
-              </div>
-              <div class="skeleton-content">
-                <div v-for="n in category.itemCount" :key="n" class="skeleton-review-item">
-                  <div class="skeleton-line skeleton-line-long"></div>
-                  <div class="skeleton-line skeleton-line-medium"></div>
-                  <div class="skeleton-line skeleton-line-short"></div>
-                </div>
-              </div>
+        <!-- JSON树形结构展示 -->
+        <div class="review-items tree-view">
+          <!-- 采购标签图谱模式：显示 Cytoscape 组件 -->
+          <div
+            v-if="treeGroupMode === 'original' && !debugMode"
+            class="graph-view"
+            style="height: 100%; flex: 1; position: relative"
+          >
+            <CytoscapeComponent
+              :use-sample-data="false"
+              :nodes="graphNodes"
+              :edges="graphEdges"
+              layout="cose"
+              @node-click="handleNodeClick"
+              @edge-click="handleEdgeClick"
+            />
+            <div style="position: absolute; bottom: 16px; left: 16px; z-index: 10">
+              <GraphLegend />
             </div>
           </div>
-          <!-- 有数据内容 -->
-          <div v-else-if="filteredItems.length && resultData.reviewResult !== -1" class="items-list">
-            <div v-for="item in filteredItems" :key="item.reviewItemCode" class="item-group">
-              <div class="item-title-bar" @click="toggleItemExpand(item.reviewItemCode)">
-                <span class="item-index"></span>
-                <span class="item-title">{{ item.reviewItemName }}</span>
-                <span class="item-count">{{ item.pointNum || item.children?.length || 0 }}</span>
-                <span class="expand-text">
-                  {{ expandedState[item.reviewItemCode] === false ? '展开' : '收起' }}
-                </span>
+
+          <!-- 调试模式：显示 TOC（不复用 TreeNode） -->
+          <div v-else-if="debugMode && debugTocData.length > 0" class="tree-list">
+            <!-- 递归渲染 TOC -->
+            <template v-for="sec1 in debugTocData" :key="sec1.line_id">
+              <div style="padding: 8px; font-weight: bold; background: #f0f0f0">
+                {{ sec1.text }} (ID: {{ sec1.line_id }})
               </div>
-              <!-- 审查项目列表 -->
-              <div class="sub-items" v-show="expandedState[item.reviewItemCode] !== false">
-                <ReviewItem
-                  v-for="subItem in item.children || []"
-                  :key="subItem.uniqueId"
-                  :data="subItem"
-                  :active="activeItem.uniqueId"
-                  :task-id="taskId"
-                  @updateFinishNum="
-                    val => {
-                      statsData.resultFinishNum += val
-                    }
-                  "
-                  @clickItem="handleReviewItemClick"
-                  @showBestMatch="handleShowBestMatch"
-                  @showOriginalSpan="handleShowOriginalSpan"
-                  @update:data="val => Object.assign(subItem, val)"
-                />
-              </div>
-            </div>
+
+              <template v-if="sec1.children">
+                <template v-for="sec2 in sec1.children" :key="sec2.line_id">
+                  <div style="padding: 8px 20px; font-weight: 600; background: #f8f8f8">
+                    {{ sec2.text }} (ID: {{ sec2.line_id }})
+                  </div>
+
+                  <template v-if="sec2.children">
+                    <template v-for="sec3 in sec2.children" :key="sec3.line_id">
+                      <div style="padding: 8px 40px; background: #fff">
+                        {{ sec3.text }} (ID: {{ sec3.line_id }})
+                        <span v-if="sec3.child_line_ids" style="color: green">
+                          [段落数: {{ sec3.child_line_ids.length }}]
+                        </span>
+                      </div>
+
+                      <!-- 段落列表 -->
+                      <div v-if="sec3.child_line_ids" style="padding-left: 60px">
+                        <div
+                          v-for="(paraIds, idx) in sec3.child_line_ids"
+                          :key="idx"
+                          style="
+                            padding: 4px;
+                            margin: 2px 0;
+                            background: #e8f5e9;
+                            cursor: pointer;
+                            border-left: 3px solid #4caf50;
+                          "
+                          @click="handleParagraphClick(paraIds)"
+                        >
+                          📄 段落 {{ idx + 1 }}: {{ getParagraphPreview(paraIds) }}
+                        </div>
+                      </div>
+                    </template>
+                  </template>
+                </template>
+              </template>
+            </template>
           </div>
-          <BaseEmpty v-else description="暂无数据" />
-        </div>
-        <!--  已处理         -->
-        <div class="handle-result">
-          <div class="tip">
-            <svg-icon icon="icon-tishi" class="icon" />
-            <span>采用AI辅助审查，最终结果需人工核对</span>
+
+          <!-- 正常模式：显示标签树或原始树 -->
+          <div v-else-if="builtTreeData.length > 0" class="tree-list">
+            <TreeNode
+              v-for="node in builtTreeData"
+              :key="node.line_id"
+              :node="node"
+              :depth="0"
+              :expanded-nodes="treeExpandedNodes"
+              :selected-id="selectedNodeId"
+              :node-map="nodeMap"
+              :debug-mode="false"
+              @toggle="toggleTreeNode"
+              @select="selectTreeNode"
+              @paragraphClick="handleParagraphClick"
+            />
           </div>
-          <a-divider type="vertical" />
-          <span>已处理</span>
-          <span class="num">{{ statsData.resultFinishNum || 0 }}/{{ statsData.resultNum || 0 }}</span>
-          <span>风险点</span>
-          <div class="percent-bar"><span class="percent" :style="{ width: resultBarWidth }"></span></div>
+
+          <div v-else style="padding: 20px; text-align: center; color: #999">暂无数据</div>
         </div>
       </div>
     </div>
@@ -250,6 +194,11 @@ import LeftSideActions from '@/components/LeftSideActions/index.vue'
 import CheckListModal from './components/CheckListModal.vue'
 import HistoryFilesModal from './components/HistoryFilesModal.vue'
 import ReviewItem from './components/ReviewItem.vue'
+import ReviewTreeNode from './components/ReviewTreeNode.vue'
+import TreeNode from './components/TreeNode.vue'
+import CytoscapeComponent from './components/CytoscapeComponent.vue'
+import GraphLegend from '../../components/knowledge-graph/GraphLegend.vue'
+import { getGraphData } from '@/components/knowledge-graph/graphData'
 import config from '../../config'
 
 defineOptions({
@@ -268,14 +217,22 @@ const isDev = import.meta.env.DEV === true || import.meta.env.MODE === 'dev'
 const existRisk = ref(true)
 // 获取任务ID（初始为空，在 onMounted 中从 taskList.json 加载第一个）
 const taskId = ref((route.query.taskId as string) || '')
- // 视图模式切换：result | search
+// 视图模式切换：result | search
 const viewMode = ref<'result' | 'search'>('result')
+// 树形结构分组模式：original（原始结构）| label（按标签分组）
+const treeGroupMode = ref<'original' | 'label'>('label') // 默认按标签分组
+// 调试模式（加载固定的调试文件）
+const debugMode = ref(false)
 // 开发模式（显示未匹配数据）
 const isDevMode = ref(false)
 // 未匹配的数据
 const unmatchedData = ref<any[]>([])
 // 展开/收起状态（使用 reviewItemCode 作为 key）
 const expandedState = reactive<Record<string, boolean>>({})
+// 树形结构的展开状态
+const treeExpandedNodes = ref(new Set<any>())
+// 选中的节点ID
+const selectedNodeId = ref<number | null>(null)
 // 页面状态管理
 const state = reactive({
   loading: false,
@@ -341,47 +298,61 @@ const filterTabs = computed(() => createFilterTabs(statsData.value))
 const filteredItems = computed(() => {
   // 开发模式：显示未匹配数据
   if (isDevMode.value) {
-    return [{
-      reviewItemCode: 'dev_unmatched',
-      reviewItemName: '未匹配数据（开发模式）',
-      children: unmatchedData.value.map((item, index) => ({
-        uniqueId: `unmatched_${index}`,
-        reviewItemName: '未匹配数据',
+    return [
+      {
         reviewItemCode: 'dev_unmatched',
-        sceneDesc: item.reason,
-        fileText: item.span.targetText,
-        page: item.span.page,
-        spanList: [{
-          pid: item.span.pid,
-          text: item.span.targetText,
-          // PDF中找到的最接近批注（用于第一个按钮）
-          pdfAnnotations: item.bestMatch ? [{
-            pageNum: item.bestMatch.pageNum,
-            rect: item.bestMatch.rect,
-            quadPoints: item.bestMatch.quadPoints
-          }] : []
-        }],
-        // 保存原始span数据（用于第二个按钮：显示annotation.json期望的位置）
-        _originalSpan: {
+        reviewItemName: '未匹配数据（开发模式）',
+        children: unmatchedData.value.map((item, index) => ({
+          uniqueId: `unmatched_${index}`,
+          reviewItemName: '未匹配数据',
+          reviewItemCode: 'dev_unmatched',
+          sceneDesc: item.reason,
+          fileText: item.span.targetText,
           page: item.span.page,
-          quadPoints: item.span.quadPoints,
-          pid: item.span.pid
-        },
-        legalBasicSourceList: [],
-        showRiskTip: `annotation.json: uniqueId=${item.uniqueId}, page=${item.span.page}, pid=${item.span.pid}\n` +
-                     `最接近PDF批注: ${item.bestMatch ? `page=${item.bestMatch.pageNum}, IOU=${item.matchInfo.iou}, 文本相似度=${item.matchInfo.textSim}` : '无'}`,
-        acceptStatus: 0,
-        handleStatus: 0,
-        _isDevMode: true // 标记为开发模式数据
-      }))
-    }]
+          spanList: [
+            {
+              pid: item.span.pid,
+              text: item.span.targetText,
+              // PDF中找到的最接近批注（用于第一个按钮）
+              pdfAnnotations: item.bestMatch
+                ? [
+                    {
+                      pageNum: item.bestMatch.pageNum,
+                      rect: item.bestMatch.rect,
+                      quadPoints: item.bestMatch.quadPoints
+                    }
+                  ]
+                : []
+            }
+          ],
+          // 保存原始span数据（用于第二个按钮：显示annotation.json期望的位置）
+          _originalSpan: {
+            page: item.span.page,
+            quadPoints: item.span.quadPoints,
+            pid: item.span.pid
+          },
+          legalBasicSourceList: [],
+          showRiskTip:
+            `annotation.json: uniqueId=${item.uniqueId}, page=${item.span.page}, pid=${item.span.pid}\n` +
+            `最接近PDF批注: ${
+              item.bestMatch
+                ? `page=${item.bestMatch.pageNum}, IOU=${item.matchInfo.iou}, 文本相似度=${item.matchInfo.textSim}`
+                : '无'
+            }`,
+          acceptStatus: 0,
+          handleStatus: 0,
+          _isDevMode: true // 标记为开发模式数据
+        }))
+      }
+    ]
   }
 
   // 正常模式
   const dataList = resultData.dataList || []
 
-  console.log('过滤后的审查项:', {
-    总数: dataList.length,
+  console.log('🌳 filteredItems 计算:', {
+    原始数据长度: dataList.length,
+    resultData: resultData,
     匹配数: dataList.filter((item: any) => item.spanList?.some((span: any) => span.pdfAnnotations?.length > 0)).length
   })
 
@@ -458,13 +429,11 @@ const handleReviewItemClick = async (item: any) => {
         pdfAnns.forEach((ann: any) => {
           console.log('添加高亮区域:', ann)
           highlightRects.push({
-            pageNum: ann.pageNum,  // 使用 pageNum 而不是 page
+            pageNum: ann.pageNum, // 使用 pageNum 而不是 page
             quadPoints: ann.quadPoints,
             rect: ann.rect,
             jump: true, // 可滚动到对应的选区
-            annotations: item.acceptStatus === 1 && item.acceptText
-              ? [{ content: item.acceptText }]
-              : []
+            annotations: item.acceptStatus === 1 && item.acceptText ? [{ content: item.acceptText }] : []
           })
         })
       }
@@ -474,10 +443,7 @@ const handleReviewItemClick = async (item: any) => {
   // 如果没有 PDF 批注数据，回退到原有的 position 逻辑
   if (targetPage === -1) {
     const position = item.position ?? []
-    const annotations =
-      item.acceptStatus === 1 && item.acceptText
-        ? [{ content: item.acceptText }]
-        : []
+    const annotations = item.acceptStatus === 1 && item.acceptText ? [{ content: item.acceptText }] : []
 
     if (position?.length) {
       highlightRects = [
@@ -547,12 +513,14 @@ const handleShowOriginalSpan = async (item: any) => {
   const targetPage = originalSpan.page
 
   // 构造高亮区域（使用annotation.json中的quadPoints）
-  const highlightRects = [{
-    pageNum: targetPage,
-    quadPoints: originalSpan.quadPoints,
-    rect: null,  // 可以不提供rect，使用quadPoints
-    jump: true
-  }]
+  const highlightRects = [
+    {
+      pageNum: targetPage,
+      quadPoints: originalSpan.quadPoints,
+      rect: null, // 可以不提供rect，使用quadPoints
+      jump: true
+    }
+  ]
 
   // 更新 PDF 显示
   pdfData.highlightRects = highlightRects
@@ -581,7 +549,10 @@ const getData = async () => {
 
   // 优先使用本地 JSON 文件数据
   if (reviewListData.value) {
-    console.log('使用本地 JSON 数据渲染列表')
+    console.log('✅ 使用本地 JSON 数据渲染列表', {
+      'reviewListData.value': reviewListData.value,
+      dataList长度: reviewListData.value?.dataList?.length
+    })
     const data = reviewListData.value
     state.loading = false
 
@@ -604,6 +575,9 @@ const getData = async () => {
       existRisk.value = false
       setActiveFilter(null)
     }
+
+    // 初始化树形结构的展开状态 - 默认展开第一级节点
+    initTreeExpandState()
     return
   }
 
@@ -640,6 +614,22 @@ const getData = async () => {
     existRisk.value = false
     setActiveFilter(null)
   }
+
+  // 初始化树形结构的展开状态
+  initTreeExpandState()
+}
+
+// 初始化树形结构的展开状态 - 默认展开第一级节点
+const initTreeExpandState = () => {
+  const firstLevelNodes = new Set<string>()
+  resultData.dataList?.forEach((item: any) => {
+    // 添加一级节点（审查项）
+    if (item.reviewItemCode) {
+      firstLevelNodes.add(item.reviewItemCode)
+    }
+  })
+  treeExpandedNodes.value = firstLevelNodes
+  console.log('🌳 初始化树形展开状态:', firstLevelNodes)
 }
 // ==================== 业务方法 ====================
 
@@ -680,7 +670,7 @@ const onFileSelected = async (e: Event) => {
       body: form
     })
     const json = await resp.json().catch(() => ({}))
-    if (resp.ok && (json?.success !== false)) {
+    if (resp.ok && json?.success !== false) {
       message.success('PDF上传成功')
       await refreshData()
     } else {
@@ -870,7 +860,7 @@ const matchAnnotations = () => {
   console.log('数据概览:', {
     'annotation.json 数量': annotationJson.length,
     'PDF.js 批注数量': pdfAnns.length,
-    '右侧列表数据数量': reviewListData.value?.dataList?.length || 0
+    右侧列表数据数量: reviewListData.value?.dataList?.length || 0
   })
 
   // 1. 按页码分组 PDF 批注
@@ -939,14 +929,14 @@ const matchAnnotations = () => {
           pdfAnnotationId: bestMatch.pdfAnnotationId,
 
           // 跳转定位数据（必需）
-          pageNum: bestMatch.pageNum,                    // 页码
-          rect: Array.from(bestMatch.rect || []),        // 矩形边界 [x1, y1, x2, y2]
+          pageNum: bestMatch.pageNum, // 页码
+          rect: Array.from(bestMatch.rect || []), // 矩形边界 [x1, y1, x2, y2]
           quadPoints: Array.from(bestMatch.quadPoints || []), // 精确四边形坐标（8个点）
 
           // 高亮显示数据（可选）
-          subtype: bestMatch.subtype,                    // "Highlight" 等
+          subtype: bestMatch.subtype, // "Highlight" 等
           color: bestMatch.color ? Array.from(bestMatch.color) : null, // RGB 颜色
-          opacity: bestMatch.opacity,                    // 透明度
+          opacity: bestMatch.opacity, // 透明度
 
           // 匹配信息（调试用）
           score: bestScore.toFixed(3),
@@ -1064,7 +1054,9 @@ const matchAnnotations = () => {
             hasQuadPoints: !!quadPoints && quadPoints.length > 0,
             hasTargetText: !!targetText && targetText.trim() !== '',
             iou: bestMatch ? calculateIOU(quadPoints, bestMatch.quadPoints).toFixed(3) : 'N/A',
-            textSim: bestMatch ? textSimilarity(targetText, bestMatch.原始数据?.contentsObj?.str || bestMatch.contents).toFixed(3) : 'N/A'
+            textSim: bestMatch
+              ? textSimilarity(targetText, bestMatch.原始数据?.contentsObj?.str || bestMatch.contents).toFixed(3)
+              : 'N/A'
           }
         })
       }
@@ -1139,13 +1131,15 @@ const matchAnnotations = () => {
       targetText: item.span.targetText,
       quadPoints: item.span.quadPoints
     },
-    bestMatch: item.bestMatch ? {
-      id: item.bestMatch.id,
-      pageNum: item.bestMatch.pageNum,
-      text: item.bestMatch.原始数据?.contentsObj?.str,
-      quadPoints: item.bestMatch.quadPoints,
-      rect: item.bestMatch.rect
-    } : null,
+    bestMatch: item.bestMatch
+      ? {
+          id: item.bestMatch.id,
+          pageNum: item.bestMatch.pageNum,
+          text: item.bestMatch.原始数据?.contentsObj?.str,
+          quadPoints: item.bestMatch.quadPoints,
+          rect: item.bestMatch.rect
+        }
+      : null,
     matchInfo: {
       iou: item.details?.iou,
       textSim: item.details?.textSim
@@ -1194,10 +1188,13 @@ const matchAnnotations = () => {
       unmatchedReviewItems.forEach((item, index) => {
         console.log(`[${index + 1}] uniqueId: ${item.uniqueId}`)
         console.log(`    场景描述: ${item.sceneDesc}`)
-        console.log(`    spanList:`, item.spanList?.map((s: any) => ({
-          pid: s.pid,
-          text: s.text?.substring(0, 30)
-        })))
+        console.log(
+          `    spanList:`,
+          item.spanList?.map((s: any) => ({
+            pid: s.pid,
+            text: s.text?.substring(0, 30)
+          }))
+        )
       })
     }
   }
@@ -1220,46 +1217,736 @@ const handleAnnotationsLoaded = (annotations: any[]) => {
   }
 }
 
-// 读取 JSON 文件（根据环境模式选择接口）
-const loadJsonFiles = async (taskId: string) => {
-  try {
-    // 根据环境选择基础 URL
-    const baseUrl = isDev
-      ? `/task/${taskId}`
-      : `${config.env.VITE_APP_PUBLIC_URL}/task/${taskId}`
+// 树形结构的原始数据
+const rawTreeData = ref<any[]>([])
+const allTreeNodes = ref<any[]>([])
+const builtTreeData = ref<any[]>([])
+// 预构建的树数据（从 _labeled_tree.json 加载的）
+const prebuiltTreeData = ref<any[]>([])
+// 是否使用了预构建的树
+const hasPrebuiltTree = ref(false)
+// 节点映射表（line_id -> node）
+const nodeMap = ref<Record<number, any>>({})
 
-    console.log('📦 开始加载 JSON 文件，taskId:', taskId)
+// 调试模式的 TOC 数据（仅用于本地调试，线上不使用）
+// 注意：这个功能是完全独立的，不要与其他功能混用
+const debugTocData = ref<any[]>([])
 
-    // 读取 PDF 批注数据
-    const annotationsUrl = `${baseUrl}/${taskId}_pdf_annotations.json`
-    const annotationsResponse = await fetch(annotationsUrl)
-    if (annotationsResponse.ok) {
-      pdfAnnotationsData.value = await annotationsResponse.json()
-      console.log('✅ annotation.json 加载完成:', pdfAnnotationsData.value?.annotations?.length, '条')
+// 结构化数据（包含 fields 信息，用于知识图谱）
+const structuredData = ref<any[]>([])
 
-      // 如果 PDF 批注已经提取完成，立即进行匹配
-      if (pdfAnnotations.value?.length) {
-        console.log('✅ PDF 批注已存在，触发匹配')
-        matchAnnotations()
-      } else {
-        console.log('⏳ 等待 PDF 批注加载...')
+// 图谱数据
+const graphNodes = ref<Array<{ id: string; label: string; type: string }>>([])
+const graphEdges = ref<Array<{ id: string; source: string; target: string; label: string }>>([])
+
+// 标签层级顺序（从 label_hierarchy.json 加载）
+const labelHierarchy = ref<{ label: string; children: string[] }[]>([])
+const labelOrderMap = ref<Map<string, number>>(new Map())
+
+// 显示的树数据（调试模式显示 TOC，否则显示构建的树）
+const displayTreeData = computed(() => {
+  if (debugMode.value && debugTocData.value.length > 0) {
+    return debugTocData.value
+  }
+  return builtTreeData.value
+})
+
+// 合并段落：将 connect 关系的 fstline/para 合并成一个 paragraph 节点
+const mergeParagraphs = (nodes: any[]): any[] => {
+  const processedIds = new Set<number>()
+  const mergedNodes: any[] = []
+
+  nodes.forEach(node => {
+    if (processedIds.has(node.line_id)) return
+
+    // 如果是 fstline 或 para，尝试合并
+    if (node.class === 'fstline' || node.class === 'para') {
+      // 查找所有通过 connect 关系连接的节点
+      const paragraphNodes: any[] = [node]
+      processedIds.add(node.line_id)
+
+      // 查找所有 parent_id 指向当前节点且 relation 为 connect 的节点
+      const findConnectedNodes = (currentId: number) => {
+        nodes.forEach(n => {
+          if (n.parent_id === currentId && n.relation === 'connect' && !processedIds.has(n.line_id)) {
+            paragraphNodes.push(n)
+            processedIds.add(n.line_id)
+            // 递归查找连接到这个节点的节点
+            findConnectedNodes(n.line_id)
+          }
+        })
       }
+
+      findConnectedNodes(node.line_id)
+
+      // 提取所有行的 box 和 page 信息
+      const boxes = paragraphNodes
+        .filter(n => n.box && n.box.length === 4)
+        .map(n => ({
+          box: n.box,
+          page: n.page,
+          line_id: n.line_id
+        }))
+
+      console.log(`📝 合并段落 [line_id=${node.line_id}]:`, {
+        原始行数: paragraphNodes.length,
+        box数量: boxes.length,
+        页码范围: [...new Set(boxes.map(b => b.page))],
+        文本长度: paragraphNodes
+          .map(n => n.text)
+          .filter(Boolean)
+          .join(' ').length
+      })
+
+      // 创建合并后的段落节点
+      const mergedNode = {
+        ...node,
+        class: 'paragraph', // 改为 paragraph 类型
+        text: paragraphNodes
+          .map(n => n.text)
+          .filter(Boolean)
+          .join(' '), // 合并文本
+        boxes: boxes, // 保存所有行的 box 信息（用于多区域高亮）
+        _originalNodes: paragraphNodes, // 保存原始节点（用于调试）
+        children: []
+      }
+
+      mergedNodes.push(mergedNode)
     } else {
-      console.warn('❌ 未找到PDF批注文件:', annotationsUrl)
+      // 其他类型节点直接添加
+      mergedNodes.push(node)
+      processedIds.add(node.line_id)
+    }
+  })
+
+  return mergedNodes
+}
+
+// 构建树形结构（参考 my-app/tree）
+const buildTree = async () => {
+  if (!rawTreeData.value.length) {
+    console.log('⚠️ 原始数据为空，无法构建树')
+    return
+  }
+
+  console.log('🌲 开始构建树形结构，原始数据数量:', rawTreeData.value.length)
+
+  // 第一步：合并段落节点
+  const mergedData = mergeParagraphs(rawTreeData.value)
+  console.log('📝 段落合并后的数据数量:', mergedData.length)
+
+  // 过滤掉 meta 类型的节点（author、affili、mail 等）和 footer 节点
+  const filteredData = mergedData.filter(n => n.relation !== 'meta' && n.class !== 'footer')
+  console.log('🗑️ 过滤 meta/footer 节点后的数据数量:', filteredData.length)
+
+  // 更新 allTreeNodes 为过滤后的数据（重要！用于查找节点）
+  allTreeNodes.value = filteredData
+
+  // 调试：查看合并后的段落节点
+  const paragraphNodes = mergedData.filter(n => n.class === 'paragraph')
+  console.log('📝 paragraph 节点数量:', paragraphNodes.length)
+  if (paragraphNodes.length > 0) {
+    console.log('📝 第一个 paragraph 节点示例:', paragraphNodes[0])
+  }
+
+  // 创建节点映射（使用过滤后的数据）
+  const nodeMap = new Map()
+  filteredData.forEach(item => {
+    nodeMap.set(item.line_id, {
+      ...item,
+      children: []
+    })
+  })
+
+  // 先找到每个节点的真正父节点（处理 equality 链）
+  const findRealParent = (item: any): number => {
+    if (item.parent_id === -1) {
+      return -1
     }
 
-    // 读取审查列表数据
-    const reviewDataUrl = `${baseUrl}/${taskId}.json`
-    const reviewDataResponse = await fetch(reviewDataUrl)
-    if (reviewDataResponse.ok) {
-      const jsonData = await reviewDataResponse.json()
-      console.log('✅ 审查列表数据加载完成')
+    if (item.relation === 'contain') {
+      // contain 关系：parent_id 就是真正的父节点
+      return item.parent_id
+    }
 
-      // 提取 data 字段（JSON 结构是 {success: true, data: {...}}）
-      reviewListData.value = jsonData.data || jsonData
-      console.log('提取后的数据:', reviewListData.value)
+    if (item.relation === 'equality') {
+      // equality 关系：沿着 parent_id 链追溯，找到第一个 contain 关系的节点
+      let current = filteredData.find(n => n.line_id === item.parent_id)
+      while (current) {
+        if (current.relation === 'contain') {
+          // 找到了 contain 节点，它的 parent_id 就是真正的父节点
+          return current.parent_id
+        } else if (current.relation === 'equality') {
+          // 继续往上找
+          current = filteredData.find(n => n.line_id === current.parent_id)
+        } else {
+          break
+        }
+      }
+    }
+
+    // 其他情况或找不到，返回原 parent_id
+    return item.parent_id
+  }
+
+  // 构建父子关系
+  const roots: any[] = []
+  filteredData.forEach(item => {
+    const node = nodeMap.get(item.line_id)
+
+    // 跳过 connect 关系（已在段落合并中处理）
+    if (item.relation === 'connect') {
+      return
+    }
+
+    const realParentId = findRealParent(item)
+
+    if (realParentId === -1) {
+      // 根节点
+      roots.push(node)
     } else {
-      console.warn('❌ 未找到审查数据文件:', reviewDataUrl)
+      // 添加到父节点的 children
+      const parent = nodeMap.get(realParentId)
+      if (parent) {
+        parent.children.push(node)
+      } else {
+        // 找不到父节点，作为根节点
+        console.warn('找不到父节点:', realParentId, '节点:', item)
+        roots.push(node)
+      }
+    }
+  })
+
+  builtTreeData.value = roots
+  console.log('✅ 树形结构构建完成，根节点数量:', roots.length)
+
+  // 生成知识图谱数据
+  await buildGraphData()
+
+  // 调试：检查 SEC1 和 SEC2 节点的层级结构
+  const sec1Nodes = filteredData.filter(n => n.class === 'sec1')
+  const sec2Nodes = filteredData.filter(n => n.class === 'sec2')
+
+  console.log(
+    '🔍 SEC1 节点检查:',
+    sec1Nodes.map(n => ({
+      line_id: n.line_id,
+      text: n.text?.substring(0, 30),
+      parent_id: n.parent_id,
+      relation: n.relation,
+      realParent: findRealParent(n),
+      计算后的父节点: nodeMap.get(findRealParent(n))?.text?.substring(0, 30)
+    }))
+  )
+
+  console.log(
+    '🔍 SEC2 节点检查:',
+    sec2Nodes.map(n => ({
+      line_id: n.line_id,
+      text: n.text?.substring(0, 30),
+      parent_id: n.parent_id,
+      relation: n.relation,
+      realParent: findRealParent(n),
+      计算后的父节点: nodeMap.get(findRealParent(n))?.text?.substring(0, 30)
+    }))
+  )
+
+  // 默认展开第一层（根节点）
+  const firstLevel = new Set<number>()
+  filteredData.filter(n => n.parent_id === -1 && n.relation !== 'meta').forEach(n => firstLevel.add(n.line_id))
+
+  treeExpandedNodes.value = firstLevel
+  console.log('🌲 默认展开节点:', firstLevel)
+}
+
+// 构建按标签分组的树形结构
+const buildTreeByLabel = async () => {
+  if (!rawTreeData.value.length) {
+    console.log('⚠️ 原始数据为空，无法构建树')
+    return
+  }
+
+  console.log('🏷️ 开始构建按标签分组的树形结构')
+
+  // 检查数据是否有标签
+  const hasLabels = rawTreeData.value.some(item => 'label_level1' in item)
+  if (!hasLabels) {
+    console.warn('⚠️ 数据中没有标签字段，回退到原始结构')
+    buildTree()
+    return
+  }
+
+  // 第一步：合并段落节点
+  const mergedData = mergeParagraphs(rawTreeData.value)
+  const filteredData = mergedData.filter(n => n.relation !== 'meta' && n.class !== 'footer')
+
+  // 按一级标签和二级标签分组（两层结构）
+  const level1Groups = new Map<string, Map<string, any[]>>()
+
+  filteredData.forEach(item => {
+    let label1 = '未分类'
+    let label2 = '无'
+
+    // 兼容新旧两种标签格式
+    if (item.label && typeof item.label === 'string' && item.label.includes('/')) {
+      // 新格式：label = "一级标签/二级标签"
+      const parts = item.label.split('/')
+      if (parts.length >= 1) label1 = parts[0]
+      if (parts.length >= 2) label2 = parts[1]
+
+      // 保存到 item 中，方便后续使用
+      item.label_level1 = label1
+      item.label_level2 = label2
+    } else {
+      // 旧格式：使用现有的 label_level1 和 label_level2
+      label1 = item.label_level1 || '未分类'
+      label2 = item.label_level2 || '无'
+    }
+
+    if (!level1Groups.has(label1)) {
+      level1Groups.set(label1, new Map())
+    }
+
+    const level2Map = level1Groups.get(label1)!
+    if (!level2Map.has(label2)) {
+      level2Map.set(label2, [])
+    }
+
+    level2Map.get(label2)!.push(item)
+  })
+
+  console.log('🏷️ 一级标签数量:', level1Groups.size)
+
+  // 构建两层标签树：一级标签 → 二级标签 → 原有层级
+  const labelRoots: any[] = []
+  let virtualLineId = -10000 // 虚拟节点ID（从负数开始避免冲突）
+
+  // 辅助函数：在指定节点列表中构建树形结构
+  const buildSubTree = (items: any[]) => {
+    // 不再过滤 sec 节点，因为它们可能包含有用的标签信息
+    const filteredItems = items
+
+    const nodeMap = new Map()
+    filteredItems.forEach(item => {
+      nodeMap.set(item.line_id, {
+        ...item,
+        children: []
+      })
+    })
+
+    // 构建父子关系
+    const findRealParent = (item: any): number => {
+      if (item.parent_id === -1) return -1
+      if (item.relation === 'contain') return item.parent_id
+      if (item.relation === 'equality') {
+        let current = filteredItems.find(n => n.line_id === item.parent_id)
+        while (current) {
+          if (current.relation === 'contain') return current.parent_id
+          else if (current.relation === 'equality') current = filteredItems.find(n => n.line_id === current.parent_id)
+          else break
+        }
+      }
+      return item.parent_id
+    }
+
+    const roots: any[] = []
+    filteredItems.forEach(item => {
+      const node = nodeMap.get(item.line_id)
+      if (item.relation === 'connect') return
+
+      const realParentId = findRealParent(item)
+      if (realParentId === -1) {
+        roots.push(node)
+      } else {
+        const parent = nodeMap.get(realParentId)
+        if (parent) parent.children.push(node)
+        else roots.push(node)
+      }
+    })
+
+    return roots
+  }
+
+  // 遍历一级标签
+  level1Groups.forEach((level2Map, label1) => {
+    // 创建一级标签虚拟节点
+    const level1Node = {
+      line_id: virtualLineId--,
+      text: label1,
+      class: 'label-group',
+      label_level1: label1,
+      label_level2: '无',
+      children: [],
+      isVirtual: true
+    }
+
+    // 遍历二级标签
+    level2Map.forEach((items, label2) => {
+      if (label2 === '无') {
+        // 如果二级标签是"无"，直接将内容添加到一级标签下
+        const subTree = buildSubTree(items)
+
+        // 保存完整子元素列表到父节点
+        level1Node._fullChildren = subTree
+
+        // 限制子元素数量为3个(默认预览模式)
+        const previewChildren = subTree.slice(0, 3)
+        level1Node.children.push(...previewChildren)
+
+        // 如果有更多子元素,添加一个"查看更多"节点
+        if (subTree.length > 3) {
+          const moreNode = {
+            line_id: virtualLineId--,
+            text: `... 更多 ... 还有 ${subTree.length - 3} 个元素`,
+            class: 'more-indicator',
+            isVirtual: true,
+            _parentNode: level1Node // 保存父节点引用
+          }
+          level1Node.children.push(moreNode)
+        }
+      } else {
+        // 创建二级标签虚拟节点
+        const level2Node = {
+          line_id: virtualLineId--,
+          text: label2,
+          class: 'label-group-2',
+          label_level1: label1,
+          label_level2: label2,
+          children: [],
+          isVirtual: true
+        }
+
+        // 在二级标签下构建树
+        const subTree = buildSubTree(items)
+
+        // 保存完整子元素列表到节点
+        level2Node._fullChildren = subTree
+
+        // 限制子元素数量为3个(默认预览模式)
+        const previewChildren = subTree.slice(0, 3)
+        level2Node.children = previewChildren
+
+        // 如果有更多子元素,添加一个"查看更多"节点
+        if (subTree.length > 3) {
+          const moreNode = {
+            line_id: virtualLineId--,
+            text: `... 更多 ... 还有 ${subTree.length - 3} 个元素`,
+            class: 'more-indicator',
+            isVirtual: true,
+            _parentNode: level2Node // 保存父节点引用
+          }
+          level2Node.children.push(moreNode)
+        }
+
+        // 将二级标签节点添加到一级标签下
+        level1Node.children.push(level2Node)
+      }
+    })
+
+    labelRoots.push(level1Node)
+  })
+
+  // 使用统一的排序函数
+  sortTreeByHierarchy(labelRoots)
+
+  builtTreeData.value = labelRoots
+  console.log('✅ 按标签分组的树形结构构建完成')
+  console.log('  - 一级标签数量:', labelRoots.length)
+
+  // 生成知识图谱数据
+  await buildGraphData()
+
+  // 只在子节点有标签的时候展开
+  const expandedLabels = new Set<number>()
+
+  const shouldExpand = (node: any): boolean => {
+    if (!node.children || node.children.length === 0) return false
+    // 检查子节点是否有标签（label字段存在且不为空）
+    return node.children.some((child: any) => child.label && child.label.trim() !== '')
+  }
+
+  // 只检查一级节点，不递归
+  labelRoots.forEach(node => {
+    if (shouldExpand(node)) {
+      expandedLabels.add(node.line_id)
+    }
+  })
+
+  treeExpandedNodes.value = expandedLabels
+}
+
+// 统一的树构建入口（根据 treeGroupMode 切换）
+const rebuildTree = () => {
+  if (treeGroupMode.value === 'label') {
+    buildTreeByLabel()
+  } else {
+    buildTree()
+  }
+}
+
+// 监听分组模式切换
+watch(treeGroupMode, () => {
+  console.log('🔄 树形结构分组模式切换:', treeGroupMode.value)
+
+  if (treeGroupMode.value === 'original') {
+    // 切换到采购标签图谱
+    console.log('📊 采购标签图谱数据状态:')
+    console.log('  - graphNodes 数量:', graphNodes.value.length)
+    console.log('  - graphEdges 数量:', graphEdges.value.length)
+    if (graphNodes.value.length === 0) {
+      console.warn('⚠️ 图谱数据为空，尝试重新生成...')
+      buildGraphData()
+    }
+  } else if (treeGroupMode.value === 'label') {
+    // 切换回业务语义结构树
+    if (hasPrebuiltTree.value && prebuiltTreeData.value.length > 0) {
+      // 如果有预构建的树，直接使用（已经排序过了）
+      console.log('✅ 使用预构建的树数据')
+      builtTreeData.value = prebuiltTreeData.value
+
+      // 只在子节点有标签的时候展开（只展开一层）
+      const expandedLabels = new Set<number>()
+
+      const shouldExpand = (node: any): boolean => {
+        if (!node.children || node.children.length === 0) return false
+        return node.children.some((child: any) => child.label && child.label.trim() !== '')
+      }
+
+      // 只检查一级节点，不递归
+      builtTreeData.value.forEach(node => {
+        if (shouldExpand(node)) {
+          expandedLabels.add(node.line_id)
+        }
+      })
+
+      treeExpandedNodes.value = expandedLabels
+    } else {
+      // 否则重新构建（会自动排序）
+      console.log('🔨 重新构建树结构')
+      rebuildTree()
+    }
+  }
+})
+
+// 监听调试模式切换
+watch(debugMode, async newVal => {
+  console.log('🐛 调试模式切换:', newVal)
+  if (newVal) {
+    // 加载调试文件
+    await loadDebugFiles()
+  } else {
+    // 清空调试数据，恢复正常模式
+    debugTocData.value = []
+    nodeMap.value = {}
+    // 重新加载当前任务的文件
+    if (taskId.value) {
+      await loadJsonFiles(taskId.value)
+    }
+  }
+})
+
+// 加载调试文件
+const loadDebugFiles = async () => {
+  try {
+    console.log('🐛 加载调试文件...')
+
+    // 加载结构化数据文件
+    const structuredDataUrl = `${import.meta.env.BASE_URL}hrdoc/1980950753551908866_structured_data.json`
+    const structuredDataResponse = await fetch(structuredDataUrl)
+
+    if (!structuredDataResponse.ok) {
+      console.error('❌ 结构化数据文件加载失败')
+      return
+    }
+
+    const structuredData = await structuredDataResponse.json()
+    console.log('✅ 结构化数据加载成功:', structuredData)
+
+    // 使用 structured_data 字段
+    if (structuredData.structured_data && Array.isArray(structuredData.structured_data)) {
+      debugTocData.value = structuredData.structured_data
+      console.log('✅ 结构化数据已加载，节点数:', debugTocData.value.length)
+      console.log('🔍 第一个节点:', debugTocData.value[0])
+      console.log(
+        '🔍 第一个节点的 child_line_ids:',
+        debugTocData.value[0]?.children?.[0]?.children?.[0]?.child_line_ids
+      )
+    }
+
+    // 加载原始 JSON（用于获取段落内容）
+    const jsonUrl = `${import.meta.env.BASE_URL}hrdoc/1980950753551908866.json`
+    const jsonResponse = await fetch(jsonUrl)
+
+    if (jsonResponse.ok) {
+      const jsonData = await jsonResponse.json()
+      console.log('✅ 原始 JSON 数据加载成功，节点数:', jsonData.length)
+
+      // 创建 nodeMap
+      const map: Record<number, any> = {}
+      jsonData.forEach((node: any) => {
+        map[node.line_id] = node
+      })
+      nodeMap.value = map
+      console.log('✅ NodeMap 创建成功，节点数:', Object.keys(nodeMap.value).length)
+    }
+  } catch (error) {
+    console.error('❌ 调试文件加载失败:', error)
+  }
+}
+
+// 读取 JSON 文件（从 public/hrdoc 目录）
+const loadJsonFiles = async (taskId: string) => {
+  try {
+    console.log('📦 开始加载 JSON 文件，taskId:', taskId)
+
+    // 优先级: _labeled_tree.json > _labeled.json > .json
+    const urlPriority = [
+      `${import.meta.env.BASE_URL}hrdoc/${taskId}_labeled_tree.json`,
+      `${import.meta.env.BASE_URL}hrdoc/${taskId}_labeled.json`,
+      `${import.meta.env.BASE_URL}hrdoc/${taskId}.json`
+    ]
+
+    let treeDataUrl = ''
+    let jsonData = null
+    let isTreeJson = false
+
+    // 按优先级尝试加载
+    for (const url of urlPriority) {
+      try {
+        const response = await fetch(url)
+        if (response.ok) {
+          jsonData = await response.json()
+          treeDataUrl = url
+          isTreeJson = url.includes('_labeled_tree.json')
+          console.log('✅ 数据源:', treeDataUrl)
+          break
+        }
+      } catch (e) {
+        continue
+      }
+    }
+
+    if (!jsonData) {
+      console.warn('❌ 未找到任何JSON文件')
+      return
+    }
+
+    console.log('✅ 树形数据加载完成，数据类型:', Array.isArray(jsonData) ? '数组' : '对象')
+
+    // 如果加载的是 _labeled_tree.json，直接使用
+    if (isTreeJson) {
+      console.log('🌲 使用预构建的树形JSON')
+
+      // 新格式: { "tree": [...], "pdf_path": "" }
+      const treeData = jsonData.tree || jsonData
+      prebuiltTreeData.value = Array.isArray(treeData) ? treeData : [treeData]
+
+      // 对预构建的树按照 hierarchy 顺序排序
+      sortTreeByHierarchy(prebuiltTreeData.value)
+
+      builtTreeData.value = prebuiltTreeData.value
+      hasPrebuiltTree.value = true
+
+      // 如果有pdf_path字段,可以使用它
+      if (jsonData.pdf_path) {
+        console.log('📄 PDF路径:', jsonData.pdf_path)
+        // 未来可以用这个路径加载PDF
+      }
+
+      // 保存原始数据用于查找节点
+      allTreeNodes.value = []
+      const extractNodes = (nodes: any[]) => {
+        nodes.forEach(node => {
+          if (!node.isVirtual) {
+            allTreeNodes.value.push(node)
+          }
+          if (node.children) {
+            extractNodes(node.children)
+          }
+        })
+      }
+      extractNodes(builtTreeData.value)
+
+      // 同时加载 _labeled.json 用于文件视图切换
+      try {
+        const labeledUrl = treeDataUrl.replace('_labeled_tree.json', '_labeled.json')
+        const labeledResponse = await fetch(labeledUrl)
+        if (labeledResponse.ok) {
+          const labeledData = await labeledResponse.json()
+
+          // 扁平化树结构（_labeled.json 是嵌套结构，需要扁平化）
+          const flattenTree = (nodes: any[]): any[] => {
+            const result: any[] = []
+            const traverse = (node: any) => {
+              // 先添加当前节点
+              result.push(node)
+              // 递归处理子节点
+              if (node.children && Array.isArray(node.children)) {
+                node.children.forEach(traverse)
+              }
+            }
+            nodes.forEach(traverse)
+            return result
+          }
+
+          const treeData = Array.isArray(labeledData) ? labeledData : [labeledData]
+          rawTreeData.value = flattenTree(treeData)
+
+          console.log('✅ 同时加载 _labeled.json 并扁平化，节点数:', rawTreeData.value.length)
+
+          // 统计有 fields 的节点数
+          const nodesWithFields = rawTreeData.value.filter(n => n.fields && Object.keys(n.fields).length > 0).length
+          console.log(`   其中包含 fields 的节点数: ${nodesWithFields}`)
+        } else {
+          console.warn('⚠️ 未找到对应的 _labeled.json，文件视图将不可用')
+        }
+      } catch (e) {
+        console.warn('⚠️ 加载 _labeled.json 失败:', e)
+      }
+
+      // 只在子节点有标签的时候展开
+      const expandedLabels = new Set<number>()
+
+      const shouldExpand = (node: any): boolean => {
+        if (!node.children || node.children.length === 0) return false
+        return node.children.some((child: any) => child.label && child.label.trim() !== '')
+      }
+
+      // 只检查一级节点，不递归
+      builtTreeData.value.forEach(node => {
+        if (shouldExpand(node)) {
+          expandedLabels.add(node.line_id)
+        }
+      })
+
+      treeExpandedNodes.value = expandedLabels
+
+      console.log('✅ 树形结构加载完成，一级标签数量:', builtTreeData.value.length)
+    } else {
+      // 使用扁平JSON，需要客户端构建树
+      console.log('📋 使用扁平JSON，客户端构建树')
+      rawTreeData.value = Array.isArray(jsonData) ? jsonData : [jsonData]
+      allTreeNodes.value = rawTreeData.value
+
+      // 构建树形结构（使用统一入口，支持切换模式）
+      rebuildTree()
+    }
+
+    // 加载 structured_data 文件（用于知识图谱的 fields 信息）
+    try {
+      const structuredDataUrl = `${import.meta.env.BASE_URL}hrdoc/${taskId}_structured_data.json`
+      const structuredDataResponse = await fetch(structuredDataUrl)
+      if (structuredDataResponse.ok) {
+        const data = await structuredDataResponse.json()
+        if (data.structured_data && Array.isArray(data.structured_data)) {
+          structuredData.value = data.structured_data
+          console.log('✅ structured_data 加载成功，用于知识图谱 fields，节点数:', structuredData.value.length)
+        }
+      } else {
+        console.warn('⚠️ 未找到 _structured_data.json，知识图谱将不包含 fields 信息')
+      }
+    } catch (e) {
+      console.warn('⚠️ 加载 _structured_data.json 失败:', e)
     }
 
     console.log('📦 JSON 文件加载完成')
@@ -1279,9 +1966,9 @@ const getFile = async () => {
     return
   }
 
-  // 统一从后端读取 PDF
-  pdfData.pdfUrl = `/python/api/pdf/task/${encodeURIComponent(taskId.value)}/pdf`
-  console.log('使用后端PDF接口:', pdfData.pdfUrl)
+  // 从 public 目录读取 PDF
+  pdfData.pdfUrl = `${import.meta.env.BASE_URL}hrdoc/${taskId.value}.pdf`
+  console.log('从public目录读取PDF:', pdfData.pdfUrl)
 }
 
 // ==================== 导出相关方法 ====================
@@ -1326,6 +2013,707 @@ const toggleItemExpand = (reviewItemCode: string) => {
   expandedState[reviewItemCode] = currentState === false ? true : false
 }
 
+// 切换树节点展开/折叠
+const toggleTreeNode = (nodeId: any) => {
+  console.log('切换节点:', nodeId, '当前状态:', treeExpandedNodes.value.has(nodeId))
+
+  const isCurrentlyExpanded = treeExpandedNodes.value.has(nodeId)
+
+  if (isCurrentlyExpanded) {
+    // 折叠节点
+    treeExpandedNodes.value.delete(nodeId)
+
+    // 如果是标签节点且之前展开过全部子元素,重置为只显示3个
+    const node = findNodeById(builtTreeData.value, nodeId)
+    if (node && (node.class === 'label-group' || node.class === 'label-group-2')) {
+      if (node._isExpanded && node._fullChildren && node._fullChildren.length > 3) {
+        console.log('🔄 重置标签节点为预览模式(只显示3个)')
+
+        // 恢复为只显示前3个
+        const previewChildren = node._fullChildren.slice(0, 3)
+
+        // 创建"查看更多"节点
+        const moreNode = {
+          line_id: -Date.now(), // 使用时间戳生成唯一负数ID
+          text: `... 更多 ... 还有 ${node._fullChildren.length - 3} 个元素`,
+          class: 'more-indicator',
+          isVirtual: true,
+          _parentNode: node
+        }
+
+        node.children = [...previewChildren, moreNode]
+        node._isExpanded = false
+      }
+    }
+  } else {
+    // 展开节点
+    treeExpandedNodes.value.add(nodeId)
+  }
+
+  treeExpandedNodes.value = new Set(treeExpandedNodes.value)
+}
+
+/**
+ * 智能合并 boxes：将同一栏的连续行合并成一个大矩形
+ *
+ * 分栏判断标准：
+ * 1. 页码变化 → 新区域
+ * 2. X 坐标显著跳变（超过阈值）→ 换栏
+ * 3. Y 坐标向上跳（非连续）→ 换栏
+ *
+ * @param boxInfos - 包含 {box, page, line_id} 的数组
+ * @returns 合并后的 box 数组 [x1, y1, x2, y2]
+ */
+const mergeBoxesByColumn = (boxInfos: any[]): number[][] => {
+  if (!boxInfos || boxInfos.length === 0) return []
+  if (boxInfos.length === 1) return [boxInfos[0].box]
+
+  const mergedBoxes: number[][] = []
+  let currentGroup: any[] = [boxInfos[0]]
+
+  for (let i = 1; i < boxInfos.length; i++) {
+    const prev = boxInfos[i - 1]
+    const curr = boxInfos[i]
+
+    // 判断是否需要开始新区域
+    const shouldStartNewRegion =
+      // 1. 页码变化
+      curr.page !== prev.page ||
+      // 2. X 坐标显著跳变（左边界相差超过 100 像素，说明换栏了）
+      Math.abs(curr.box[0] - prev.box[0]) > 100 ||
+      // 3. Y 坐标向上跳（y1 减小，说明不连续）
+      curr.box[1] < prev.box[1]
+
+    if (shouldStartNewRegion) {
+      // 合并当前组的所有 box
+      mergedBoxes.push(mergeBoxGroup(currentGroup))
+      // 开始新组
+      currentGroup = [curr]
+    } else {
+      // 添加到当前组
+      currentGroup.push(curr)
+    }
+  }
+
+  // 处理最后一组
+  if (currentGroup.length > 0) {
+    mergedBoxes.push(mergeBoxGroup(currentGroup))
+  }
+
+  return mergedBoxes
+}
+
+/**
+ * 合并一组 box 为一个大矩形
+ */
+const mergeBoxGroup = (boxInfos: any[]): number[] => {
+  const boxes = boxInfos.map(info => info.box)
+
+  const x1 = Math.min(...boxes.map(b => b[0]))
+  const y1 = Math.min(...boxes.map(b => b[1]))
+  const x2 = Math.max(...boxes.map(b => b[2]))
+  const y2 = Math.max(...boxes.map(b => b[3]))
+
+  return [x1, y1, x2, y2]
+}
+
+// 递归查找第一个非标签节点
+const findFirstNonLabelNode = (node: any): any => {
+  // 如果当前节点不是标签节点也不是"查看更多"节点，返回自身
+  if (node.class !== 'label-group' && node.class !== 'label-group-2' && node.class !== 'more-indicator') {
+    return node
+  }
+
+  // 如果是标签节点，递归查找子节点
+  if (node.children && node.children.length > 0) {
+    for (const child of node.children) {
+      const result = findFirstNonLabelNode(child)
+      if (result) return result
+    }
+  }
+
+  return null
+}
+
+// 选择树节点并跳转到PDF位置
+const selectTreeNode = async (nodeId: number) => {
+  selectedNodeId.value = nodeId
+  console.log('🎯 选中节点:', nodeId)
+
+  // 先在构建好的树中查找（用于处理虚拟节点）
+  let node = findNodeById(builtTreeData.value, nodeId)
+
+  // 如果在构建树中没找到，尝试在原始数据中查找
+  if (!node) {
+    console.log('⚠️ 在构建树中未找到，尝试在原始数据中查找')
+    node = findNodeById(allTreeNodes.value, nodeId)
+  }
+
+  if (!node) {
+    console.warn('❌ 未找到节点:', nodeId)
+    return
+  }
+
+  // 如果点击的是"查看更多"节点，展开所有子元素
+  if (node.class === 'more-indicator') {
+    console.log('🔍 点击了"查看更多"，展开所有子元素')
+    const parentNode = node._parentNode
+    if (parentNode && parentNode._fullChildren) {
+      // 替换父节点的children为完整的子元素列表
+      parentNode.children = [...parentNode._fullChildren]
+      // 标记为已展开状态
+      parentNode._isExpanded = true
+      console.log('✓ 已展开所有子元素，共', parentNode._fullChildren.length, '个')
+    }
+    return
+  }
+
+  // 记录是否是标签节点(用于控制高亮行为)
+  const isLabelNode = node.class === 'label-group' || node.class === 'label-group-2'
+
+  // 如果点击的是标签节点，只跳转页面不高亮
+  if (isLabelNode) {
+    console.log('🏷️ 点击的是标签节点，只跳转页面不高亮')
+    const targetNode = findFirstNonLabelNode(node)
+    if (targetNode) {
+      console.log('✓ 找到目标节点:', targetNode.line_id, targetNode.class)
+
+      // 只跳转到页面,不高亮
+      if (targetNode.boxes && targetNode.boxes.length > 0) {
+        const firstBox = targetNode.boxes[0]
+        const pageNum = firstBox.page + 1
+        pdfData.currentPage = pageNum
+        pdfData.highlightRects = []
+        console.log('✅ 已跳转到页面', pageNum, '(不高亮)')
+      } else if (targetNode.page !== undefined) {
+        const pageNum = targetNode.page + 1
+        pdfData.currentPage = pageNum
+        pdfData.highlightRects = []
+        console.log('✅ 已跳转到页面', pageNum, '(不高亮)')
+      }
+    } else {
+      console.warn('❌ 该标签下没有非标签节点')
+    }
+    return
+  }
+
+  console.log('📄 节点详情:', node)
+  console.log('📦 boxes字段:', node.boxes)
+  console.log('📦 boxes类型:', typeof node.boxes, Array.isArray(node.boxes))
+  console.log('📦 boxes长度:', node.boxes?.length)
+
+  try {
+    // 判断是否为段落节点（有 boxes 数组）
+    if (node.boxes && node.boxes.length > 0) {
+      // 段落节点：高亮所有行
+      console.log('📝 段落节点，包含', node.boxes.length, '个 box')
+
+      // 跳转到第一个 box 所在的页面
+      const firstBox = node.boxes[0]
+      const pageNum = firstBox.page + 1
+      pdfData.currentPage = pageNum
+
+      // 普通节点：智能合并 boxes 并高亮
+      const mergedBoxes = mergeBoxesByColumn(node.boxes)
+
+      console.log('📦 Box 合并结果:', {
+        原始box数: node.boxes.length,
+        合并后区域数: mergedBoxes.length,
+        合并详情: mergedBoxes
+      })
+
+      // 将合并后的 boxes 转换为 quadPoints
+      const allQuadPoints: number[] = []
+      mergedBoxes.forEach((box: number[]) => {
+        // 每个 box 贡献 8 个坐标点
+        allQuadPoints.push(
+          box[0],
+          box[1], // 左上
+          box[2],
+          box[1], // 右上
+          box[2],
+          box[3], // 右下
+          box[0],
+          box[3] // 左下
+        )
+      })
+
+      console.log('📌 多区域高亮:', {
+        区域数量: mergedBoxes.length,
+        quadPoints长度: allQuadPoints.length,
+        页码: pageNum
+      })
+
+      // 创建单个高亮对象，包含所有合并后的 box 的 quadPoints
+      const highlightData = {
+        pageNum: pageNum,
+        rect: firstBox.box, // 使用第一个 box 的 rect（用于定位）
+        quadPoints: allQuadPoints, // 包含所有合并后区域的 quadPoints
+        needsConversion: true, // 标记需要坐标转换
+        jump: true
+      }
+
+      // 更新 PDF 高亮区域
+      pdfData.highlightRects = [highlightData]
+
+      // 跳转并高亮
+      if (pdfReaderRef.value?.scrollToAnnotation) {
+        await nextTick()
+        await pdfReaderRef.value.scrollToAnnotation(highlightData)
+        console.log('✅ 已跳转到段落位置并高亮所有区域')
+      }
+    } else if (node.page !== undefined && node.box) {
+      // 单个节点：普通节点高亮
+      const pageNum = node.page + 1
+      const box = node.box
+
+      console.log('📍 单行节点，box:', { pageNum, box })
+
+      pdfData.currentPage = pageNum
+
+      const highlightRect = {
+        pageNum: pageNum,
+        rect: box,
+        quadPoints: [box[0], box[1], box[2], box[1], box[2], box[3], box[0], box[3]],
+        jump: true,
+        needsConversion: true
+      }
+
+      pdfData.highlightRects = [highlightRect]
+
+      if (pdfReaderRef.value?.scrollToAnnotation) {
+        await nextTick()
+        await pdfReaderRef.value.scrollToAnnotation(highlightRect)
+        console.log('✅ 已跳转到 PDF 位置并高亮')
+      }
+    } else if (node.page !== undefined) {
+      // 只有页码，没有位置信息：只跳转页面，不高亮
+      const pageNum = node.page + 1
+      pdfData.currentPage = pageNum
+      pdfData.highlightRects = []
+      console.log('✅ 已跳转到页面', pageNum, '(无位置信息，不高亮)')
+    } else {
+      console.warn('⚠️ 节点缺少位置信息:', node)
+    }
+  } catch (error) {
+    console.error('❌ 跳转失败:', error)
+  }
+}
+
+// 获取段落预览文本
+const getParagraphPreview = (paragraphIds: number[]): string => {
+  if (!paragraphIds || paragraphIds.length === 0) return ''
+
+  const texts: string[] = []
+  for (const id of paragraphIds) {
+    const node = nodeMap.value[id]
+    if (node && node.text) {
+      texts.push(node.text)
+    }
+  }
+
+  const fullText = texts.join('')
+  return fullText.length > 60 ? fullText.substring(0, 60) + '...' : fullText
+}
+
+// 从结构化数据中提取 fields 信息（用于知识图谱）
+const extractFieldsFromStructuredData = () => {
+  const fieldsMap = new Map<number, any>()
+
+  const traverse = (nodes: any[]) => {
+    if (!nodes || !Array.isArray(nodes)) return
+
+    for (const node of nodes) {
+      // 如果节点有 fields 属性，记录下来
+      if (node.line_id !== undefined && node.fields && typeof node.fields === 'object') {
+        fieldsMap.set(node.line_id, node.fields)
+        console.log(`📋 找到 fields: line_id=${node.line_id}`, node.fields)
+      }
+
+      // 递归处理子节点
+      if (node.children && Array.isArray(node.children)) {
+        traverse(node.children)
+      }
+    }
+  }
+
+  // 遍历 structuredData（从 _structured_data.json 加载）
+  if (structuredData.value && Array.isArray(structuredData.value)) {
+    console.log('🔍 开始从 structured_data 提取 fields...')
+    traverse(structuredData.value)
+    console.log(`✅ 共提取 ${fieldsMap.size} 个节点的 fields 信息`)
+  } else {
+    console.warn('⚠️ structuredData 为空，无法提取 fields')
+  }
+
+  return fieldsMap
+}
+
+//生成知识图谱数据（基于标签分组数据）
+const buildGraphData = async () => {
+  console.log('🔧 开始生成知识图谱数据')
+
+  // Get concept nodes and edges (with inferred edges from sameAs) from ontology.json
+  const { nodes: conceptNodes, edges: conceptEdges } = await getGraphData()
+
+  // Start with concept nodes
+  const nodes: Array<{ id: string; label: string; type: string }> = [...conceptNodes]
+  const edges: Array<{ id: string; source: string; target: string; label: string }> = [...conceptEdges]
+
+  const nodeIds = new Set<string>(conceptNodes.map((n: any) => n.id))
+  let edgeIdCounter = edges.length
+
+  let paragraphNodesAdded = 0
+
+  console.log('概念节点数:', conceptNodes.length)
+  console.log('概念边数（含推理）:', conceptEdges.length)
+
+  // 自动构建 label 到概念节点 ID 的映射（使用概念节点的 label 字段）
+  const labelToConceptMap = new Map<string, string>()
+  conceptNodes.forEach((node: any) => {
+    if (node.label) {
+      labelToConceptMap.set(node.label, node.id)
+    }
+  })
+  console.log('📋 概念节点标签映射表（共 ' + labelToConceptMap.size + ' 个）:', Array.from(labelToConceptMap.keys()))
+
+  // Extract fields from structured data
+  const fieldsMap = extractFieldsFromStructuredData()
+
+  // 提取段落数据：优先使用 rawTreeData，如果为空则从 builtTreeData 中提取
+  let filteredData: any[] = []
+  if (rawTreeData.value && rawTreeData.value.length > 0) {
+    // 使用 rawTreeData（扁平数据）
+    console.log('📋 使用 rawTreeData，原始节点数:', rawTreeData.value.length)
+
+    // 统计有 label 的节点数
+    const nodesWithLabel = rawTreeData.value.filter(n => n.label && n.label !== '')
+    console.log(`   其中有 label 的节点数: ${nodesWithLabel.length}`)
+    if (nodesWithLabel.length > 0) {
+      console.log(
+        '   示例 label:',
+        nodesWithLabel.slice(0, 3).map(n => n.label)
+      )
+    }
+
+    const mergedData = mergeParagraphs(rawTreeData.value)
+    filteredData = mergedData.filter(n => n.relation !== 'meta' && n.class !== 'footer')
+    console.log('📋 合并段落后，节点数:', filteredData.length)
+  } else if (builtTreeData.value && builtTreeData.value.length > 0) {
+    // 从 builtTreeData（预构建树）中提取所有节点
+    console.log('📋 从 builtTreeData（预构建树）提取段落')
+    const extractAllNodes = (nodes: any[]): any[] => {
+      const result: any[] = []
+      nodes.forEach(node => {
+        if (!node.isVirtual) {
+          result.push(node)
+        }
+        if (node.children && node.children.length > 0) {
+          result.push(...extractAllNodes(node.children))
+        }
+      })
+      return result
+    }
+    const allNodes = extractAllNodes(builtTreeData.value)
+    filteredData = allNodes.filter(n => n.relation !== 'meta' && n.class !== 'footer')
+    console.log('📋 从预构建树提取节点数:', filteredData.length)
+
+    // 统计提取的节点中有 fields 的数量
+    const nodesWithFields = filteredData.filter(n => n.fields && Object.keys(n.fields).length > 0)
+    console.log(`   其中包含 fields 的节点数: ${nodesWithFields.length}`)
+    if (nodesWithFields.length > 0) {
+      console.log('   示例节点:', nodesWithFields[0])
+    }
+  } else {
+    console.warn('⚠️ 没有可用的数据源（rawTreeData 和 builtTreeData 都为空）')
+    filteredData = []
+  }
+
+  // Merge fields into items
+  console.log('🔄 合并 fields 到段落数据...')
+  filteredData.forEach(item => {
+    if (item.line_id !== undefined && fieldsMap.has(item.line_id)) {
+      item.fields = fieldsMap.get(item.line_id)
+      console.log(`  ✓ 合并 fields 到 line_id=${item.line_id}`, item.fields)
+    }
+  })
+
+  // Group by label_level1 and label_level2
+  const paragraphsByLabel = new Map<string, any[]>()
+
+  filteredData.forEach(item => {
+    // 兼容新旧两种标签格式
+    let label = ''
+    if (item.label && typeof item.label === 'string' && item.label.includes('/')) {
+      // 新格式：label = "一级标签/二级标签"，提取二级标签
+      const parts = item.label.split('/')
+      label = parts[parts.length - 1] // 取最后一部分（二级标签）
+    } else {
+      // 旧格式：使用 label_level2 或 label_level1
+      label = item.label_level2 || item.label_level1 || item.label || ''
+    }
+
+    // Skip nodes without valid labels
+    if (!label || label === '无' || label === '未分类' || label === '') return
+
+    if (!paragraphsByLabel.has(label)) {
+      paragraphsByLabel.set(label, [])
+    }
+    paragraphsByLabel.get(label)!.push(item)
+  })
+
+  console.log('📊 按标签分组的段落数:', paragraphsByLabel.size)
+  console.log('📋 实际数据中的标签:', Array.from(paragraphsByLabel.keys()))
+
+  // Extract paragraphs for each matched label (max 3 per label)
+  paragraphsByLabel.forEach((items, labelText) => {
+    const conceptId = labelToConceptMap.get(labelText)
+    if (!conceptId) {
+      console.log(`  ⚠️ 未匹配标签: "${labelText}"`)
+      return
+    }
+
+    console.log(`  ✓ 标签 "${labelText}" → ${items.length} 个段落`)
+
+    // Sort: prioritize items with fields, then take first 3
+    const sortedItems = items.sort((a, b) => {
+      const aHasFields = a.fields && Object.keys(a.fields).length > 0
+      const bHasFields = b.fields && Object.keys(b.fields).length > 0
+      if (aHasFields && !bHasFields) return -1
+      if (!aHasFields && bHasFields) return 1
+      return 0
+    })
+
+    const paragraphsToAdd = sortedItems.slice(0, 3)
+    const withFieldsCount = paragraphsToAdd.filter(item => item.fields && Object.keys(item.fields).length > 0).length
+    console.log(`    → 取前3个 (其中 ${withFieldsCount} 个有fields)`)
+
+    paragraphsToAdd.forEach(item => {
+      const paragraphId = `doc_${item.line_id}`
+      const text = item.text || ''
+      const label = text.length > 5 ? text.substring(0, 5) + '...' : text
+
+      // Add paragraph node
+      if (!nodeIds.has(paragraphId)) {
+        nodes.push({
+          id: paragraphId,
+          label,
+          type: 'doc'
+        })
+        nodeIds.add(paragraphId)
+        paragraphNodesAdded++
+
+        // Add instanceOf edge
+        edges.push({
+          id: `e${edgeIdCounter++}`,
+          source: paragraphId,
+          target: conceptId,
+          label: 'instanceOf'
+        })
+
+        // If item has fields, create field nodes
+        if (item.fields && typeof item.fields === 'object') {
+          const fieldCount = Object.keys(item.fields).length
+          console.log(`      📋 段落 ${item.line_id} 有 ${fieldCount} 个字段:`, item.fields)
+
+          Object.entries(item.fields).forEach(([fieldKey, fieldValue]) => {
+            const fieldId = `field_${item.line_id}_${fieldKey}`
+            const fieldLabel = `${fieldKey}: ${fieldValue}`
+
+            if (!nodeIds.has(fieldId)) {
+              nodes.push({
+                id: fieldId,
+                label: fieldLabel.length > 20 ? fieldLabel.substring(0, 20) + '...' : fieldLabel,
+                type: 'element' // 要素节点
+              })
+              nodeIds.add(fieldId)
+              paragraphNodesAdded++
+
+              console.log(`        ✓ 创建要素节点: ${fieldLabel}`)
+
+              // Add hasAttribute edge from paragraph to field
+              edges.push({
+                id: `e${edgeIdCounter++}`,
+                source: paragraphId,
+                target: fieldId,
+                label: 'hasAttribute'
+              })
+            }
+          })
+        } else {
+          console.log(`      ⚠️ 段落 ${item.line_id} 无 fields 字段`)
+        }
+      }
+    })
+  })
+
+  graphNodes.value = nodes
+  graphEdges.value = edges
+
+  // Count different node types
+  const docNodes = nodes.filter(n => n.type === 'doc').length
+  const elementNodes = nodes.filter(n => n.type === 'element').length
+  const normalNodes = nodes.filter(n => n.type === 'normal').length
+
+  console.log('\n' + '='.repeat(60))
+  console.log('✅ 知识图谱数据生成完成')
+  console.log('  - 概念节点数:', normalNodes)
+  console.log('  - 段落节点数:', docNodes)
+  console.log('  - 要素节点数:', elementNodes, '🩷')
+  console.log('  - 总节点数:', nodes.length)
+  console.log('  - 概念边数:', conceptEdges.length)
+  console.log('  - 实例边数:', edges.length - conceptEdges.length)
+  console.log('  - 总边数:', edges.length)
+}
+
+// 处理图谱节点点击
+const handleNodeClick = (nodeData: { id: string; label: string; type: string }) => {
+  console.log('🎯 图谱节点被点击:', nodeData)
+
+  // 处理文档节点 (doc_xxx)
+  if (nodeData.type === 'doc' && nodeData.id.startsWith('doc_')) {
+    const lineId = parseInt(nodeData.id.replace('doc_', ''))
+    if (!isNaN(lineId)) {
+      selectTreeNode(lineId)
+    }
+    return
+  }
+
+  // 处理要素节点 (field_xxx_xxx)
+  if (nodeData.type === 'element' && nodeData.id.startsWith('field_')) {
+    // field_lineId_fieldKey 格式
+    const parts = nodeData.id.split('_')
+    if (parts.length >= 2) {
+      const lineId = parseInt(parts[1])
+      if (!isNaN(lineId)) {
+        selectTreeNode(lineId)
+      }
+    }
+    return
+  }
+
+  // 处理概念节点：查找连接到它的第一个文档节点
+  if (nodeData.type === 'normal') {
+    console.log('🏷️ 概念节点，查找关联的文档节点...')
+
+    // 在图谱边中查找以该概念为 target 的 instanceOf 边
+    const relatedEdges = graphEdges.value.filter(edge => edge.target === nodeData.id && edge.label === 'instanceOf')
+
+    console.log(`  找到 ${relatedEdges.length} 个关联边`)
+
+    if (relatedEdges.length > 0) {
+      // 获取第一个文档节点的 ID
+      const firstDocId = relatedEdges[0].source
+      console.log(`  跳转到第一个文档节点: ${firstDocId}`)
+
+      // 提取 line_id 并跳转
+      if (firstDocId.startsWith('doc_')) {
+        const lineId = parseInt(firstDocId.replace('doc_', ''))
+        if (!isNaN(lineId)) {
+          selectTreeNode(lineId)
+          return
+        }
+      }
+    }
+
+    console.log('  ⚠️ 未找到关联的文档节点')
+  }
+}
+
+// 处理图谱边点击
+const handleEdgeClick = (edgeData: { id: string; source: string; target: string; label: string }) => {
+  console.log('🔗 图谱边被点击:', edgeData)
+}
+
+// 处理段落点击
+const handleParagraphClick = async (paragraphIds: number[]) => {
+  console.log('📄 点击段落，line_ids:', paragraphIds)
+
+  if (!paragraphIds || paragraphIds.length === 0) {
+    console.warn('❌ 段落 IDs 为空')
+    return
+  }
+
+  try {
+    // 从 nodeMap 中获取所有段落行的信息
+    const paragraphNodes = paragraphIds.map(id => nodeMap.value[id]).filter(node => node) // 过滤掉不存在的节点
+
+    if (paragraphNodes.length === 0) {
+      console.warn('❌ 未找到段落节点')
+      return
+    }
+
+    console.log('✅ 找到段落节点:', paragraphNodes)
+
+    // 收集所有的 boxes
+    const allBoxes: any[] = []
+    paragraphNodes.forEach(node => {
+      if (node.box) {
+        allBoxes.push({
+          page: node.page,
+          box: node.box
+        })
+      }
+    })
+
+    if (allBoxes.length === 0) {
+      console.warn('❌ 段落没有 box 信息')
+      return
+    }
+
+    // 跳转到第一个 box 所在的页面
+    const firstBox = allBoxes[0]
+    const pageNum = firstBox.page + 1
+    pdfData.currentPage = pageNum
+
+    // 合并所有的 boxes 并高亮
+    const mergedBoxes = mergeBoxesByColumn(allBoxes.map(b => b.box))
+    const allQuadPoints = mergedBoxes.flatMap((box: number[]) => boxToQuadPoints(box))
+
+    // 创建高亮对象
+    const highlightData = {
+      pageNum: pageNum,
+      rect: firstBox.box,
+      quadPoints: allQuadPoints,
+      needsConversion: true,
+      jump: true
+    }
+
+    // 更新 PDF 高亮区域
+    pdfData.highlightRects = [highlightData]
+
+    // 跳转并高亮
+    if (pdfReaderRef.value?.scrollToAnnotation) {
+      await nextTick()
+      await pdfReaderRef.value.scrollToAnnotation(highlightData)
+      console.log('✅ 已跳转到段落位置并高亮')
+    }
+  } catch (error) {
+    console.error('❌ 段落跳转失败:', error)
+  }
+}
+
+// 通过ID查找节点（递归查找包括子节点）
+const findNodeById = (nodes: any[], id: number): any => {
+  for (const node of nodes) {
+    if (node.line_id === id) return node
+
+    // 递归查找子节点
+    if (node.children && node.children.length > 0) {
+      const found = findNodeById(node.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+// 处理树节点选择（兼容旧接口）
+const handleTreeNodeSelect = (node: any) => {
+  if (!node) return
+  activeItem.value = node
+  handleReviewItemClick(node)
+}
+
 // 设置筛选条件
 const setActiveFilter = (filterKey: number | null) => {
   state.activeFilter = filterKey
@@ -1361,8 +2749,88 @@ const confirmLeave = () => {
   }
 }
 
+// 加载标签层级配置
+const loadLabelHierarchy = async () => {
+  try {
+    const hierarchyUrl = `${import.meta.env.BASE_URL}hrdoc/label/label_hierarchy.json`
+    const response = await fetch(hierarchyUrl)
+    if (response.ok) {
+      const data = await response.json()
+      if (data.hierarchy && Array.isArray(data.hierarchy)) {
+        labelHierarchy.value = data.hierarchy
+
+        // 构建顺序映射表（索引越小，优先级越高）
+        const orderMap = new Map<string, number>()
+        data.hierarchy.forEach((item: any, index: number) => {
+          // 一级标签
+          orderMap.set(item.label, index * 1000) // 用1000的倍数，为二级标签留出空间
+
+          // 二级标签
+          if (item.children && Array.isArray(item.children)) {
+            item.children.forEach((child: string, childIndex: number) => {
+              orderMap.set(child, index * 1000 + childIndex + 1)
+            })
+          }
+        })
+
+        labelOrderMap.value = orderMap
+        console.log(
+          '✅ 标签层级配置加载成功，一级标签数:',
+          data.total_first_level,
+          '二级标签数:',
+          data.total_second_level
+        )
+        console.log('📋 标签顺序映射表:', Array.from(orderMap.entries()))
+      }
+    } else {
+      console.warn('⚠️ 未找到 label_hierarchy.json，将使用默认排序')
+    }
+  } catch (error) {
+    console.warn('⚠️ 加载标签层级配置失败，将使用默认排序:', error)
+  }
+}
+
+// 对树节点按照 hierarchy 顺序排序（可用于预构建树和客户端构建树）
+const sortTreeByHierarchy = (treeNodes: any[]) => {
+  if (!treeNodes || treeNodes.length === 0 || labelOrderMap.value.size === 0) {
+    return treeNodes
+  }
+
+  // 排序一级标签
+  treeNodes.sort((a, b) => {
+    const orderA = labelOrderMap.value.get(a.label_level1 || a.text) ?? 999999
+    const orderB = labelOrderMap.value.get(b.label_level1 || b.text) ?? 999999
+    return orderA - orderB
+  })
+
+  // 排序每个一级标签下的二级标签
+  treeNodes.forEach(level1Node => {
+    if (level1Node.children && level1Node.children.length > 0) {
+      // 过滤出二级标签节点
+      const level2Nodes = level1Node.children.filter((child: any) => child.class === 'label-group-2')
+      const otherChildren = level1Node.children.filter((child: any) => child.class !== 'label-group-2')
+
+      // 排序二级标签
+      level2Nodes.sort((a: any, b: any) => {
+        const orderA = labelOrderMap.value.get(a.label_level2 || a.text) ?? 999999
+        const orderB = labelOrderMap.value.get(b.label_level2 || b.text) ?? 999999
+        return orderA - orderB
+      })
+
+      // 重新组合：二级标签 + 其他子节点
+      level1Node.children = [...level2Nodes, ...otherChildren]
+    }
+  })
+
+  console.log('📊 已按照 hierarchy 顺序排序树节点')
+  return treeNodes
+}
+
 // 页面挂载后初始化数据
 onMounted(async () => {
+  // 加载标签层级配置
+  await loadLabelHierarchy()
+
   // 仅使用地址栏中的 taskId，不再从 taskList.json 回退
   taskId.value = (route.query.taskId as string) || ''
   refreshData()
@@ -1472,6 +2940,55 @@ onBeforeUnmount(() => {
   flex: 1;
   min-width: 860px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+
+  .pdf-header-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 24px;
+    border-bottom: 1px solid var(--line-2);
+    background: white;
+    flex-shrink: 0;
+
+    .nav-buttons {
+      display: flex;
+      gap: 16px;
+
+      .nav-btn {
+        display: flex;
+        align-items: center;
+
+        &.back-btn {
+          padding: 8px 16px;
+          border: 1px solid var(--line-3);
+          border-radius: 4px;
+
+          .icon {
+            margin-right: 8px;
+          }
+        }
+
+        &.history-btn {
+          padding: 8px 16px;
+          border: 1px solid var(--line-3);
+          border-radius: 4px;
+
+          .icon {
+            margin-right: 8px;
+          }
+        }
+      }
+    }
+
+    .file-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+
   .pdf-placeholder {
     height: 100%;
     display: flex;
@@ -1541,8 +3058,12 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px;
-    font-size: 16px;
+    padding: 11px 24px;
+    border-bottom: 1px solid var(--line-2);
+    background: white;
+    font-size: 14px;
+    line-height: 22px;
+    min-height: 55px;
     .statistics {
       font-size: 14px;
       .num {
@@ -1651,6 +3172,19 @@ onBeforeUnmount(() => {
   }
 
   .review-items {
+    &.tree-view {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+
+      .tree-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+    }
+
     .skeleton-title-bar,
     .item-title-bar {
       display: flex;
@@ -1782,6 +3316,5 @@ onBeforeUnmount(() => {
   text-align: left;
   padding: 0 8px;
 }
-
 </style>
 
