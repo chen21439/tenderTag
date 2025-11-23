@@ -89,36 +89,42 @@ HEADING_RECOGNITION_PROMPT = """请识别这张文档图片中的标题层级。
 ```"""
 
 
-# 文档布局分析提示词（多页）
-DOCUMENT_LAYOUT_ANALYSIS_PROMPT = """你是一个专业的文档结构分析专家。我会给你多张文档页面的截图。
+# 文档行级标签分类提示词
+DOCUMENT_LINE_TAGGING_PROMPT = """你是一个专业的文档结构分析专家。你的任务是对文档中的每一行文本进行标签分类。
+
+标签类型说明：
+- Caption: 标题（章节标题、小标题等）
+- Para-Line: 段落行（正文内容）
+- First-Line: 段落首行（段落的第一行，通常有缩进）
+- List-Item: 列表项（带编号或符号的列表）
+- Table-Cell: 表格单元格
+- Header: 页眉
+- Footer: 页脚
+- Other: 其他类型
 
 {page_descriptions}
 
-请分析这些页面的布局和结构，包括：
-1. 每个页面的主要内容类型（标题页、目录、正文、表格、附录等）
-2. 页面的整体布局结构（标题、段落、列表、表格等元素的分布）
-3. 各页面之间的逻辑关系和连贯性
-4. 特殊的排版特征（居中、缩进、编号等）
+现在的输入图片为：<这里放入页面图片>
+对应的行数据 JSON 为：
+{json_data}
 
-请以JSON格式输出分析结果，格式如下：
+请根据上述要求，对每个 line_id 进行分类，并按指定 JSON 格式输出。
+
+示例输出（只是格式示例，内容不代表真实预测）：
 ```json
-{
-  "pages": [
-    {
-      "page_number": 页码,
-      "content_type": "页面类型",
-      "layout": {
-        "has_title": true/false,
-        "has_table": true/false,
-        "has_list": true/false,
-        "structure": "布局描述"
-      },
-      "key_elements": ["关键元素1", "关键元素2"]
-    }
-  ],
-  "document_structure": "整体文档结构描述"
-}
-```"""
+[
+  {{"line_id": 834, "label": "Caption"}},
+  {{"line_id": 835, "label": "Para-Line"}},
+  {{"line_id": 836, "label": "First-Line"}}
+]
+```
+
+注意：
+1. 必须为每个 line_id 分配一个标签
+2. 输出必须是 JSON 数组格式
+3. 使用 ```json 代码块包裹输出
+4. 不要输出任何解释性文字，只输出 JSON 数组
+"""
 
 
 def build_custom_prompt(

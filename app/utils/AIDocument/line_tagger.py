@@ -37,7 +37,8 @@ def tag_document_batch(
     lines_data: List[Dict[str, Any]],
     prompt_template: str,
     temperature: float = 0.000001,
-    verbose: bool = False
+    verbose: bool = False,
+    save_response: bool = False
 ) -> List[Dict[str, str]]:
     """
     对多页文档进行行级标签分类（批量处理）
@@ -78,6 +79,12 @@ def tag_document_batch(
         verbose=verbose
     )
 
+    # 保存原始响应用于调试
+    if save_response or verbose:
+        response_preview = response[:500] + "..." if len(response) > 500 else response
+        if verbose:
+            print(f"[API响应预览] {response_preview}")
+
     # 解析 JSON 响应
     if "```json" in response:
         json_str = response.split("```json")[1].split("```")[0].strip()
@@ -89,9 +96,33 @@ def tag_document_batch(
     else:
         json_str = response.strip()
 
-    result = json.loads(json_str)
+    try:
+        result = json.loads(json_str)
+        return result
+    except json.JSONDecodeError as e:
+        # JSON 解析失败，尝试修复常见问题
+        if verbose:
+            print(f"[JSONDecodeError] 原始错误: {e}")
+            print(f"[JSONDecodeError] 尝试修复...")
 
-    return result
+        # 尝试修复：移除多余的逗号、修复引号等
+        import re
+
+        # 1. 移除尾部多余的逗号（如 "label": "Title", } 改为 "label": "Title" }）
+        json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
+
+        # 2. 尝试重新解析
+        try:
+            result = json.loads(json_str)
+            if verbose:
+                print(f"[JSONDecodeError] 修复成功")
+            return result
+        except json.JSONDecodeError as e2:
+            # 修复失败，抛出详细错误信息
+            error_msg = f"JSON解析失败: {e2}\n错误位置附近的内容:\n{json_str[max(0, e2.pos-100):min(len(json_str), e2.pos+100)]}"
+            if verbose:
+                print(f"[JSONDecodeError] {error_msg}")
+            raise ValueError(error_msg)
 
 
 def tag_document_pages(
@@ -456,7 +487,7 @@ if __name__ == "__main__":
     # 方式1：处理前3页（快速测试）
     results = process_document_by_name(
         doc_name=doc_name,
-        batch_size=5,
+        batch_size=3,
         max_pages=10,
         verbose=True
     )
