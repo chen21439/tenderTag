@@ -67,6 +67,10 @@
               <a-radio-button value="label">业务语义结构树</a-radio-button>
               <a-radio-button value="original">采购标签图谱</a-radio-button>
             </a-radio-group>
+            <!-- 调试按钮（仅在开发环境显示） -->
+            <a-button v-if="showDebugButtons" size="small" @click="debugMode = !debugMode">
+              {{ debugMode ? '关闭调试' : '开启调试' }}
+            </a-button>
           </div>
         </div>
 
@@ -223,6 +227,8 @@ const viewMode = ref<'result' | 'search'>('result')
 const treeGroupMode = ref<'original' | 'label'>('label') // 默认按标签分组
 // 调试模式（加载固定的调试文件）
 const debugMode = ref(false)
+// 是否显示调试按钮（从环境变量读取）
+const showDebugButtons = import.meta.env.VITE_APP_SHOW_DEBUG_BUTTONS === 'true' || import.meta.env.VITE_APP_SHOW_DEBUG_BUTTONS === true
 // 开发模式（显示未匹配数据）
 const isDevMode = ref(false)
 // 未匹配的数据

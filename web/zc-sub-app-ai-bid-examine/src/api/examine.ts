@@ -82,12 +82,11 @@ export const apiTaskList = (
 })
 
 /**
- * 删除审查任务
+ * 删除审查任务（同时删除数据库记录和文件）
  */
 export const apiTaskDelete = (data: { taskId: string }) => http({
-  url: '/compliance/v1/task/delete',
-  method: 'post',
-  data
+  url: `/python/api/pdf/task/${data.taskId}`,
+  method: 'delete'
 }) 
 /**
  * 开始审查
@@ -302,12 +301,11 @@ export const ruleStatistics = () => http({
 })
 
 /**
- * 根据任务ID获取md信息
+ * 根据任务ID获取md信息（新接口：从文件系统读取 model）
  */
 export const taskMarkDownDetail = (data: { taskId: string }) => http({
-  url: '/compliance/v1/task/markDownDetail',
-  method: 'post',
-  data
+  url: `/python/api/pdf/task/${data.taskId}/result?result_type=model`,
+  method: 'get'
 })
 
 /**

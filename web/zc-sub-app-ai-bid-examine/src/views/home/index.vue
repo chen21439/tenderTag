@@ -202,7 +202,7 @@ import { Trash,  FileSearch, ArrowDownToLine, CircleAlert } from 'lucide-vue-nex
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useTable } from '@/hooks/use-table'
-import {apiTaskCreate, apiTaskDelete} from '@/api/examine'
+import {apiTaskCreate, apiTaskDelete, apiTaskList} from '@/api/examine'
 import { customDocumentBundleExport } from '@/api/download'
 import { getFileIcon, getStatusIcon } from '@/views/hooks/examine'
 import { usePolling } from '@/hooks/use-polling'
@@ -296,6 +296,8 @@ async function handleStartReview() {
     const json = await resp.json().catch(() => ({}))
     if (resp.ok && (json?.success !== false)) {
       message.success('PDF上传成功')
+      // 清空文件列表
+      fileList.value = []
       restart()
       // 如需跳转审查页：
       // if (json?.task_id) router.push({ name: 'ComplianceReview', query: { taskId: json.task_id } })
@@ -320,9 +322,9 @@ const { state,getTableData, refresh } = useTable({
   },
 
   // API 函数
-  getList: async () => {
-    const response = await fetch(`${import.meta.env.BASE_URL}hrdoc/page.json`)
-    return await response.json()
+  getList: async (params: any) => {
+    const { err, data } = await apiTaskList(params)
+    return { err, data }
   },
   // 启用功能
   usePagination: false,

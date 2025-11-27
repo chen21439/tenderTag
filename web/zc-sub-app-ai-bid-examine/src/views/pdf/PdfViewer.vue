@@ -708,8 +708,21 @@ const drawHighlightAnimation = async (pageNum: number, annotationData: any) => {
   if (quadPoints && Array.isArray(quadPoints) && quadPoints.length >= 8) {
     // quadPoints 格式：[x1,y1, x2,y2, x3,y3, x4,y4, ...]
     // 每8个点表示一个矩形（可能有多个矩形，表示多行文本）
+    console.log(`🎨 [Page ${pageNum}] 开始绘制高亮框:`, {
+      quadPoints: quadPoints,
+      页面高度: viewport.height,
+      缩放比例: scale.value
+    })
+
     for (let i = 0; i < quadPoints.length; i += 8) {
       const [x1, y1, x2, y2, x3, y3, x4, y4] = quadPoints.slice(i, i + 8)
+
+      console.log(`  📍 矩形 ${i/8}: PDF坐标(BOTTOMLEFT):`, {
+        点1_左下: `(${x1}, ${y1})`,
+        点2_右下: `(${x2}, ${y2})`,
+        点3_右上: `(${x3}, ${y3})`,
+        点4_左上: `(${x4}, ${y4})`
+      })
 
       // 转换为 Canvas 坐标
       const [cx1, cy1] = viewport.convertToViewportPoint(x1, y1)
@@ -717,20 +730,35 @@ const drawHighlightAnimation = async (pageNum: number, annotationData: any) => {
       const [cx3, cy3] = viewport.convertToViewportPoint(x3, y3)
       const [cx4, cy4] = viewport.convertToViewportPoint(x4, y4)
 
+      console.log(`  🖼️ 矩形 ${i/8}: Canvas坐标(TOPLEFT):`, {
+        点1: `(${cx1.toFixed(1)}, ${cy1.toFixed(1)})`,
+        点2: `(${cx2.toFixed(1)}, ${cy2.toFixed(1)})`,
+        点3: `(${cx3.toFixed(1)}, ${cy3.toFixed(1)})`,
+        点4: `(${cx4.toFixed(1)}, ${cy4.toFixed(1)})`
+      })
+
       // 计算矩形的边界
       const minX = Math.min(cx1, cx2, cx3, cx4)
       const maxX = Math.max(cx1, cx2, cx3, cx4)
       const minY = Math.min(cy1, cy2, cy3, cy4)
       const maxY = Math.max(cy1, cy2, cy3, cy4)
 
-      highlightRegions.push({
+      const region = {
         x: minX,
         y: minY,
         width: maxX - minX,
         height: maxY - minY
+      }
+
+      console.log(`  ✅ 矩形 ${i/8}: 最终绘制区域:`, {
+        x: region.x.toFixed(1),
+        y: region.y.toFixed(1),
+        width: region.width.toFixed(1),
+        height: region.height.toFixed(1)
       })
+
+      highlightRegions.push(region)
     }
-    console.log('使用 quadPoints 绘制高亮:', { pageNum, quadPoints, regions: highlightRegions })
   }
   // 回退到 rect（简单矩形）
   else if (rect && Array.isArray(rect) && rect.length === 4) {
