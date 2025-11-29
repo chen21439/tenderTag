@@ -1807,7 +1807,8 @@ const loadJsonFiles = async (taskId: string) => {
         pid: n.pid,
         label: n.label,
         fields: n.fields,
-        title: n.title
+        title: n.title,
+        location: n.location // 检查 location 信息
       })))
 
       // 只在子节点有标签的时候展开
@@ -2417,6 +2418,21 @@ const buildGraphData = async () => {
   nodes.push(...fieldNodes)
   edges.push(...fieldEdges)
 
+  // 🔍 检查传递给 Cytoscape 的节点数据是否包含 location
+  console.log(`\n🔍 检查传递给 Cytoscape 的前3个要素节点:`)
+  const fieldNodesInGraph = nodes.filter(n => n.type === 'element').slice(0, 3)
+  fieldNodesInGraph.forEach((node, index) => {
+    const nodeData = node as any // 类型断言
+    console.log(`  节点 ${index + 1}:`, {
+      id: nodeData.id,
+      label: nodeData.label,
+      type: nodeData.type,
+      pid: nodeData.pid,
+      hasLocation: !!nodeData.location,
+      locationLength: nodeData.location?.length
+    })
+  })
+
   // 节点已经在前面添加好了，这里不需要再添加
   console.log(`📊 最终节点数: ${nodes.length} (概念节点 + 要素节点)`)
 
@@ -2667,31 +2683,30 @@ const handleNodeClick = (nodeData: { id: string; label: string; type: string }) 
 
   // 处理要素节点 (field_pid_fieldKey)
   if (nodeData.type === 'element' && nodeData.id.startsWith('field_')) {
-    console.log('🏷️ 要素节点被点击，查找对应的段落节点...')
+    console.log('🏷️ 要素节点被点击，直接使用节点的 location 信息...')
+    console.log('  - nodeData:', nodeData)
 
-    // field_pid_fieldKey 格式，提取 pid
-    const parts = nodeData.id.split('_')
-    if (parts.length >= 3) {
-      const pid = parts.slice(1, -1).join('_') // 支持 pid 中包含下划线的情况
-      console.log(`  - 提取的 pid: ${pid}`)
+    // 直接从节点数据中读取 location（已在 fieldNodesBuilder 中保存）
+    const fieldNodeData = nodeData as any // 类型断言，因为要素节点包含额外的字段
+    if (fieldNodeData.location && fieldNodeData.location.length > 0) {
+      const firstLocation = fieldNodeData.location[0]
+      console.log(`  - 找到位置信息:`, firstLocation)
 
-      // 从 structuredData 中查找对应的节点
-      if (structuredData.value && Array.isArray(structuredData.value)) {
-        const targetNode = structuredData.value.find((item: any) => item.pid === pid)
-        if (targetNode && targetNode.location && targetNode.location.length > 0) {
-          const firstLocation = targetNode.location[0]
-          console.log(`  - 找到位置信息:`, firstLocation)
-
-          // 调用 PDF 跳转
-          if (pdfReaderRef.value && firstLocation.page) {
-            const rect = [firstLocation.l, firstLocation.t, firstLocation.r, firstLocation.b]
-            pdfReaderRef.value.scrollToAnnotation(firstLocation.page, rect, true)
-            console.log(`  ✓ 跳转到 PDF 第 ${firstLocation.page} 页`)
-          }
-        } else {
-          console.log(`  ⚠️ 未找到 pid=${pid} 的位置信息`)
-        }
+      // 调用 PDF 跳转
+      if (pdfReaderRef.value && firstLocation.page) {
+        const rect = [firstLocation.l, firstLocation.t, firstLocation.r, firstLocation.b]
+        // scrollToAnnotation 期望接收一个对象参数：{pageNum, rect, needsConversion}
+        pdfReaderRef.value.scrollToAnnotation({
+          pageNum: firstLocation.page,
+          rect: rect,
+          needsConversion: true
+        })
+        console.log(`  ✓ 跳转到 PDF 第 ${firstLocation.page} 页`)
+      } else {
+        console.log(`  ⚠️ location 缺少 page 信息:`, firstLocation)
       }
+    } else {
+      console.log(`  ⚠️ 节点缺少 location 信息，pid: ${fieldNodeData.pid}`)
     }
     return
   }

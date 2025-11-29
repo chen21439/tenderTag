@@ -226,11 +226,8 @@ const bindEvents = () => {
     // Highlight children of clicked node
     highlightNodeChildren(nodeId)
 
-    emit('node-click', {
-      id: nodeId,
-      label: node.data('label'),
-      type: node.data('type')
-    })
+    // 传递完整的节点数据（包括 location、pid 等自定义字段）
+    emit('node-click', node.data())
   })
 
   // Click on background to clear highlights
@@ -421,7 +418,7 @@ const updateGraph = () => {
   const elements: ElementDefinition[] = [
     ...data.nodes.map(node => ({
       data: {
-        id: node.id,
+        ...node, // 保留所有原始字段（包括 location, pid 等）
         label: node.label || node.id,
         type: node.type || 'default'
       }
