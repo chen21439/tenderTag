@@ -1,0 +1,531 @@
+<template>
+  <div class="cytoscape-wrapper">
+    <div class="cytoscape-container" ref="cytoscapeRef"></div>
+
+    <!-- 控制按钮 -->
+    <div class="control-panel">
+      <GraphControls
+        @reset="resetLayout"
+        @fit="fitView"
+        @zoomIn="zoomIn"
+        @zoomOut="zoomOut"
+      />
+    </div>
+
+    <div v-if="selectedNodeId" class="legend-panel">
+      <div class="legend-title">图例</div>
+      <div class="legend-item">
+        <span class="legend-box legend-parent"></span>
+        <span class="legend-text">父节点</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-box legend-child"></span>
+        <span class="legend-text">子节点</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import cytoscape, { type Core, type ElementDefinition } from 'cytoscape'
+import { getGraphData, getConceptNodes, getConceptEdges } from '@/components/knowledge-graph/graphData'
+import { getGraphStyles } from '@/components/knowledge-graph/graphStyles'
+import GraphControls from '@/components/knowledge-graph/GraphControls.vue'
+
+defineOptions({
+  name: 'CytoscapeComponent'
+})
+
+interface Props {
+  nodes?: Array<{ id: string; label?: string; type?: string }>
+  edges?: Array<{ id: string; source: string; target: string; label?: string }>
+  layout?: string
+  useSampleData?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  nodes: () => [],
+  edges: () => [],
+  layout: 'cose',
+  useSampleData: true
+})
+
+const emit = defineEmits(['node-click', 'edge-click', 'node-hover'])
+
+const cytoscapeRef = ref<HTMLElement | null>(null)
+let cy: Core | null = null
+const selectedNodeId = ref<string | null>(null) // Currently selected node
+
+// Load concept data from ontology.json (with inferred edges from sameAs)
+const conceptDataCache = ref<{ nodes: any[]; edges: any[] } | null>(null)
+
+const loadConceptData = async () => {
+  if (!conceptDataCache.value) {
+    conceptDataCache.value = await getGraphData()
+  }
+  return conceptDataCache.value
+}
+
+// Generate sample instance nodes (dynamic - for testing)
+const getSampleInstanceNodes = () => {
+  return [
+    { id: '文本片段1', label: '文本片段1', type: 'doc' },
+    { id: '文本片段2', label: '文本片段2', type: 'doc' },
+    { id: '文本片段3', label: '文本片段3', type: 'doc' },
+    { id: '文本片段4', label: '文本片段4', type: 'doc' },
+    { id: '文本片段5', label: '文本片段5', type: 'doc' },
+    { id: '文本片段6', label: '文本片段6', type: 'doc' },
+    { id: '文本片段7', label: '文本片段7', type: 'doc' },
+    { id: '文本片段8', label: '文本片段8', type: 'doc' },
+    { id: '文本片段9', label: '文本片段9', type: 'doc' },
+    { id: '文本片段10', label: '文本片段10', type: 'doc' },
+    { id: '文本片段11', label: '文本片段11', type: 'doc' },
+    { id: '文本片段12', label: '文本片段12', type: 'doc' },
+    { id: '文本片段13', label: '文本片段13', type: 'doc' },
+    { id: '文本片段14', label: '文本片段14', type: 'doc' },
+    { id: '文本片段15', label: '文本片段15', type: 'doc' },
+    { id: '文本片段16', label: '文本片段16', type: 'doc' },
+    { id: '文本片段17', label: '文本片段17', type: 'doc' },
+    { id: '文本片段18', label: '文本片段18', type: 'doc' },
+    { id: '文本片段19', label: '文本片段19', type: 'doc' },
+    { id: '补充说明1', label: '补充说明1', type: 'supplement' },
+    { id: '补充说明2', label: '补充说明2', type: 'supplement' },
+    { id: '补充说明3', label: '补充说明3', type: 'supplement' }
+  ]
+}
+
+// Generate sample instance edges (dynamic - for testing)
+const getSampleInstanceEdges = () => {
+  return [
+    // supplement nodes attach to tables
+    { id: 'e27', source: '补充说明1', target: '商务要求表', label: 'attachedTo' },
+    { id: 'e28', source: '补充说明2', target: '技术要求表', label: 'attachedTo' },
+    { id: 'e29', source: '补充说明3', target: '评标信息表', label: 'attachedTo' },
+    // doc nodes are instances of concepts
+    { id: 'e30', source: '文本片段1', target: '项目基本信息', label: 'instanceOf' },
+    { id: 'e31', source: '文本片段2', target: '投标人须知', label: 'instanceOf' },
+    { id: 'e32', source: '文本片段3', target: '商务要求', label: 'instanceOf' },
+    { id: 'e33', source: '文本片段4', target: '技术要求', label: 'instanceOf' },
+    { id: 'e34', source: '文本片段5', target: '资格要求', label: 'instanceOf' },
+    { id: 'e35', source: '文本片段6', target: '符合性要求', label: 'instanceOf' },
+    { id: 'e36', source: '文本片段7', target: '评标信息', label: 'instanceOf' },
+    { id: 'e37', source: '文本片段8', target: '评标信息表', label: 'instanceOf' },
+    { id: 'e38', source: '文本片段9', target: '商务要求表', label: 'instanceOf' },
+    { id: 'e39', source: '文本片段10', target: '技术要求表', label: 'instanceOf' },
+    { id: 'e40', source: '文本片段11', target: '资格性审查表', label: 'instanceOf' },
+    { id: 'e41', source: '文本片段12', target: '符合性审查表', label: 'instanceOf' },
+    { id: 'e42', source: '文本片段13', target: '评标方法', label: 'instanceOf' },
+    { id: 'e43', source: '文本片段14', target: '商务要求项', label: 'instanceOf' },
+    { id: 'e44', source: '文本片段15', target: '技术要求项', label: 'instanceOf' },
+    { id: 'e45', source: '文本片段16', target: '资格性审查项', label: 'instanceOf' },
+    { id: 'e46', source: '文本片段17', target: '符合性审查项', label: 'instanceOf' },
+    { id: 'e47', source: '文本片段18', target: '评标信息项', label: 'instanceOf' },
+    { id: 'e48', source: '文本片段19', target: '补充说明', label: 'instanceOf' },
+    { id: 'e49', source: '文本片段1', target: '文本片段2', label: 'referTo' }
+  ]
+}
+
+// Sample graph data with concept nodes loaded from ontology.json
+const sampleGraphData = ref<{ nodes: any[]; edges: any[] }>({ nodes: [], edges: [] })
+
+const loadSampleGraphData = async () => {
+  const conceptData = await loadConceptData()
+  sampleGraphData.value = {
+    nodes: [...conceptData.nodes, ...getSampleInstanceNodes()],
+    edges: [...conceptData.edges, ...getSampleInstanceEdges()]
+  }
+}
+
+// Computed graph data
+const graphData = computed(() => {
+  if (props.useSampleData) {
+    return sampleGraphData.value
+  }
+  return {
+    nodes: props.nodes,
+    edges: props.edges
+  }
+})
+
+const initCytoscape = () => {
+  if (!cytoscapeRef.value) return
+
+  const data = graphData.value
+  const elements: ElementDefinition[] = [
+    ...data.nodes.map(node => ({
+      data: {
+        id: node.id,
+        label: node.label || node.id,
+        type: node.type || 'default',
+        level: node.level // 添加 level 属性
+      }
+    })),
+    ...data.edges.map(edge => ({
+      data: {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label || ''
+      }
+    }))
+  ]
+
+  cy = cytoscape({
+    container: cytoscapeRef.value,
+    elements,
+    style: getGraphStyles(),
+    layout: {
+      name: props.layout,
+      animate: true,
+      animationDuration: 500,
+      animationEasing: 'ease-out',
+      nodeRepulsion: 8000,
+      idealEdgeLength: 100,
+      edgeElasticity: 100,
+      nestingFactor: 5,
+      gravity: 80,
+      numIter: 1000,
+      initialTemp: 200,
+      coolingFactor: 0.95,
+      minTemp: 1.0
+    },
+    minZoom: 0.3,
+    maxZoom: 3,
+    wheelSensitivity: 0.2
+  })
+
+  bindEvents()
+}
+
+const bindEvents = () => {
+  if (!cy) return
+
+  cy.on('tap', 'node', event => {
+    const node = event.target
+    const nodeId = node.data('id')
+
+    // Highlight children of clicked node
+    highlightNodeChildren(nodeId)
+
+    emit('node-click', {
+      id: nodeId,
+      label: node.data('label'),
+      type: node.data('type')
+    })
+  })
+
+  // Click on background to clear highlights
+  cy.on('tap', event => {
+    if (event.target === cy) {
+      clearHighlights()
+    }
+  })
+
+  cy.on('tap', 'edge', event => {
+    const edge = event.target
+    emit('edge-click', {
+      id: edge.data('id'),
+      source: edge.data('source'),
+      target: edge.data('target'),
+      label: edge.data('label')
+    })
+  })
+
+  cy.on('mouseover', 'node', event => {
+    const node = event.target
+    emit('node-hover', {
+      id: node.data('id'),
+      label: node.data('label'),
+      type: node.data('type')
+    })
+  })
+}
+
+// Highlight parent and child nodes of selected node
+const highlightNodeChildren = (nodeId: string) => {
+  if (!cy) return
+
+  // Clear previous highlights
+  clearHighlights()
+
+  selectedNodeId.value = nodeId
+  const data = graphData.value
+
+  const parentNodeIds = new Set<string>()
+  const childNodeIds = new Set<string>()
+  const relatedEdges: string[] = []
+
+  // Process all edges to find parents and children
+  // Direction depends on edge type:
+  // - instanceOf: source (instance) -> target (concept), so source is child, target is parent
+  // - hasField: source (paragraph) -> target (field), so source is parent, target is child
+  // - hasPart/hasMember: source (whole) -> target (part), so source is parent, target is child
+  data.edges.forEach(edge => {
+    const isInstanceOf = edge.label === 'instanceOf'
+
+    if (edge.source === nodeId) {
+      // This node is source
+      if (isInstanceOf) {
+        // For instanceOf: source is child (instance), target is parent (concept)
+        parentNodeIds.add(edge.target)
+      } else {
+        // For hasPart/hasMember/hasField/etc: source is parent, target is child
+        childNodeIds.add(edge.target)
+      }
+      relatedEdges.push(edge.id)
+    } else if (edge.target === nodeId) {
+      // This node is target
+      if (isInstanceOf) {
+        // For instanceOf: target is parent (concept), source is child (instance)
+        childNodeIds.add(edge.source)
+      } else {
+        // For hasPart/hasMember/hasField/etc: target is child, source is parent
+        parentNodeIds.add(edge.source)
+      }
+      relatedEdges.push(edge.id)
+    }
+  })
+
+  console.log(`🎯 Selected node: ${nodeId}`)
+  console.log(`   ⬆️  ${parentNodeIds.size} parent(s):`, Array.from(parentNodeIds))
+  console.log(`   ⬇️  ${childNodeIds.size} child(ren):`, Array.from(childNodeIds))
+
+  // Dim all nodes and edges
+  cy.nodes().addClass('dimmed')
+  cy.edges().addClass('dimmed')
+
+  // Highlight selected node (remove dimming)
+  const selectedNode = cy.getElementById(nodeId)
+  selectedNode.removeClass('dimmed')
+
+  // Highlight parent nodes (different style from children)
+  parentNodeIds.forEach(parentId => {
+    const parentNode = cy.getElementById(parentId)
+    if (parentNode.length > 0) {
+      parentNode.removeClass('dimmed')
+      parentNode.addClass('highlighted-parent')
+    }
+  })
+
+  // Highlight child nodes
+  childNodeIds.forEach(childId => {
+    const childNode = cy.getElementById(childId)
+    if (childNode.length > 0) {
+      childNode.removeClass('dimmed')
+      childNode.addClass('highlighted-child')
+    }
+  })
+
+  // Highlight related edges
+  relatedEdges.forEach(edgeId => {
+    const edgeElement = cy.getElementById(edgeId)
+    if (edgeElement.length > 0) {
+      edgeElement.removeClass('dimmed')
+      edgeElement.addClass('highlighted')
+    }
+  })
+}
+
+// Clear all highlights
+const clearHighlights = () => {
+  if (!cy) return
+
+  selectedNodeId.value = null
+
+  // Remove all highlight classes
+  cy.nodes().removeClass('dimmed highlighted-parent highlighted-child')
+  cy.edges().removeClass('dimmed highlighted')
+
+  console.log('✨ Cleared all highlights')
+}
+
+const resetLayout = () => {
+  if (!cy) return
+
+  const layout = cy.layout({
+    name: props.layout,
+    animate: true,
+    animationDuration: 500,
+    animationEasing: 'ease-out',
+    nodeRepulsion: 8000,
+    idealEdgeLength: 100,
+    edgeElasticity: 100,
+    nestingFactor: 5,
+    gravity: 80,
+    numIter: 1000,
+    initialTemp: 200,
+    coolingFactor: 0.95,
+    minTemp: 1.0
+  })
+
+  layout.run()
+}
+
+const fitView = () => {
+  if (!cy) return
+  cy.fit(undefined, 50)
+}
+
+const zoomIn = () => {
+  if (!cy) return
+  cy.zoom({
+    level: cy.zoom() * 1.2,
+    renderedPosition: {
+      x: cy.width() / 2,
+      y: cy.height() / 2
+    }
+  })
+}
+
+const zoomOut = () => {
+  if (!cy) return
+  cy.zoom({
+    level: cy.zoom() * 0.8,
+    renderedPosition: {
+      x: cy.width() / 2,
+      y: cy.height() / 2
+    }
+  })
+}
+
+const updateGraph = () => {
+  if (!cy) return
+
+  cy.elements().remove()
+
+  const data = graphData.value
+  console.log('📊 CytoscapeComponent updateGraph:')
+  console.log('  - nodes:', data.nodes.length)
+  console.log('  - edges:', data.edges.length)
+  console.log('  - useSampleData:', props.useSampleData)
+
+  const elements: ElementDefinition[] = [
+    ...data.nodes.map(node => ({
+      data: {
+        id: node.id,
+        label: node.label || node.id,
+        type: node.type || 'default'
+      }
+    })),
+    ...data.edges.map(edge => ({
+      data: {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label || ''
+      }
+    }))
+  ]
+
+  console.log('  - elements 数量:', elements.length)
+  cy.add(elements)
+  resetLayout()
+}
+
+watch(
+  () => [props.nodes, props.edges],
+  () => {
+    updateGraph()
+  },
+  { deep: true }
+)
+
+onMounted(async () => {
+  // Load sample data if needed
+  if (props.useSampleData) {
+    await loadSampleGraphData()
+  }
+  initCytoscape()
+})
+
+onUnmounted(() => {
+  if (cy) {
+    cy.destroy()
+    cy = null
+  }
+})
+
+defineExpose({
+  resetLayout,
+  fitView,
+  zoomIn,
+  zoomOut,
+  getCytoscape: () => cy,
+  getConceptNodes,
+  getConceptEdges
+})
+</script>
+
+<style lang="scss" scoped>
+.cytoscape-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #fafafa;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .cytoscape-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  .control-panel {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+  }
+
+  .legend-panel {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+
+    .legend-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #262626;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .legend-box {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        border: 3px solid;
+        margin-right: 8px;
+        background: #f5f5f5;
+      }
+
+      .legend-parent {
+        border-color: #fa8c16;
+      }
+
+      .legend-child {
+        border-color: #52c41a;
+      }
+
+      .legend-text {
+        font-size: 12px;
+        color: #595959;
+      }
+    }
+  }
+}
+</style>

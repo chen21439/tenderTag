@@ -1,0 +1,472 @@
+.compliance-review-container {
+  color: #111827;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-section {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 24px;
+  border-bottom: 1px solid var(--line-2);
+  box-sizing: border-box;
+  .breadcrumb-area {
+    display: flex;
+    align-items: center;
+    .nav-buttons {
+      display: flex;
+      gap: 16px;
+      .nav-btn {
+        display: flex;
+        align-items: center;
+        &.back-btn {
+          padding: 8px 16px;
+          border: 1px solid var(--line-3);
+          border-radius: 4px;
+          .icon {
+            margin-right: 8px;
+          }
+        }
+        &.history-btn {
+          border: 1px solid var(--line-3);
+          padding: 8px;
+          margin-right: 16px;
+          &:hover {
+            background-color: transparent;
+          }
+        }
+      }
+    }
+  }
+
+  .info-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    .review-time {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #4b5563;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+
+      .export-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid var(--line-3);
+
+        .icon {
+          margin-right: 4px;
+        }
+      }
+    }
+  }
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.pdf-reader-wrapper {
+  border-right: 1px solid #e5e7eb;
+  position: relative;
+  flex: 1;
+  min-width: 860px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+
+  .pdf-header-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 24px;
+    border-bottom: 1px solid var(--line-2);
+    background: white;
+    flex-shrink: 0;
+
+    .nav-buttons {
+      display: flex;
+      gap: 16px;
+
+      .nav-btn {
+        display: flex;
+        align-items: center;
+
+        &.back-btn {
+          padding: 8px 16px;
+          border: 1px solid var(--line-3);
+          border-radius: 4px;
+
+          .icon {
+            margin-right: 8px;
+          }
+        }
+
+        &.history-btn {
+          padding: 8px 16px;
+          border: 1px solid var(--line-3);
+          border-radius: 4px;
+
+          .icon {
+            margin-right: 8px;
+          }
+        }
+      }
+    }
+
+    .file-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+
+  .pdf-placeholder {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+.review-panel {
+  position: relative;
+  flex: 1;
+  // max-width: 632px;
+  max-width: 832px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--fill-0);
+  .handle-result {
+    position: sticky;
+    display: flex;
+    align-items: center;
+    bottom: 0;
+    height: 45px;
+    line-height: 45px;
+    padding: 0 12px;
+    z-index: 10;
+    background-color: var(--fill-0);
+    box-shadow: 0px -2px 4px -2px #0000001a;
+    color: #374151;
+    margin-top: auto;
+    .tip {
+      display: flex;
+      align-items: center;
+    }
+    .icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+    }
+    .tip {
+      font-size: 14px;
+      font-weight: 400;
+      color: #4b5563;
+    }
+    .num {
+      color: var(--main-6);
+      flex-shrink: 0;
+    }
+    .text {
+      flex-shrink: 0;
+    }
+    .percent-bar {
+      flex: 1;
+      min-width: 0;
+      margin-left: 6px;
+      background-color: #e5e7eb;
+      height: 8px;
+      display: flex;
+      border-radius: 8px;
+      .percent {
+        border-radius: 8px;
+        background-color: var(--main-6);
+      }
+    }
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 24px;
+    border-bottom: 1px solid var(--line-2);
+    background: white;
+    font-size: 14px;
+    line-height: 22px;
+    min-height: 55px;
+    .statistics {
+      font-size: 14px;
+      .num {
+        font-weight: 500;
+        color: var(--main-6);
+        padding: 0 4px;
+        &.error {
+          color: var(--error-6);
+        }
+      }
+    }
+  }
+
+  .filter-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    margin: 0 16px 16px 16px;
+    .filter-tab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      height: 38px;
+      min-width: 60px;
+      border-radius: 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      .tab-label {
+        font-size: var(--font-14);
+        color: var(--text-4);
+      }
+      .tab-count {
+        display: inline-block;
+        text-align: center;
+        color: #4b5563;
+        border-radius: 50%;
+        background-color: #f3f4f6;
+        margin-left: 8px;
+        padding: 0 4px;
+        min-width: 20px;
+      }
+
+      // 特定tab的颜色样式（适用于正常状态和骨架状态）
+      &:nth-child(2) {
+        .tab-count,
+        .skeleton-count {
+          background: #fee2e2;
+          color: #dc2626;
+        }
+      }
+      &:nth-child(3) {
+        .tab-count,
+        .skeleton-count {
+          background-color: #dcfce7;
+          color: #16a34a;
+        }
+      }
+
+      &:hover,
+      &.active {
+        background: var(--fill-0);
+      }
+
+      // 骨架tab样式
+      &.skeleton-tab {
+        cursor: default;
+
+        .tab-label {
+          color: #9ca3af;
+        }
+
+        .skeleton-count {
+          background-color: #e5e7eb;
+          color: #9ca3af;
+          animation: skeleton-loading 1.5s ease-in-out infinite;
+        }
+
+        &.active {
+          background: var(--fill-0);
+
+          .skeleton-count {
+            background-color: #d1d5db;
+          }
+        }
+
+        // 骨架状态下保持特定颜色，但降低透明度
+        &:nth-child(2) {
+          .skeleton-count {
+            background: rgba(254, 226, 226, 0.7);
+            color: rgba(220, 38, 38, 0.7);
+          }
+        }
+        &:nth-child(3) {
+          .skeleton-count {
+            background-color: rgba(220, 252, 231, 0.7);
+            color: rgba(22, 163, 74, 0.7);
+          }
+        }
+      }
+    }
+  }
+
+  .review-items {
+    &.tree-view {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+
+      .tree-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .markdown-view {
+        height: 100%;
+        overflow: hidden;
+      }
+
+      .graph-view {
+        height: 100%;
+      }
+    }
+
+    .skeleton-title-bar,
+    .item-title-bar {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: #f5f5f5;
+      border-bottom: 1px solid #e5e7eb;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background: #ebebeb;
+      }
+
+      .item-index {
+        width: 6px;
+        height: 16px;
+        background-color: var(--main-6);
+        border-radius: 2px;
+        margin-right: 12px;
+      }
+
+      .item-title {
+        font-size: var(--font-16);
+        flex: 1;
+      }
+
+      .item-count {
+        color: #4b5563;
+        border-radius: 50%;
+        background-color: #e5e7eb;
+        margin-left: 8px;
+        padding: 0 4px;
+        min-width: 20px;
+        text-align: center;
+      }
+
+      .expand-text {
+        margin-left: 8px;
+        font-size: 12px;
+        color: var(--main-6);
+        user-select: none;
+
+        &:hover {
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+}
+
+.empty-state {
+  padding: 40px 0;
+  text-align: center;
+}
+
+// 骨架屏样式
+.skeleton-container {
+  .skeleton-item-group {
+    margin-bottom: 24px;
+    .skeleton-content {
+      padding: 16px;
+
+      .skeleton-review-item {
+        padding: 16px 0;
+        border-bottom: 1px solid #e5e7eb;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .skeleton-line {
+          height: 16px;
+          background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+          background-size: 200% 100%;
+          border-radius: 4px;
+          margin-bottom: 12px;
+          animation: skeleton-loading 1.5s ease-in-out infinite;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          &.skeleton-line-long {
+            width: 85%;
+          }
+
+          &.skeleton-line-medium {
+            width: 65%;
+          }
+
+          &.skeleton-line-short {
+            width: 45%;
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.left-side-actions {
+  position: fixed;
+  left: 12px;
+  top: 140px;
+  z-index: 1000;
+}
+
+.side-icon {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-3);
+  font-weight: 600;
+}
+
+.side-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.side-menu-item {
+  text-align: left;
+  padding: 0 8px;
+}

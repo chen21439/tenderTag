@@ -62,15 +62,10 @@
         <div class="panel-header">
           <span class="shrink-0 mr-[4px]">文档结构</span>
           <div style="margin-left: auto; display: flex; gap: 12px; align-items: center">
-            <!-- <a-checkbox v-model:checked="debugMode" size="small">调试模式</a-checkbox> -->
             <a-radio-group v-model:value="treeGroupMode" size="middle" button-style="solid">
               <a-radio-button value="label">业务语义结构树</a-radio-button>
               <a-radio-button value="original">采购标签图谱</a-radio-button>
             </a-radio-group>
-            <!-- 调试按钮（仅在开发环境显示） -->
-            <a-button v-if="showDebugButtons" size="small" @click="debugMode = !debugMode">
-              {{ debugMode ? '关闭调试' : '开启调试' }}
-            </a-button>
           </div>
         </div>
 
@@ -78,7 +73,7 @@
         <div class="review-items tree-view">
           <!-- 采购标签图谱模式：显示 Cytoscape 组件 -->
           <div
-            v-if="treeGroupMode === 'original' && !debugMode"
+            v-if="treeGroupMode === 'original'"
             class="graph-view"
             style="height: 100%; flex: 1; position: relative"
           >
@@ -93,53 +88,6 @@
             <div style="position: absolute; bottom: 16px; left: 16px; z-index: 10">
               <GraphLegend />
             </div>
-          </div>
-
-          <!-- 调试模式：显示 TOC（不复用 TreeNode） -->
-          <div v-else-if="debugMode && debugTocData.length > 0" class="tree-list">
-            <!-- 递归渲染 TOC -->
-            <template v-for="sec1 in debugTocData" :key="sec1.line_id">
-              <div style="padding: 8px; font-weight: bold; background: #f0f0f0">
-                {{ sec1.text }} (ID: {{ sec1.line_id }})
-              </div>
-
-              <template v-if="sec1.children">
-                <template v-for="sec2 in sec1.children" :key="sec2.line_id">
-                  <div style="padding: 8px 20px; font-weight: 600; background: #f8f8f8">
-                    {{ sec2.text }} (ID: {{ sec2.line_id }})
-                  </div>
-
-                  <template v-if="sec2.children">
-                    <template v-for="sec3 in sec2.children" :key="sec3.line_id">
-                      <div style="padding: 8px 40px; background: #fff">
-                        {{ sec3.text }} (ID: {{ sec3.line_id }})
-                        <span v-if="sec3.child_line_ids" style="color: green">
-                          [段落数: {{ sec3.child_line_ids.length }}]
-                        </span>
-                      </div>
-
-                      <!-- 段落列表 -->
-                      <div v-if="sec3.child_line_ids" style="padding-left: 60px">
-                        <div
-                          v-for="(paraIds, idx) in sec3.child_line_ids"
-                          :key="idx"
-                          style="
-                            padding: 4px;
-                            margin: 2px 0;
-                            background: #e8f5e9;
-                            cursor: pointer;
-                            border-left: 3px solid #4caf50;
-                          "
-                          @click="handleParagraphClick(paraIds)"
-                        >
-                          📄 段落 {{ idx + 1 }}: {{ getParagraphPreview(paraIds) }}
-                        </div>
-                      </div>
-                    </template>
-                  </template>
-                </template>
-              </template>
-            </template>
           </div>
 
           <!-- 正常模式：显示标签树或原始树 -->
@@ -204,6 +152,7 @@ import CytoscapeComponent from './components/CytoscapeComponent.vue'
 import GraphLegend from '../../components/knowledge-graph/GraphLegend.vue'
 import { getGraphData } from '@/components/knowledge-graph/graphData'
 import config from '../../config'
+import { useOntologyTree } from './components/ontology/useOntologyTree'
 
 defineOptions({
   name: 'ComplianceReview'
@@ -225,10 +174,9 @@ const taskId = ref((route.query.taskId as string) || '')
 const viewMode = ref<'result' | 'search'>('result')
 // 树形结构分组模式：original（原始结构）| label（按标签分组）
 const treeGroupMode = ref<'original' | 'label'>('label') // 默认按标签分组
-// 调试模式（加载固定的调试文件）
-const debugMode = ref(false)
-// 是否显示调试按钮（从环境变量读取）
-const showDebugButtons = import.meta.env.VITE_APP_SHOW_DEBUG_BUTTONS === 'true' || import.meta.env.VITE_APP_SHOW_DEBUG_BUTTONS === true
+
+// 初始化本体树构建逻辑
+const { buildOntologyTree, expandMoreNode } = useOntologyTree()
 // 开发模式（显示未匹配数据）
 const isDevMode = ref(false)
 // 未匹配的数据
@@ -1234,9 +1182,6 @@ const hasPrebuiltTree = ref(false)
 // 节点映射表（line_id -> node）
 const nodeMap = ref<Record<number, any>>({})
 
-// 调试模式的 TOC 数据（仅用于本地调试，线上不使用）
-// 注意：这个功能是完全独立的，不要与其他功能混用
-const debugTocData = ref<any[]>([])
 
 // 结构化数据（包含 fields 信息，用于知识图谱）
 const structuredData = ref<any[]>([])
@@ -1249,11 +1194,8 @@ const graphEdges = ref<Array<{ id: string; source: string; target: string; label
 const labelHierarchy = ref<{ label: string; children: string[] }[]>([])
 const labelOrderMap = ref<Map<string, number>>(new Map())
 
-// 显示的树数据（调试模式显示 TOC，否则显示构建的树）
+// 显示的树数据
 const displayTreeData = computed(() => {
-  if (debugMode.value && debugTocData.value.length > 0) {
-    return debugTocData.value
-  }
   return builtTreeData.value
 })
 
@@ -1299,7 +1241,7 @@ const mergeParagraphs = (nodes: any[]): any[] => {
         box数量: boxes.length,
         页码范围: [...new Set(boxes.map(b => b.page))],
         文本长度: paragraphNodes
-          .map(n => n.text)
+          .map(n => n.text || n.content)
           .filter(Boolean)
           .join(' ').length
       })
@@ -1309,7 +1251,7 @@ const mergeParagraphs = (nodes: any[]): any[] => {
         ...node,
         class: 'paragraph', // 改为 paragraph 类型
         text: paragraphNodes
-          .map(n => n.text)
+          .map(n => n.text || n.content)
           .filter(Boolean)
           .join(' '), // 合并文本
         boxes: boxes, // 保存所有行的 box 信息（用于多区域高亮）
@@ -1472,108 +1414,59 @@ const buildTreeByLabel = async () => {
     return
   }
 
-  console.log('🏷️ 开始构建按标签分组的树形结构')
+  // 使用本体树构建逻辑
+  const labelRoots = buildOntologyTree(rawTreeData.value)
 
-  // 检查数据是否有标签
-  const hasLabels = rawTreeData.value.some(item => 'label_level1' in item)
-  if (!hasLabels) {
+  // 如果没有标签，回退到原始结构
+  if (!labelRoots || labelRoots.length === 0) {
     console.warn('⚠️ 数据中没有标签字段，回退到原始结构')
     buildTree()
     return
   }
 
-  // 第一步：合并段落节点
-  const mergedData = mergeParagraphs(rawTreeData.value)
-  const filteredData = mergedData.filter(n => n.relation !== 'meta' && n.class !== 'footer')
+  // 使用统一的排序函数
+  sortTreeByHierarchy(labelRoots)
 
-  // 按一级标签和二级标签分组（两层结构）
-  const level1Groups = new Map<string, Map<string, any[]>>()
+  builtTreeData.value = labelRoots
+  console.log('✅ 按标签分组的树形结构构建完成')
+  console.log('  - 根标签数量:', labelRoots.length)
 
-  filteredData.forEach(item => {
-    let label1 = '未分类'
-    let label2 = '无'
+  // 生成知识图谱数据
+  await buildGraphData()
 
-    // 兼容新旧两种标签格式
-    if (item.label && typeof item.label === 'string' && item.label.includes('/')) {
-      // 新格式：label = "一级标签/二级标签"
-      const parts = item.label.split('/')
-      if (parts.length >= 1) label1 = parts[0]
-      if (parts.length >= 2) label2 = parts[1]
+  // 只在子节点有标签的时候展开
+  const expandedLabels = new Set<number>()
 
-      // 保存到 item 中，方便后续使用
-      item.label_level1 = label1
-      item.label_level2 = label2
-    } else {
-      // 旧格式：使用现有的 label_level1 和 label_level2
-      label1 = item.label_level1 || '未分类'
-      label2 = item.label_level2 || '无'
-    }
-
-    if (!level1Groups.has(label1)) {
-      level1Groups.set(label1, new Map())
-    }
-
-    const level2Map = level1Groups.get(label1)!
-    if (!level2Map.has(label2)) {
-      level2Map.set(label2, [])
-    }
-
-    level2Map.get(label2)!.push(item)
-  })
-
-  console.log('🏷️ 一级标签数量:', level1Groups.size)
-
-  // 构建两层标签树：一级标签 → 二级标签 → 原有层级
-  const labelRoots: any[] = []
-  let virtualLineId = -10000 // 虚拟节点ID（从负数开始避免冲突）
-
-  // 辅助函数：在指定节点列表中构建树形结构
-  const buildSubTree = (items: any[]) => {
-    // 不再过滤 sec 节点，因为它们可能包含有用的标签信息
-    const filteredItems = items
-
-    const nodeMap = new Map()
-    filteredItems.forEach(item => {
-      nodeMap.set(item.line_id, {
-        ...item,
-        children: []
-      })
+  const shouldExpand = (node: any): boolean => {
+    if (!node.children || node.children.length === 0) return false
+    // 检查子节点是否有标签（label字段存在且包含"/"路径分隔符）
+    return node.children.some((child: any) => {
+      const labelValue = child.label || child.class
+      return labelValue && typeof labelValue === 'string' && labelValue.includes('/')
     })
-
-    // 构建父子关系
-    const findRealParent = (item: any): number => {
-      if (item.parent_id === -1) return -1
-      if (item.relation === 'contain') return item.parent_id
-      if (item.relation === 'equality') {
-        let current = filteredItems.find(n => n.line_id === item.parent_id)
-        while (current) {
-          if (current.relation === 'contain') return current.parent_id
-          else if (current.relation === 'equality') current = filteredItems.find(n => n.line_id === current.parent_id)
-          else break
-        }
-      }
-      return item.parent_id
-    }
-
-    const roots: any[] = []
-    filteredItems.forEach(item => {
-      const node = nodeMap.get(item.line_id)
-      if (item.relation === 'connect') return
-
-      const realParentId = findRealParent(item)
-      if (realParentId === -1) {
-        roots.push(node)
-      } else {
-        const parent = nodeMap.get(realParentId)
-        if (parent) parent.children.push(node)
-        else roots.push(node)
-      }
-    })
-
-    return roots
   }
 
-  // 遍历一级标签
+  // 递归检查所有节点，标记需要展开的节点
+  const collectExpandableNodes = (nodes: any[]) => {
+    nodes.forEach(node => {
+      if (shouldExpand(node)) {
+        expandedLabels.add(node.line_id)
+        // 递归检查子节点
+        if (node.children && node.children.length > 0) {
+          collectExpandableNodes(node.children)
+        }
+      }
+    })
+  }
+
+  collectExpandableNodes(labelRoots)
+
+  treeExpandedNodes.value = expandedLabels
+}
+
+// ============ 旧代码（已废弃，仅供参考）============
+/*
+const buildTreeByLabel_OLD = async () => {
   level1Groups.forEach((level2Map, label1) => {
     // 创建一级标签虚拟节点
     const level1Node = {
@@ -1680,6 +1573,7 @@ const buildTreeByLabel = async () => {
 
   treeExpandedNodes.value = expandedLabels
 }
+*/
 
 // 统一的树构建入口（根据 treeGroupMode 切换）
 const rebuildTree = () => {
@@ -1691,7 +1585,7 @@ const rebuildTree = () => {
 }
 
 // 监听分组模式切换
-watch(treeGroupMode, () => {
+watch(treeGroupMode, async () => {
   console.log('🔄 树形结构分组模式切换:', treeGroupMode.value)
 
   if (treeGroupMode.value === 'original') {
@@ -1704,131 +1598,120 @@ watch(treeGroupMode, () => {
       buildGraphData()
     }
   } else if (treeGroupMode.value === 'label') {
-    // 切换回业务语义结构树
-    if (hasPrebuiltTree.value && prebuiltTreeData.value.length > 0) {
-      // 如果有预构建的树，直接使用（已经排序过了）
-      console.log('✅ 使用预构建的树数据')
-      builtTreeData.value = prebuiltTreeData.value
-
-      // 只在子节点有标签的时候展开（只展开一层）
-      const expandedLabels = new Set<number>()
-
-      const shouldExpand = (node: any): boolean => {
-        if (!node.children || node.children.length === 0) return false
-        return node.children.some((child: any) => child.label && child.label.trim() !== '')
-      }
-
-      // 只检查一级节点，不递归
-      builtTreeData.value.forEach(node => {
-        if (shouldExpand(node)) {
-          expandedLabels.add(node.line_id)
-        }
-      })
-
-      treeExpandedNodes.value = expandedLabels
-    } else {
-      // 否则重新构建（会自动排序）
-      console.log('🔨 重新构建树结构')
-      rebuildTree()
-    }
-  }
-})
-
-// 监听调试模式切换
-watch(debugMode, async newVal => {
-  console.log('🐛 调试模式切换:', newVal)
-  if (newVal) {
-    // 加载调试文件
-    await loadDebugFiles()
-  } else {
-    // 清空调试数据，恢复正常模式
-    debugTocData.value = []
-    nodeMap.value = {}
-    // 重新加载当前任务的文件
+    // 切换到业务语义结构树 - 重新加载 ontology 数据
+    console.log('🔄 切换到业务语义结构树，重新加载数据...')
     if (taskId.value) {
       await loadJsonFiles(taskId.value)
     }
   }
 })
 
-// 加载调试文件
-const loadDebugFiles = async () => {
-  try {
-    console.log('🐛 加载调试文件...')
+// 转换 API 返回的树数据格式为组件所需格式
+const convertAPITreeData = (nodes: any[]): any[] => {
+  let nodeIdCounter = 0
 
-    // 加载结构化数据文件
-    const structuredDataUrl = `${import.meta.env.BASE_URL}hrdoc/1980950753551908866_structured_data.json`
-    const structuredDataResponse = await fetch(structuredDataUrl)
-
-    if (!structuredDataResponse.ok) {
-      console.error('❌ 结构化数据文件加载失败')
-      return
+  const convertNode = (node: any): any => {
+    // 生成 line_id（从 id 字段提取数字，如 "texts-123" -> 123）
+    let lineId = nodeIdCounter++
+    if (node.id && typeof node.id === 'string') {
+      const match = node.id.match(/\d+$/)
+      if (match) {
+        lineId = parseInt(match[0])
+      }
+    } else if (node.pid && typeof node.pid === 'string') {
+      const match = node.pid.match(/\d+$/)
+      if (match) {
+        lineId = parseInt(match[0])
+      }
     }
 
-    const structuredData = await structuredDataResponse.json()
-    console.log('✅ 结构化数据加载成功:', structuredData)
-
-    // 使用 structured_data 字段
-    if (structuredData.structured_data && Array.isArray(structuredData.structured_data)) {
-      debugTocData.value = structuredData.structured_data
-      console.log('✅ 结构化数据已加载，节点数:', debugTocData.value.length)
-      console.log('🔍 第一个节点:', debugTocData.value[0])
-      console.log(
-        '🔍 第一个节点的 child_line_ids:',
-        debugTocData.value[0]?.children?.[0]?.children?.[0]?.child_line_ids
-      )
+    // 保留原始节点的所有字段，然后覆盖需要转换的字段
+    const converted: any = {
+      ...node, // 保留所有原始字段（包括 fields, title, label 等）
+      line_id: lineId,
+      text: node.text || node.title || '', // 优先使用 title
+      class: node.label || 'text', // 保留 label 字段用于业务语义树
+      page: node.page ? node.page - 1 : 0, // API 的 page 从 1 开始，组件需要从 0 开始
+      _originalId: node.id || node.pid // 保存原始 ID 用于调试
     }
 
-    // 加载原始 JSON（用于获取段落内容）
-    const jsonUrl = `${import.meta.env.BASE_URL}hrdoc/1980950753551908866.json`
-    const jsonResponse = await fetch(jsonUrl)
-
-    if (jsonResponse.ok) {
-      const jsonData = await jsonResponse.json()
-      console.log('✅ 原始 JSON 数据加载成功，节点数:', jsonData.length)
-
-      // 创建 nodeMap
-      const map: Record<number, any> = {}
-      jsonData.forEach((node: any) => {
-        map[node.line_id] = node
-      })
-      nodeMap.value = map
-      console.log('✅ NodeMap 创建成功，节点数:', Object.keys(nodeMap.value).length)
+    // 转换 bboxes 或 location 为 boxes 格式
+    const locationData = node.bboxes || node.location
+    if (locationData && Array.isArray(locationData) && locationData.length > 0) {
+      converted.boxes = locationData.map((bbox: any) => ({
+        page: (bbox.page || node.page || 1) - 1, // 确保 page 从 0 开始
+        box: [bbox.l, bbox.t, bbox.r, bbox.b], // [left, top, right, bottom] - TOPLEFT 坐标
+        coord_origin: bbox.coord_origin || 'TOPLEFT'
+      }))
+      // 兼容旧格式，设置第一个 box
+      converted.box = converted.boxes[0]?.box
+      // 同时更新 page 为第一个位置的页码
+      if (locationData[0]?.page) {
+        converted.page = locationData[0].page - 1
+      }
     }
-  } catch (error) {
-    console.error('❌ 调试文件加载失败:', error)
+
+    // 递归转换子节点
+    if (node.children && Array.isArray(node.children) && node.children.length > 0) {
+      converted.children = node.children.map(convertNode)
+    } else {
+      // 确保没有 children 的节点也有一个空数组
+      converted.children = []
+    }
+
+    return converted
   }
+
+  return nodes.map(convertNode)
 }
 
-// 读取 JSON 文件（从 public/hrdoc 目录）
+// 读取 JSON 文件（从 API 接口）
 const loadJsonFiles = async (taskId: string) => {
   try {
     console.log('📦 开始加载 JSON 文件，taskId:', taskId)
-
-    // 优先级: _labeled_tree.json > _labeled.json > .json
-    const urlPriority = [
-      `${import.meta.env.BASE_URL}hrdoc/${taskId}_labeled_tree.json`,
-      `${import.meta.env.BASE_URL}hrdoc/${taskId}_labeled.json`,
-      `${import.meta.env.BASE_URL}hrdoc/${taskId}.json`
-    ]
 
     let treeDataUrl = ''
     let jsonData = null
     let isTreeJson = false
 
-    // 按优先级尝试加载
-    for (const url of urlPriority) {
-      try {
-        const response = await fetch(url)
-        if (response.ok) {
-          jsonData = await response.json()
-          treeDataUrl = url
-          isTreeJson = url.includes('_labeled_tree.json')
-          console.log('✅ 数据源:', treeDataUrl)
-          break
+    // 优先从 API 加载（根据模式选择不同的 result_type）
+    try {
+      // 业务语义结构树用 ontology，采购标签图谱用 tree
+      const resultType = treeGroupMode.value === 'label' ? 'ontology' : 'tree'
+      const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=${resultType}`
+      console.log(`🔄 从 API 加载数据 (模式: ${treeGroupMode.value}, result_type: ${resultType}):`, apiUrl)
+      const response = await fetch(apiUrl)
+      if (response.ok) {
+        jsonData = await response.json()
+        treeDataUrl = apiUrl
+        isTreeJson = true
+        console.log(`✅ 数据源: API (result_type=${resultType})`)
+      }
+    } catch (e) {
+      console.log('⚠️ API 加载失败，尝试从 public 目录加载:', e)
+    }
+
+    // 如果 API 加载失败，回退到 public 目录
+    if (!jsonData) {
+      const urlPriority = [
+        `${import.meta.env.BASE_URL}hrdoc/${taskId}_labeled_tree.json`,
+        `${import.meta.env.BASE_URL}hrdoc/${taskId}_labeled.json`,
+        `${import.meta.env.BASE_URL}hrdoc/${taskId}.json`
+      ]
+
+      for (const url of urlPriority) {
+        try {
+          const response = await fetch(url)
+          if (response.ok) {
+            jsonData = await response.json()
+            treeDataUrl = url
+            isTreeJson = url.includes('_labeled_tree.json')
+            console.log('✅ 数据源:', treeDataUrl)
+            break
+          }
+        } catch (e) {
+          continue
         }
-      } catch (e) {
-        continue
       }
     }
 
@@ -1839,19 +1722,51 @@ const loadJsonFiles = async (taskId: string) => {
 
     console.log('✅ 树形数据加载完成，数据类型:', Array.isArray(jsonData) ? '数组' : '对象')
 
-    // 如果加载的是 _labeled_tree.json，直接使用
+    // 如果加载的是 _labeled_tree.json 或 API tree，直接使用
     if (isTreeJson) {
       console.log('🌲 使用预构建的树形JSON')
 
-      // 新格式: { "tree": [...], "pdf_path": "" }
-      const treeData = jsonData.tree || jsonData
+      // 处理不同的数据格式
+      // API 格式: { success: true, data: { dataList: [...] } }
+      // 文件格式: { tree: [...] } 或 [...]
+      let treeData
+      if (jsonData.success && jsonData.data && jsonData.data.dataList) {
+        // API 格式
+        treeData = jsonData.data.dataList
+        console.log('📊 检测到 API 格式 (success/data/dataList)')
+      } else if (jsonData.tree) {
+        // 文件格式 { tree: [...] }
+        treeData = jsonData.tree
+        console.log('📊 检测到文件格式 (tree)')
+      } else {
+        // 直接数组格式
+        treeData = jsonData
+        console.log('📊 检测到数组格式')
+      }
+
       prebuiltTreeData.value = Array.isArray(treeData) ? treeData : [treeData]
+
+      // 如果是 API 数据，需要转换格式
+      if (jsonData.success && jsonData.data && jsonData.data.dataList) {
+        console.log('🔄 转换 API 数据格式为组件所需格式')
+        prebuiltTreeData.value = convertAPITreeData(prebuiltTreeData.value)
+      }
 
       // 对预构建的树按照 hierarchy 顺序排序
       sortTreeByHierarchy(prebuiltTreeData.value)
 
-      builtTreeData.value = prebuiltTreeData.value
-      hasPrebuiltTree.value = true
+      // 保存到 rawTreeData 用于后续构建
+      rawTreeData.value = prebuiltTreeData.value
+
+      // 如果是业务语义结构树模式，需要按标签重新构建
+      if (treeGroupMode.value === 'label') {
+        console.log('🏷️ 业务语义结构树模式，按标签重新构建...')
+        hasPrebuiltTree.value = false
+        // 不直接赋值，等待 buildTreeByLabel 构建
+      } else {
+        builtTreeData.value = prebuiltTreeData.value
+        hasPrebuiltTree.value = true
+      }
 
       // 如果有pdf_path字段,可以使用它
       if (jsonData.pdf_path) {
@@ -1895,13 +1810,15 @@ const loadJsonFiles = async (taskId: string) => {
             return result
           }
 
+          // 注意：不要覆盖 rawTreeData.value，它已经在前面正确赋值了
+          // 这里加载 _labeled.json 只是为了补充信息，不需要替换整个数据
           const treeData = Array.isArray(labeledData) ? labeledData : [labeledData]
-          rawTreeData.value = flattenTree(treeData)
+          const flattenedData = flattenTree(treeData)
 
-          console.log('✅ 同时加载 _labeled.json 并扁平化，节点数:', rawTreeData.value.length)
+          console.log('✅ 同时加载 _labeled.json 并扁平化，节点数:', flattenedData.length)
 
           // 统计有 fields 的节点数
-          const nodesWithFields = rawTreeData.value.filter(n => n.fields && Object.keys(n.fields).length > 0).length
+          const nodesWithFields = flattenedData.filter(n => n.fields && Object.keys(n.fields).length > 0).length
           console.log(`   其中包含 fields 的节点数: ${nodesWithFields}`)
         } else {
           console.warn('⚠️ 未找到对应的 _labeled.json，文件视图将不可用')
@@ -1928,6 +1845,12 @@ const loadJsonFiles = async (taskId: string) => {
       treeExpandedNodes.value = expandedLabels
 
       console.log('✅ 树形结构加载完成，一级标签数量:', builtTreeData.value.length)
+
+      // 如果是业务语义结构树模式，需要按标签重新构建
+      if (treeGroupMode.value === 'label' && rawTreeData.value.length > 0) {
+        console.log('🔄 调用 buildTreeByLabel 重新构建业务语义结构树...')
+        await buildTreeByLabel()
+      }
     } else {
       // 使用扁平JSON，需要客户端构建树
       console.log('📋 使用扁平JSON，客户端构建树')
@@ -1972,9 +1895,9 @@ const getFile = async () => {
     return
   }
 
-  // 从 public 目录读取 PDF
-  pdfData.pdfUrl = `${import.meta.env.BASE_URL}hrdoc/${taskId.value}.pdf`
-  console.log('从public目录读取PDF:', pdfData.pdfUrl)
+  // 从 API 接口读取 PDF
+  pdfData.pdfUrl = `/python/api/pdf/task/${taskId.value}/result?result_type=pdf`
+  console.log('从 API 接口读取 PDF:', pdfData.pdfUrl)
 }
 
 // ==================== 导出相关方法 ====================
@@ -2163,13 +2086,11 @@ const selectTreeNode = async (nodeId: number) => {
   // 如果点击的是"查看更多"节点，展开所有子元素
   if (node.class === 'more-indicator') {
     console.log('🔍 点击了"查看更多"，展开所有子元素')
-    const parentNode = node._parentNode
-    if (parentNode && parentNode._fullChildren) {
-      // 替换父节点的children为完整的子元素列表
-      parentNode.children = [...parentNode._fullChildren]
-      // 标记为已展开状态
-      parentNode._isExpanded = true
-      console.log('✓ 已展开所有子元素，共', parentNode._fullChildren.length, '个')
+    const expanded = expandMoreNode(node)
+    if (expanded) {
+      // 强制触发响应式更新
+      builtTreeData.value = [...builtTreeData.value]
+      console.log('✓ 已展开所有子元素')
     }
     return
   }
@@ -2204,26 +2125,38 @@ const selectTreeNode = async (nodeId: number) => {
   }
 
   console.log('📄 节点详情:', node)
-  console.log('📦 boxes字段:', node.boxes)
-  console.log('📦 boxes类型:', typeof node.boxes, Array.isArray(node.boxes))
-  console.log('📦 boxes长度:', node.boxes?.length)
+
+  // 兼容 location 字段：将 location 转换为 boxes 格式
+  let boxes = node.boxes
+  if (!boxes && node.location && Array.isArray(node.location)) {
+    boxes = node.location.map((loc: any) => ({
+      page: loc.page - 1, // location 的 page 从 1 开始，需要转为 0 开始
+      box: [loc.l, loc.t, loc.r, loc.b],
+      coord_origin: loc.coord_origin || 'TOPLEFT'
+    }))
+    console.log('🔄 从 location 字段转换为 boxes:', boxes)
+  }
+
+  console.log('📦 boxes字段:', boxes)
+  console.log('📦 boxes类型:', typeof boxes, Array.isArray(boxes))
+  console.log('📦 boxes长度:', boxes?.length)
 
   try {
     // 判断是否为段落节点（有 boxes 数组）
-    if (node.boxes && node.boxes.length > 0) {
+    if (boxes && boxes.length > 0) {
       // 段落节点：高亮所有行
-      console.log('📝 段落节点，包含', node.boxes.length, '个 box')
+      console.log('📝 段落节点，包含', boxes.length, '个 box')
 
       // 跳转到第一个 box 所在的页面
-      const firstBox = node.boxes[0]
+      const firstBox = boxes[0]
       const pageNum = firstBox.page + 1
       pdfData.currentPage = pageNum
 
       // 普通节点：智能合并 boxes 并高亮
-      const mergedBoxes = mergeBoxesByColumn(node.boxes)
+      const mergedBoxes = mergeBoxesByColumn(boxes)
 
       console.log('📦 Box 合并结果:', {
-        原始box数: node.boxes.length,
+        原始box数: boxes.length,
         合并后区域数: mergedBoxes.length,
         合并详情: mergedBoxes
       })
@@ -2255,7 +2188,7 @@ const selectTreeNode = async (nodeId: number) => {
         pageNum: pageNum,
         rect: firstBox.box, // 使用第一个 box 的 rect（用于定位）
         quadPoints: allQuadPoints, // 包含所有合并后区域的 quadPoints
-        needsConversion: true, // 标记需要坐标转换
+        needsConversion: true, // TOPLEFT 坐标，需要转换为 PDF 坐标
         jump: true
       }
 
@@ -2268,38 +2201,51 @@ const selectTreeNode = async (nodeId: number) => {
         await pdfReaderRef.value.scrollToAnnotation(highlightData)
         console.log('✅ 已跳转到段落位置并高亮所有区域')
       }
-    } else if (node.page !== undefined && node.box) {
-      // 单个节点：普通节点高亮
-      const pageNum = node.page + 1
-      const box = node.box
-
-      console.log('📍 单行节点，box:', { pageNum, box })
-
-      pdfData.currentPage = pageNum
-
-      const highlightRect = {
-        pageNum: pageNum,
-        rect: box,
-        quadPoints: [box[0], box[1], box[2], box[1], box[2], box[3], box[0], box[3]],
-        jump: true,
-        needsConversion: true
-      }
-
-      pdfData.highlightRects = [highlightRect]
-
-      if (pdfReaderRef.value?.scrollToAnnotation) {
-        await nextTick()
-        await pdfReaderRef.value.scrollToAnnotation(highlightRect)
-        console.log('✅ 已跳转到 PDF 位置并高亮')
-      }
-    } else if (node.page !== undefined) {
-      // 只有页码，没有位置信息：只跳转页面，不高亮
-      const pageNum = node.page + 1
-      pdfData.currentPage = pageNum
-      pdfData.highlightRects = []
-      console.log('✅ 已跳转到页面', pageNum, '(无位置信息，不高亮)')
     } else {
-      console.warn('⚠️ 节点缺少位置信息:', node)
+      // 尝试从 location 获取单个位置（兼容旧格式的 box）
+      let pageNum, box
+
+      if (node.page !== undefined && node.box) {
+        // 旧格式：node.page + node.box
+        pageNum = node.page + 1
+        box = node.box
+      } else if (node.location && node.location.length > 0) {
+        // 新格式：从 location 数组取第一个
+        const loc = node.location[0]
+        pageNum = loc.page
+        box = [loc.l, loc.t, loc.r, loc.b]
+      }
+
+      if (pageNum && box) {
+        // 单个节点：普通节点高亮
+        console.log('📍 单行节点，box:', { pageNum, box })
+
+        pdfData.currentPage = pageNum
+
+        const highlightRect = {
+          pageNum: pageNum,
+          rect: box,
+          quadPoints: [box[0], box[1], box[2], box[1], box[2], box[3], box[0], box[3]],
+          jump: true,
+          needsConversion: true // TOPLEFT 坐标，需要转换为 PDF 坐标
+        }
+
+        pdfData.highlightRects = [highlightRect]
+
+        if (pdfReaderRef.value?.scrollToAnnotation) {
+          await nextTick()
+          await pdfReaderRef.value.scrollToAnnotation(highlightRect)
+          console.log('✅ 已跳转到 PDF 位置并高亮')
+        }
+      } else if (node.page !== undefined) {
+        // 只有页码，没有位置信息：只跳转页面，不高亮
+        const pageNum = node.page + 1
+        pdfData.currentPage = pageNum
+        pdfData.highlightRects = []
+        console.log('✅ 已跳转到页面', pageNum, '(无位置信息，不高亮)')
+      } else {
+        console.warn('⚠️ 节点缺少位置信息:', node)
+      }
     }
   } catch (error) {
     console.error('❌ 跳转失败:', error)
@@ -2313,8 +2259,8 @@ const getParagraphPreview = (paragraphIds: number[]): string => {
   const texts: string[] = []
   for (const id of paragraphIds) {
     const node = nodeMap.value[id]
-    if (node && node.text) {
-      texts.push(node.text)
+    if (node && (node.text || node.content)) {
+      texts.push(node.text || node.content)
     }
   }
 
@@ -2681,7 +2627,7 @@ const handleParagraphClick = async (paragraphIds: number[]) => {
       pageNum: pageNum,
       rect: firstBox.box,
       quadPoints: allQuadPoints,
-      needsConversion: true,
+      needsConversion: true, // TOPLEFT 坐标，需要转换为 PDF 坐标
       jump: true
     }
 
