@@ -152,6 +152,13 @@ const initCytoscape = () => {
   if (!cytoscapeRef.value) return
 
   const data = graphData.value
+
+  console.log('🎨 Cytoscape 初始化数据:')
+  console.log('  - 节点数:', data.nodes.length)
+  console.log('  - 边数:', data.edges.length)
+  console.log('  - 前3个节点:', data.nodes.slice(0, 3).map(n => ({ id: n.id, label: n.label, type: n.type })))
+  console.log('  - 前3条边:', data.edges.slice(0, 3).map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label })))
+
   const elements: ElementDefinition[] = [
     ...data.nodes.map(node => ({
       data: {
@@ -170,6 +177,10 @@ const initCytoscape = () => {
       }
     }))
   ]
+
+  console.log('  - Elements 总数:', elements.length)
+  console.log('  - 节点 Elements:', elements.filter(e => !e.data.source).length)
+  console.log('  - 边 Elements:', elements.filter(e => e.data.source).length)
 
   cy = cytoscape({
     container: cytoscapeRef.value,

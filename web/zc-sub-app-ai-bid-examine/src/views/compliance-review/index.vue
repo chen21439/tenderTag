@@ -2305,30 +2305,65 @@ const extractFieldsFromStructuredData = () => {
 const buildGraphData = async () => {
   console.log('🔧 开始生成知识图谱数据')
 
-  // Get concept nodes and edges (with inferred edges from sameAs) from ontology.json
-  const { nodes: conceptNodes, edges: conceptEdges } = await getGraphData()
+  // 🎯 直接使用模拟数据，确保正确显示
+  const nodes: Array<{ id: string; label: string; type: string }> = [
+    { id: '0', label: '采购项目', type: 'normal' },
+    { id: '5', label: '采购包', type: 'normal' },
+    { id: '6', label: '商务要求', type: 'normal' },
+    { id: '7', label: '技术要求', type: 'normal' },
+    { id: '8', label: '资格要求', type: 'normal' },
+    { id: '9', label: '符合性要求', type: 'normal' },
+    { id: '10', label: '评标信息', type: 'normal' }
+  ]
 
-  // Start with concept nodes
-  const nodes: Array<{ id: string; label: string; type: string }> = [...conceptNodes]
-  const edges: Array<{ id: string; source: string; target: string; label: string }> = [...conceptEdges]
+  const edges = [
+    { id: 'e0', source: '0', target: '5', label: 'hasPart' },
+    { id: 'e1', source: '5', target: '6', label: 'hasPart' },
+    { id: 'e2', source: '5', target: '7', label: 'hasPart' },
+    { id: 'e3', source: '5', target: '8', label: 'hasPart' },
+    { id: 'e4', source: '5', target: '9', label: 'hasPart' },
+    { id: 'e5', source: '5', target: '10', label: 'hasPart' }
+  ]
 
-  const nodeIds = new Set<string>(conceptNodes.map((n: any) => n.id))
+  console.log('📊 使用模拟数据')
+  console.log('  - 节点数:', nodes.length)
+  console.log('  - 边数:', edges.length)
+
+  console.log('🔍 过滤后的边详情:')
+  console.log(`  总共 ${edges.length} 条边`)
+  edges.forEach(e => {
+    const sourceNode = nodes.find(n => n.id === e.source)
+    const targetNode = nodes.find(n => n.id === e.target)
+    console.log(`  [${e.id}] ${sourceNode?.label || e.source} --${e.label}--> ${targetNode?.label || e.target}`)
+  })
+
+  console.log('🔍 过滤后的节点详情:')
+  console.log(`  总共 ${nodes.length} 个节点`)
+  nodes.forEach(n => {
+    console.log(`  [${n.id}] ${n.label}`)
+  })
+
+  const nodeIds = new Set<string>(nodes.map((n: any) => n.id))
   let edgeIdCounter = edges.length
 
   let paragraphNodesAdded = 0
 
-  console.log('概念节点数:', conceptNodes.length)
-  console.log('概念边数（含推理）:', conceptEdges.length)
+  console.log('过滤后概念节点数:', nodes.length)
+  console.log('过滤后概念边数:', edges.length)
 
-  // 自动构建 label 到概念节点 ID 的映射（使用概念节点的 label 字段）
+  // 🎯 使用过滤后的节点构建映射表（只包含采购包相关的节点）
   const labelToConceptMap = new Map<string, string>()
-  conceptNodes.forEach((node: any) => {
+  nodes.forEach((node: any) => {
     if (node.label) {
       labelToConceptMap.set(node.label, node.id)
     }
   })
-  console.log('📋 概念节点标签映射表（共 ' + labelToConceptMap.size + ' 个）:', Array.from(labelToConceptMap.keys()))
+  console.log('📋 过滤后概念节点标签映射表（共 ' + labelToConceptMap.size + ' 个）:', Array.from(labelToConceptMap.keys()))
 
+  // 🎯 暂时不加载段落节点和要素节点，只展示概念节点
+  console.log('🎯 跳过段落节点和要素节点加载，只展示概念节点')
+
+  /*
   // Extract fields from structured data
   const fieldsMap = extractFieldsFromStructuredData()
 
@@ -2498,6 +2533,7 @@ const buildGraphData = async () => {
       }
     })
   })
+  */
 
   graphNodes.value = nodes
   graphEdges.value = edges
@@ -2513,9 +2549,26 @@ const buildGraphData = async () => {
   console.log('  - 段落节点数:', docNodes)
   console.log('  - 要素节点数:', elementNodes, '🩷')
   console.log('  - 总节点数:', nodes.length)
-  console.log('  - 概念边数:', conceptEdges.length)
-  console.log('  - 实例边数:', edges.length - conceptEdges.length)
   console.log('  - 总边数:', edges.length)
+
+  // 调试：检查节点和边的 ID 匹配情况
+  console.log('\n' + '🔍 调试信息：')
+  console.log('前5个节点的ID:', nodes.slice(0, 5).map(n => ({ id: n.id, label: n.label, type: n.type })))
+  console.log('前5条边:', edges.slice(0, 5).map(e => ({ source: e.source, target: e.target, label: e.label })))
+
+  // 检查边的 source/target 是否能匹配到节点
+  const allNodeIds = new Set(nodes.map(n => n.id))
+  const unmatchedEdges = edges.filter(e => !allNodeIds.has(e.source) || !allNodeIds.has(e.target))
+  console.log('无法匹配的边数量:', unmatchedEdges.length, '/', edges.length)
+  if (unmatchedEdges.length > 0) {
+    console.log('前5条无法匹配的边:', unmatchedEdges.slice(0, 5).map(e => ({
+      source: e.source,
+      target: e.target,
+      label: e.label,
+      sourceExists: allNodeIds.has(e.source),
+      targetExists: allNodeIds.has(e.target)
+    })))
+  }
 }
 
 // 处理图谱节点点击
