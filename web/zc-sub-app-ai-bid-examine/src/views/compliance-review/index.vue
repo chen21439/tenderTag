@@ -72,11 +72,7 @@
         <!-- JSON树形结构展示 -->
         <div class="review-items tree-view">
           <!-- 采购标签图谱模式：显示 Cytoscape 组件 -->
-          <div
-            v-if="treeGroupMode === 'original'"
-            class="graph-view"
-            style="height: 100%; flex: 1; position: relative"
-          >
+          <div v-if="treeGroupMode === 'original'" class="graph-view" style="height: 100%; flex: 1; position: relative">
             <CytoscapeComponent
               :use-sample-data="false"
               :nodes="graphNodes"
@@ -173,7 +169,7 @@ const taskId = ref((route.query.taskId as string) || '')
 // 视图模式切换：result | search
 const viewMode = ref<'result' | 'search'>('result')
 // 树形结构分组模式：original（原始结构）| label（按标签分组）
-const treeGroupMode = ref<'original' | 'label'>('label') // 默认按标签分组
+const treeGroupMode = ref<'original' | 'label'>('original') // 🔧 临时修改：默认显示采购标签图谱
 
 // 初始化本体树构建逻辑
 const { buildOntologyTree, expandMoreNode } = useOntologyTree()
@@ -1182,7 +1178,6 @@ const hasPrebuiltTree = ref(false)
 // 节点映射表（line_id -> node）
 const nodeMap = ref<Record<number, any>>({})
 
-
 // 结构化数据（包含 fields 信息，用于知识图谱）
 const structuredData = ref<any[]>([])
 
@@ -1846,10 +1841,13 @@ const loadJsonFiles = async (taskId: string) => {
 
       console.log('✅ 树形结构加载完成，一级标签数量:', builtTreeData.value.length)
 
-      // 如果是业务语义结构树模式，需要按标签重新构建
+      // 根据不同模式构建对应的数据
       if (treeGroupMode.value === 'label' && rawTreeData.value.length > 0) {
         console.log('🔄 调用 buildTreeByLabel 重新构建业务语义结构树...')
         await buildTreeByLabel()
+      } else if (treeGroupMode.value === 'original') {
+        console.log('🔄 采购标签图谱模式，生成知识图谱数据...')
+        await buildGraphData()
       }
     } else {
       // 使用扁平JSON，需要客户端构建树
@@ -2305,29 +2303,70 @@ const extractFieldsFromStructuredData = () => {
 const buildGraphData = async () => {
   console.log('🔧 开始生成知识图谱数据')
 
-  // 🎯 直接使用模拟数据，确保正确显示
-  const nodes: Array<{ id: string; label: string; type: string }> = [
-    { id: '0', label: '采购项目', type: 'normal' },
-    { id: '5', label: '采购包', type: 'normal' },
-    { id: '6', label: '商务要求', type: 'normal' },
-    { id: '7', label: '技术要求', type: 'normal' },
-    { id: '8', label: '资格要求', type: 'normal' },
-    { id: '9', label: '符合性要求', type: 'normal' },
-    { id: '10', label: '评标信息', type: 'normal' }
-  ]
+  // Get concept nodes and edges (with inferred edges from sameAs) from ontology.json
+  const { nodes: conceptNodes, edges: conceptEdges } = await getGraphData()
 
-  const edges = [
-    { id: 'e0', source: '0', target: '5', label: 'hasPart' },
-    { id: 'e1', source: '5', target: '6', label: 'hasPart' },
-    { id: 'e2', source: '5', target: '7', label: 'hasPart' },
-    { id: 'e3', source: '5', target: '8', label: 'hasPart' },
-    { id: 'e4', source: '5', target: '9', label: 'hasPart' },
-    { id: 'e5', source: '5', target: '10', label: 'hasPart' }
-  ]
+  console.log('📊 原始数据:')
+  console.log('  - 概念节点数:', conceptNodes.length)
+  console.log('  - 概念边数（含推理）:', conceptEdges.length)
+  console.log('  - 前3个节点:', conceptNodes.slice(0, 3))
+  console.log('  - 前3条边:', conceptEdges.slice(0, 3))
 
-  console.log('📊 使用模拟数据')
+  // 🎯 过滤逻辑1：不展示 hasAttribute 关系
+  const excludedEdgeTypes = new Set(['hasAttribute'])
+  const filteredEdgesByType = conceptEdges.filter((e: any) => !excludedEdgeTypes.has(e.label))
+
+  console.log(`📊 过滤边类型后: ${conceptEdges.length} -> ${filteredEdgesByType.length} 条边`)
+
+  // 🎯 过滤逻辑2：展示全量数据（收集所有有边连接的节点）
+  const relatedNodeIds = new Set<string>()
+
+  // 从所有边中收集涉及的节点
+  filteredEdgesByType.forEach((edge: any) => {
+    relatedNodeIds.add(edge.source)
+    relatedNodeIds.add(edge.target)
+  })
+
+  console.log('🎯 全量数据 - 涉及的节点数:', relatedNodeIds.size)
+
+  // 只保留有边连接的节点（避免显示孤立节点）
+  const nodes: Array<{ id: string; label: string; type: string }> = conceptNodes.filter((n: any) =>
+    relatedNodeIds.has(n.id)
+  )
+
+  // 使用所有过滤后的边
+  const edges = filteredEdgesByType
+
+  console.log('📊 过滤后数据:')
   console.log('  - 节点数:', nodes.length)
   console.log('  - 边数:', edges.length)
+  console.log(
+    '  - 节点列表:',
+    nodes.map(n => `${n.id}:${n.label}`)
+  )
+  console.log(
+    '  - 边列表:',
+    edges.map(e => `${e.source}->${e.target}(${e.label})`)
+  )
+
+  console.log('🔍 数据结构详细检查:')
+  if (nodes.length > 0) {
+    console.log('  节点示例 (第1个):', JSON.stringify(nodes[0], null, 2))
+  }
+  if (edges.length > 0) {
+    console.log('  边示例 (第1个):', JSON.stringify(edges[0], null, 2))
+  }
+
+  // 检查所有边的完整字段
+  console.log('  所有边的字段检查:')
+  edges.forEach((e: any, idx: number) => {
+    console.log(
+      `    ${idx + 1}. id=${e.id}, source=${e.source}, target=${e.target}, label=${e.label}, inferred=${
+        e.inferred
+      }, 其他字段:`,
+      Object.keys(e).filter(k => !['id', 'source', 'target', 'label', 'inferred'].includes(k))
+    )
+  })
 
   console.log('🔍 过滤后的边详情:')
   console.log(`  总共 ${edges.length} 条边`)
@@ -2358,7 +2397,10 @@ const buildGraphData = async () => {
       labelToConceptMap.set(node.label, node.id)
     }
   })
-  console.log('📋 过滤后概念节点标签映射表（共 ' + labelToConceptMap.size + ' 个）:', Array.from(labelToConceptMap.keys()))
+  console.log(
+    '📋 过滤后概念节点标签映射表（共 ' + labelToConceptMap.size + ' 个）:',
+    Array.from(labelToConceptMap.keys())
+  )
 
   // 🎯 暂时不加载段落节点和要素节点，只展示概念节点
   console.log('🎯 跳过段落节点和要素节点加载，只展示概念节点')
@@ -2535,39 +2577,60 @@ const buildGraphData = async () => {
   })
   */
 
+  // ✅ 修复：给所有边的 ID 加上前缀，避免与节点 ID 冲突
+  // Cytoscape 要求所有元素（节点+边）的 ID 必须全局唯一
+  const edgesWithUniqueId = edges.map((edge: any) => ({
+    ...edge,
+    id: 'edge_' + edge.id  // 给边 ID 加上前缀
+  }))
+
   graphNodes.value = nodes
-  graphEdges.value = edges
+  graphEdges.value = edgesWithUniqueId
+
+  console.log('✅ 已修复边 ID 冲突问题')
+  console.log('  节点数:', nodes.length, '| 边数:', edgesWithUniqueId.length)
 
   // Count different node types
-  const docNodes = nodes.filter(n => n.type === 'doc').length
-  const elementNodes = nodes.filter(n => n.type === 'element').length
-  const normalNodes = nodes.filter(n => n.type === 'normal').length
+  const finalNodes = graphNodes.value
+  const finalEdges = graphEdges.value
+  const docNodes = finalNodes.filter(n => n.type === 'doc').length
+  const elementNodes = finalNodes.filter(n => n.type === 'element').length
+  const normalNodes = finalNodes.filter(n => n.type === 'normal').length
 
   console.log('\n' + '='.repeat(60))
   console.log('✅ 知识图谱数据生成完成')
   console.log('  - 概念节点数:', normalNodes)
   console.log('  - 段落节点数:', docNodes)
   console.log('  - 要素节点数:', elementNodes, '🩷')
-  console.log('  - 总节点数:', nodes.length)
-  console.log('  - 总边数:', edges.length)
+  console.log('  - 总节点数:', finalNodes.length)
+  console.log('  - 总边数:', finalEdges.length)
 
   // 调试：检查节点和边的 ID 匹配情况
   console.log('\n' + '🔍 调试信息：')
-  console.log('前5个节点的ID:', nodes.slice(0, 5).map(n => ({ id: n.id, label: n.label, type: n.type })))
-  console.log('前5条边:', edges.slice(0, 5).map(e => ({ source: e.source, target: e.target, label: e.label })))
+  console.log(
+    '前5个节点的ID:',
+    finalNodes.slice(0, 5).map(n => ({ id: n.id, label: n.label, type: n.type }))
+  )
+  console.log(
+    '前5条边:',
+    finalEdges.slice(0, 5).map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label }))
+  )
 
   // 检查边的 source/target 是否能匹配到节点
-  const allNodeIds = new Set(nodes.map(n => n.id))
-  const unmatchedEdges = edges.filter(e => !allNodeIds.has(e.source) || !allNodeIds.has(e.target))
-  console.log('无法匹配的边数量:', unmatchedEdges.length, '/', edges.length)
+  const allNodeIds = new Set(finalNodes.map(n => n.id))
+  const unmatchedEdges = finalEdges.filter(e => !allNodeIds.has(e.source) || !allNodeIds.has(e.target))
+  console.log('无法匹配的边数量:', unmatchedEdges.length, '/', finalEdges.length)
   if (unmatchedEdges.length > 0) {
-    console.log('前5条无法匹配的边:', unmatchedEdges.slice(0, 5).map(e => ({
-      source: e.source,
-      target: e.target,
-      label: e.label,
-      sourceExists: allNodeIds.has(e.source),
-      targetExists: allNodeIds.has(e.target)
-    })))
+    console.log(
+      '前5条无法匹配的边:',
+      unmatchedEdges.slice(0, 5).map(e => ({
+        source: e.source,
+        target: e.target,
+        label: e.label,
+        sourceExists: allNodeIds.has(e.source),
+        targetExists: allNodeIds.has(e.target)
+      }))
+    )
   }
 }
 

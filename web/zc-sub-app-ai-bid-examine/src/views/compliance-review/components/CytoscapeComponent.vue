@@ -157,7 +157,8 @@ const initCytoscape = () => {
   console.log('  - 节点数:', data.nodes.length)
   console.log('  - 边数:', data.edges.length)
   console.log('  - 前3个节点:', data.nodes.slice(0, 3).map(n => ({ id: n.id, label: n.label, type: n.type })))
-  console.log('  - 前3条边:', data.edges.slice(0, 3).map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label })))
+  console.log('  - 前3条边 (原始):', data.edges.slice(0, 3))
+  console.log('  - 前3条边 (映射后):', data.edges.slice(0, 3).map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label })))
 
   const elements: ElementDefinition[] = [
     ...data.nodes.map(node => ({
@@ -181,6 +182,12 @@ const initCytoscape = () => {
   console.log('  - Elements 总数:', elements.length)
   console.log('  - 节点 Elements:', elements.filter(e => !e.data.source).length)
   console.log('  - 边 Elements:', elements.filter(e => e.data.source).length)
+
+  // 检查边 elements 的完整信息
+  const edgeElements = elements.filter(e => e.data.source)
+  if (edgeElements.length > 0) {
+    console.log('  - 前3个边 Elements:', edgeElements.slice(0, 3).map(e => e.data))
+  }
 
   cy = cytoscape({
     container: cytoscapeRef.value,
