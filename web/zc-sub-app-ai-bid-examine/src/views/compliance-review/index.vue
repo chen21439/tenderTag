@@ -1841,6 +1841,24 @@ const loadJsonFiles = async (taskId: string) => {
 
       console.log('✅ 树形结构加载完成，一级标签数量:', builtTreeData.value.length)
 
+      // 🎯 先加载 ontology 数据（用于知识图谱的 fields 信息）
+      try {
+        const ontologyUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology`
+        console.log('📡 开始加载 ontology 数据:', ontologyUrl)
+        const ontologyResponse = await fetch(ontologyUrl)
+        if (ontologyResponse.ok) {
+          const result = await ontologyResponse.json()
+          if (result.success && result.data && Array.isArray(result.data)) {
+            structuredData.value = result.data
+            console.log('✅ ontology 数据加载成功，用于知识图谱 fields，节点数:', structuredData.value.length)
+          }
+        } else {
+          console.warn('⚠️ 未找到 ontology 数据，知识图谱将不包含 fields 信息')
+        }
+      } catch (e) {
+        console.warn('⚠️ 加载 ontology 数据失败:', e)
+      }
+
       // 根据不同模式构建对应的数据
       if (treeGroupMode.value === 'label' && rawTreeData.value.length > 0) {
         console.log('🔄 调用 buildTreeByLabel 重新构建业务语义结构树...')
@@ -1857,23 +1875,6 @@ const loadJsonFiles = async (taskId: string) => {
 
       // 构建树形结构（使用统一入口，支持切换模式）
       rebuildTree()
-    }
-
-    // 加载 structured_data 文件（用于知识图谱的 fields 信息）
-    try {
-      const structuredDataUrl = `${import.meta.env.BASE_URL}hrdoc/${taskId}_structured_data.json`
-      const structuredDataResponse = await fetch(structuredDataUrl)
-      if (structuredDataResponse.ok) {
-        const data = await structuredDataResponse.json()
-        if (data.structured_data && Array.isArray(data.structured_data)) {
-          structuredData.value = data.structured_data
-          console.log('✅ structured_data 加载成功，用于知识图谱 fields，节点数:', structuredData.value.length)
-        }
-      } else {
-        console.warn('⚠️ 未找到 _structured_data.json，知识图谱将不包含 fields 信息')
-      }
-    } catch (e) {
-      console.warn('⚠️ 加载 _structured_data.json 失败:', e)
     }
 
     console.log('📦 JSON 文件加载完成')
@@ -2312,30 +2313,18 @@ const buildGraphData = async () => {
   console.log('  - 前3个节点:', conceptNodes.slice(0, 3))
   console.log('  - 前3条边:', conceptEdges.slice(0, 3))
 
-  // 🎯 过滤逻辑1：不展示 hasAttribute 关系
+  // 🎯 过滤逻辑1：API 数据中不展示 hasAttribute 关系（要素节点会在后面单独添加）
   const excludedEdgeTypes = new Set(['hasAttribute'])
   const filteredEdgesByType = conceptEdges.filter((e: any) => !excludedEdgeTypes.has(e.label))
 
-  console.log(`📊 过滤边类型后: ${conceptEdges.length} -> ${filteredEdgesByType.length} 条边`)
+  console.log(`📊 过滤 API 边类型后: ${conceptEdges.length} -> ${filteredEdgesByType.length} 条边`)
 
-  // 🎯 过滤逻辑2：展示全量数据（收集所有有边连接的节点）
-  const relatedNodeIds = new Set<string>()
+  // 初始化节点和边数组
+  const nodes: Array<{ id: string; label: string; type: string }> = []
+  const edges: Array<{ id: string; source: string; target: string; label: string }> = []
 
-  // 从所有边中收集涉及的节点
-  filteredEdgesByType.forEach((edge: any) => {
-    relatedNodeIds.add(edge.source)
-    relatedNodeIds.add(edge.target)
-  })
-
-  console.log('🎯 全量数据 - 涉及的节点数:', relatedNodeIds.size)
-
-  // 只保留有边连接的节点（避免显示孤立节点）
-  const nodes: Array<{ id: string; label: string; type: string }> = conceptNodes.filter((n: any) =>
-    relatedNodeIds.has(n.id)
-  )
-
-  // 使用所有过滤后的边
-  const edges = filteredEdgesByType
+  // 先添加 API 过滤后的边
+  edges.push(...filteredEdgesByType)
 
   console.log('📊 过滤后数据:')
   console.log('  - 节点数:', nodes.length)
@@ -2402,8 +2391,154 @@ const buildGraphData = async () => {
     Array.from(labelToConceptMap.keys())
   )
 
-  // 🎯 暂时不加载段落节点和要素节点，只展示概念节点
-  console.log('🎯 跳过段落节点和要素节点加载，只展示概念节点')
+  // 🎯 加载要素节点（从 structuredData 中提取 fields）
+  console.log('🎯 开始加载要素节点（fields）...')
+
+  // 🧪 使用模拟数据测试
+  const USE_MOCK_FIELDS = true
+
+  if (USE_MOCK_FIELDS) {
+    console.log('🧪 使用模拟数据测试 fields 挂载')
+    const mockStructuredData = [
+      {
+        pid: 'texts-15',
+        label: '采购项目/采购包/符合性要求/符合性审查项',
+        fields: {
+          '是否一票否决': null,
+          '证明材料': '资格证明资料',
+          '符合性要求内容': '符合招标公告中的投标人资格要求'
+        }
+      },
+      {
+        pid: 'texts-16',
+        label: '采购项目/采购包/符合性要求/符合性审查项',
+        fields: {
+          '是否一票否决': '',
+          '证明材料': '',
+          '符合性要求内容': ''
+        }
+      },
+      {
+        pid: 'texts-18',
+        label: '采购项目/采购包/评标信息/评标方法',
+        fields: {
+          '评标方法描述': '综合评分法说明',
+          '评标方法名称': '综合评分法'
+        }
+      }
+    ]
+
+    console.log('📋 模拟数据节点数:', mockStructuredData.length)
+    console.log('📋 模拟数据详情:', JSON.stringify(mockStructuredData, null, 2))
+
+    // 打印每个节点的 label 路径和 fields
+    mockStructuredData.forEach((item, index) => {
+      console.log(`\n📍 节点 ${index + 1}:`)
+      console.log(`  - pid: ${item.pid}`)
+      console.log(`  - label: ${item.label}`)
+      console.log(`  - label 路径解析:`)
+      const parts = item.label.split('/')
+      parts.forEach((part, i) => {
+        console.log(`    ${i + 1}. ${part}`)
+      })
+      console.log(`  - 最后一级标签: ${parts[parts.length - 1]}`)
+      console.log(`  - fields:`, item.fields)
+      console.log(`  - fields 键值对:`)
+      Object.entries(item.fields).forEach(([key, value]) => {
+        console.log(`    • ${key}: ${value}`)
+      })
+    })
+
+    // 使用模拟数据替换 structuredData
+    structuredData.value = mockStructuredData
+  }
+
+  if (structuredData.value && Array.isArray(structuredData.value)) {
+    console.log('📋 从 structuredData 提取 fields，节点数:', structuredData.value.length)
+
+    let fieldNodeCounter = 0
+
+    // 遍历 structuredData 中每个节点
+    structuredData.value.forEach((item: any) => {
+      // 检查节点是否有 fields
+      if (!item.fields || Object.keys(item.fields).length === 0) {
+        return
+      }
+
+      // 解析 label path（如 "采购项目/采购包/商务要求"）
+      const labelPath = item.label || ''
+      if (!labelPath || !labelPath.includes('/')) {
+        return
+      }
+
+      // 提取最后一级标签作为概念名称
+      const parts = labelPath.split('/')
+      const conceptLabel = parts[parts.length - 1]
+
+      // 查找对应的概念节点
+      const conceptNode = nodes.find((n: any) => n.label === conceptLabel)
+      if (!conceptNode) {
+        console.log(`  ⚠️ 未找到概念节点: ${conceptLabel}`)
+        return
+      }
+
+      // 为每个 field 创建要素节点并连接到概念节点
+      Object.entries(item.fields).forEach(([fieldKey, fieldValue]: [string, any]) => {
+        // 跳过空值的 field
+        if (fieldValue === null || fieldValue === '') {
+          return
+        }
+
+        fieldNodeCounter++
+        const fieldNodeId = `field_${item.pid}_${fieldKey}`
+
+        // 添加要素节点
+        nodes.push({
+          id: fieldNodeId,
+          label: fieldKey,
+          type: 'element'
+        })
+
+        // 添加 hasAttribute 边（概念 -> 要素）
+        edges.push({
+          id: `edge_field_${fieldNodeCounter}`,
+          source: conceptNode.id,
+          target: fieldNodeId,
+          label: 'hasAttribute'
+        })
+
+        console.log(`  ✓ 添加要素: ${conceptLabel} -> ${fieldKey}`)
+      })
+    })
+
+    console.log(`📊 共添加 ${fieldNodeCounter} 个要素节点`)
+  } else {
+    console.warn('⚠️ structuredData 为空，无法加载要素节点')
+  }
+
+  // 🎯 统一收集所有需要展示的节点（包括概念节点和要素节点）
+  console.log('🔍 收集需要展示的节点...')
+
+  // 先把所有概念节点添加到 nodes 数组
+  const relatedNodeIds = new Set<string>()
+
+  // 从所有边中收集涉及的节点ID
+  edges.forEach((edge: any) => {
+    relatedNodeIds.add(edge.source)
+    relatedNodeIds.add(edge.target)
+  })
+
+  console.log(`📊 涉及的节点ID数: ${relatedNodeIds.size}`)
+
+  // 添加概念节点（从 API 获取的）
+  conceptNodes.forEach((n: any) => {
+    if (relatedNodeIds.has(n.id)) {
+      nodes.push(n)
+    }
+  })
+
+  console.log(`📊 最终展示节点数: ${nodes.length} (概念节点 + 要素节点)`)
+  console.log(`📊 最终展示边数: ${edges.length}`)
 
   /*
   // Extract fields from structured data
