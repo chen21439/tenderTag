@@ -147,6 +147,7 @@ import TreeNode from './components/TreeNode.vue'
 import CytoscapeComponent from './components/CytoscapeComponent.vue'
 import GraphLegend from '../../components/knowledge-graph/GraphLegend.vue'
 import { getGraphData } from '@/components/knowledge-graph/graphData'
+import { buildFieldNodes, printLabelPathAnalysis } from '../../components/knowledge-graph/fieldNodesBuilder'
 import config from '../../config'
 import { useOntologyTree } from './components/ontology/useOntologyTree'
 
@@ -1669,18 +1670,16 @@ const loadJsonFiles = async (taskId: string) => {
     let jsonData = null
     let isTreeJson = false
 
-    // 优先从 API 加载（根据模式选择不同的 result_type）
+    // 统一从 ontology API 加载数据（包含 label 和 fields）
     try {
-      // 业务语义结构树用 ontology，采购标签图谱用 tree
-      const resultType = treeGroupMode.value === 'label' ? 'ontology' : 'tree'
-      const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=${resultType}`
-      console.log(`🔄 从 API 加载数据 (模式: ${treeGroupMode.value}, result_type: ${resultType}):`, apiUrl)
+      const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology`
+      console.log(`🔄 从 API 加载数据 (result_type=ontology):`, apiUrl)
       const response = await fetch(apiUrl)
       if (response.ok) {
         jsonData = await response.json()
         treeDataUrl = apiUrl
         isTreeJson = true
-        console.log(`✅ 数据源: API (result_type=${resultType})`)
+        console.log(`✅ 数据源: API (result_type=ontology)`)
       }
     } catch (e) {
       console.log('⚠️ API 加载失败，尝试从 public 目录加载:', e)
@@ -1783,44 +1782,33 @@ const loadJsonFiles = async (taskId: string) => {
       }
       extractNodes(builtTreeData.value)
 
-      // 同时加载 _labeled.json 用于文件视图切换
-      try {
-        const labeledUrl = treeDataUrl.replace('_labeled_tree.json', '_labeled.json')
-        const labeledResponse = await fetch(labeledUrl)
-        if (labeledResponse.ok) {
-          const labeledData = await labeledResponse.json()
-
-          // 扁平化树结构（_labeled.json 是嵌套结构，需要扁平化）
-          const flattenTree = (nodes: any[]): any[] => {
-            const result: any[] = []
-            const traverse = (node: any) => {
-              // 先添加当前节点
-              result.push(node)
-              // 递归处理子节点
-              if (node.children && Array.isArray(node.children)) {
-                node.children.forEach(traverse)
-              }
-            }
-            nodes.forEach(traverse)
-            return result
+      // 🎯 使用 rawTreeData 作为知识图谱 fields 数据源（包含原始的 label 和 fields）
+      const flattenTree = (nodes: any[]): any[] => {
+        const result: any[] = []
+        const traverse = (node: any) => {
+          // 先添加当前节点
+          result.push(node)
+          // 递归处理子节点
+          if (node.children && Array.isArray(node.children)) {
+            node.children.forEach(traverse)
           }
-
-          // 注意：不要覆盖 rawTreeData.value，它已经在前面正确赋值了
-          // 这里加载 _labeled.json 只是为了补充信息，不需要替换整个数据
-          const treeData = Array.isArray(labeledData) ? labeledData : [labeledData]
-          const flattenedData = flattenTree(treeData)
-
-          console.log('✅ 同时加载 _labeled.json 并扁平化，节点数:', flattenedData.length)
-
-          // 统计有 fields 的节点数
-          const nodesWithFields = flattenedData.filter(n => n.fields && Object.keys(n.fields).length > 0).length
-          console.log(`   其中包含 fields 的节点数: ${nodesWithFields}`)
-        } else {
-          console.warn('⚠️ 未找到对应的 _labeled.json，文件视图将不可用')
         }
-      } catch (e) {
-        console.warn('⚠️ 加载 _labeled.json 失败:', e)
+        nodes.forEach(traverse)
+        return result
       }
+
+      const flattenedData = flattenTree(rawTreeData.value)
+      structuredData.value = flattenedData
+
+      console.log('✅ 扁平化 rawTreeData，节点数:', flattenedData.length)
+      const nodesWithFieldsArray = flattenedData.filter(n => n.fields && Object.keys(n.fields).length > 0)
+      console.log('   其中包含 fields 的节点数:', nodesWithFieldsArray.length)
+      console.log('   📋 前3个包含 fields 的节点:', nodesWithFieldsArray.slice(0, 3).map(n => ({
+        pid: n.pid,
+        label: n.label,
+        fields: n.fields,
+        title: n.title
+      })))
 
       // 只在子节点有标签的时候展开
       const expandedLabels = new Set<number>()
@@ -1840,24 +1828,6 @@ const loadJsonFiles = async (taskId: string) => {
       treeExpandedNodes.value = expandedLabels
 
       console.log('✅ 树形结构加载完成，一级标签数量:', builtTreeData.value.length)
-
-      // 🎯 先加载 ontology 数据（用于知识图谱的 fields 信息）
-      try {
-        const ontologyUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology`
-        console.log('📡 开始加载 ontology 数据:', ontologyUrl)
-        const ontologyResponse = await fetch(ontologyUrl)
-        if (ontologyResponse.ok) {
-          const result = await ontologyResponse.json()
-          if (result.success && result.data && Array.isArray(result.data)) {
-            structuredData.value = result.data
-            console.log('✅ ontology 数据加载成功，用于知识图谱 fields，节点数:', structuredData.value.length)
-          }
-        } else {
-          console.warn('⚠️ 未找到 ontology 数据，知识图谱将不包含 fields 信息')
-        }
-      } catch (e) {
-        console.warn('⚠️ 加载 ontology 数据失败:', e)
-      }
 
       // 根据不同模式构建对应的数据
       if (treeGroupMode.value === 'label' && rawTreeData.value.length > 0) {
@@ -2326,6 +2296,20 @@ const buildGraphData = async () => {
   // 先添加 API 过滤后的边
   edges.push(...filteredEdgesByType)
 
+  // 🎯 收集涉及的节点ID（从边中）
+  const relatedNodeIds = new Set<string>()
+  edges.forEach((edge: any) => {
+    relatedNodeIds.add(edge.source)
+    relatedNodeIds.add(edge.target)
+  })
+
+  // 添加概念节点（从 API 获取的，只添加有边连接的）
+  conceptNodes.forEach((n: any) => {
+    if (relatedNodeIds.has(n.id)) {
+      nodes.push(n)
+    }
+  })
+
   console.log('📊 过滤后数据:')
   console.log('  - 节点数:', nodes.length)
   console.log('  - 边数:', edges.length)
@@ -2391,151 +2375,50 @@ const buildGraphData = async () => {
     Array.from(labelToConceptMap.keys())
   )
 
-  // 🎯 加载要素节点（从 structuredData 中提取 fields）
-  console.log('🎯 开始加载要素节点（fields）...')
+  // 🎯 加载要素节点（从扁平化的 structuredData 中提取 fields）
+  console.log('📊 使用业务语义结构树数据构建 fields')
+  console.log('📋 structuredData 节点数:', structuredData.value?.length || 0)
 
-  // 🧪 使用模拟数据测试
-  const USE_MOCK_FIELDS = true
-
-  if (USE_MOCK_FIELDS) {
-    console.log('🧪 使用模拟数据测试 fields 挂载')
-    const mockStructuredData = [
-      {
-        pid: 'texts-15',
-        label: '采购项目/采购包/符合性要求/符合性审查项',
-        fields: {
-          '是否一票否决': null,
-          '证明材料': '资格证明资料',
-          '符合性要求内容': '符合招标公告中的投标人资格要求'
-        }
-      },
-      {
-        pid: 'texts-16',
-        label: '采购项目/采购包/符合性要求/符合性审查项',
-        fields: {
-          '是否一票否决': '',
-          '证明材料': '',
-          '符合性要求内容': ''
-        }
-      },
-      {
-        pid: 'texts-18',
-        label: '采购项目/采购包/评标信息/评标方法',
-        fields: {
-          '评标方法描述': '综合评分法说明',
-          '评标方法名称': '综合评分法'
-        }
-      }
-    ]
-
-    console.log('📋 模拟数据节点数:', mockStructuredData.length)
-    console.log('📋 模拟数据详情:', JSON.stringify(mockStructuredData, null, 2))
-
-    // 打印每个节点的 label 路径和 fields
-    mockStructuredData.forEach((item, index) => {
-      console.log(`\n📍 节点 ${index + 1}:`)
-      console.log(`  - pid: ${item.pid}`)
-      console.log(`  - label: ${item.label}`)
-      console.log(`  - label 路径解析:`)
-      const parts = item.label.split('/')
-      parts.forEach((part, i) => {
-        console.log(`    ${i + 1}. ${part}`)
-      })
-      console.log(`  - 最后一级标签: ${parts[parts.length - 1]}`)
-      console.log(`  - fields:`, item.fields)
-      console.log(`  - fields 键值对:`)
-      Object.entries(item.fields).forEach(([key, value]) => {
-        console.log(`    • ${key}: ${value}`)
-      })
-    })
-
-    // 使用模拟数据替换 structuredData
-    structuredData.value = mockStructuredData
-  }
-
-  if (structuredData.value && Array.isArray(structuredData.value)) {
-    console.log('📋 从 structuredData 提取 fields，节点数:', structuredData.value.length)
-
-    let fieldNodeCounter = 0
-
-    // 遍历 structuredData 中每个节点
-    structuredData.value.forEach((item: any) => {
-      // 检查节点是否有 fields
-      if (!item.fields || Object.keys(item.fields).length === 0) {
-        return
-      }
-
-      // 解析 label path（如 "采购项目/采购包/商务要求"）
-      const labelPath = item.label || ''
-      if (!labelPath || !labelPath.includes('/')) {
-        return
-      }
-
-      // 提取最后一级标签作为概念名称
-      const parts = labelPath.split('/')
-      const conceptLabel = parts[parts.length - 1]
-
-      // 查找对应的概念节点
-      const conceptNode = nodes.find((n: any) => n.label === conceptLabel)
-      if (!conceptNode) {
-        console.log(`  ⚠️ 未找到概念节点: ${conceptLabel}`)
-        return
-      }
-
-      // 为每个 field 创建要素节点并连接到概念节点
-      Object.entries(item.fields).forEach(([fieldKey, fieldValue]: [string, any]) => {
-        // 跳过空值的 field
-        if (fieldValue === null || fieldValue === '') {
-          return
-        }
-
-        fieldNodeCounter++
-        const fieldNodeId = `field_${item.pid}_${fieldKey}`
-
-        // 添加要素节点
-        nodes.push({
-          id: fieldNodeId,
-          label: fieldKey,
-          type: 'element'
-        })
-
-        // 添加 hasAttribute 边（概念 -> 要素）
-        edges.push({
-          id: `edge_field_${fieldNodeCounter}`,
-          source: conceptNode.id,
-          target: fieldNodeId,
-          label: 'hasAttribute'
-        })
-
-        console.log(`  ✓ 添加要素: ${conceptLabel} -> ${fieldKey}`)
-      })
-    })
-
-    console.log(`📊 共添加 ${fieldNodeCounter} 个要素节点`)
-  } else {
-    console.warn('⚠️ structuredData 为空，无法加载要素节点')
-  }
-
-  // 🎯 统一收集所有需要展示的节点（包括概念节点和要素节点）
-  console.log('🔍 收集需要展示的节点...')
-
-  // 先把所有概念节点添加到 nodes 数组
-  const relatedNodeIds = new Set<string>()
-
-  // 从所有边中收集涉及的节点ID
-  edges.forEach((edge: any) => {
-    relatedNodeIds.add(edge.source)
-    relatedNodeIds.add(edge.target)
-  })
-
-  console.log(`📊 涉及的节点ID数: ${relatedNodeIds.size}`)
-
-  // 添加概念节点（从 API 获取的）
-  conceptNodes.forEach((n: any) => {
-    if (relatedNodeIds.has(n.id)) {
-      nodes.push(n)
+  // 🔍 分析 rawTreeData 的结构
+  console.log('\n🔍 rawTreeData 结构分析:')
+  console.log('  - 根节点数:', rawTreeData.value?.length || 0)
+  if (rawTreeData.value && rawTreeData.value.length > 0) {
+    console.log('  - 第一个根节点:', rawTreeData.value[0])
+    console.log('  - 第一个根节点的子节点数:', rawTreeData.value[0]?.children?.length || 0)
+    if (rawTreeData.value[0]?.children?.length > 0) {
+      console.log('  - 第一个子节点:', rawTreeData.value[0].children[0])
+      console.log('  - 第一个子节点是否有 fields:', !!rawTreeData.value[0].children[0]?.fields)
+      console.log('  - 第一个子节点的 label:', rawTreeData.value[0].children[0]?.label)
     }
-  })
+  }
+
+  // 🔍 分析 structuredData 的结构
+  console.log('\n🔍 structuredData 结构分析:')
+  if (structuredData.value && structuredData.value.length > 0) {
+    console.log('  - 第一个节点:', structuredData.value[0])
+    console.log('  - 第一个节点是否有 fields:', !!structuredData.value[0]?.fields)
+    console.log('  - 第一个节点的 label:', structuredData.value[0]?.label)
+  }
+
+  // 统计有 fields 的节点
+  const nodesWithFields = structuredData.value?.filter(
+    (n: any) => n.fields && Object.keys(n.fields).length > 0
+  ) || []
+  console.log('\n📋 有 fields 的节点数:', nodesWithFields.length)
+
+  if (nodesWithFields.length > 0) {
+    printLabelPathAnalysis(structuredData.value)
+  }
+
+  // 构建要素节点和边
+  const { fieldNodes, fieldEdges } = buildFieldNodes(structuredData.value || [], nodes)
+
+  // 将要素节点和边添加到图谱数据中
+  nodes.push(...fieldNodes)
+  edges.push(...fieldEdges)
+
+  // 节点已经在前面添加好了，这里不需要再添加
+  console.log(`📊 最终节点数: ${nodes.length} (概念节点 + 要素节点)`)
 
   console.log(`📊 最终展示节点数: ${nodes.length} (概念节点 + 要素节点)`)
   console.log(`📊 最终展示边数: ${edges.length}`)
@@ -2782,14 +2665,32 @@ const handleNodeClick = (nodeData: { id: string; label: string; type: string }) 
     return
   }
 
-  // 处理要素节点 (field_xxx_xxx)
+  // 处理要素节点 (field_pid_fieldKey)
   if (nodeData.type === 'element' && nodeData.id.startsWith('field_')) {
-    // field_lineId_fieldKey 格式
+    console.log('🏷️ 要素节点被点击，查找对应的段落节点...')
+
+    // field_pid_fieldKey 格式，提取 pid
     const parts = nodeData.id.split('_')
-    if (parts.length >= 2) {
-      const lineId = parseInt(parts[1])
-      if (!isNaN(lineId)) {
-        selectTreeNode(lineId)
+    if (parts.length >= 3) {
+      const pid = parts.slice(1, -1).join('_') // 支持 pid 中包含下划线的情况
+      console.log(`  - 提取的 pid: ${pid}`)
+
+      // 从 structuredData 中查找对应的节点
+      if (structuredData.value && Array.isArray(structuredData.value)) {
+        const targetNode = structuredData.value.find((item: any) => item.pid === pid)
+        if (targetNode && targetNode.location && targetNode.location.length > 0) {
+          const firstLocation = targetNode.location[0]
+          console.log(`  - 找到位置信息:`, firstLocation)
+
+          // 调用 PDF 跳转
+          if (pdfReaderRef.value && firstLocation.page) {
+            const rect = [firstLocation.l, firstLocation.t, firstLocation.r, firstLocation.b]
+            pdfReaderRef.value.scrollToAnnotation(firstLocation.page, rect, true)
+            console.log(`  ✓ 跳转到 PDF 第 ${firstLocation.page} 页`)
+          }
+        } else {
+          console.log(`  ⚠️ 未找到 pid=${pid} 的位置信息`)
+        }
       }
     }
     return
