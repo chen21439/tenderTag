@@ -1602,19 +1602,24 @@ watch(treeGroupMode, async () => {
   console.log('🔄 树形结构分组模式切换:', treeGroupMode.value)
 
   if (treeGroupMode.value === 'original') {
-    // 切换到采购标签图谱
-    console.log('📊 采购标签图谱数据状态:')
+    // 切换到采购标签图谱 - 加载 ontology 数据用于知识图谱
+    console.log('📊 切换到采购标签图谱...')
+    if (taskId.value && rawTreeData.value.length === 0) {
+      console.log('🔄 加载 ontology 数据...')
+      await loadOntologyData(taskId.value)
+    }
     console.log('  - graphNodes 数量:', graphNodes.value.length)
     console.log('  - graphEdges 数量:', graphEdges.value.length)
     if (graphNodes.value.length === 0) {
       console.warn('⚠️ 图谱数据为空，尝试重新生成...')
-      buildGraphData()
+      await buildGraphData()
     }
   } else if (treeGroupMode.value === 'label') {
-    // 切换到业务语义结构树 - 重新加载 ontology 数据
-    console.log('🔄 切换到业务语义结构树，重新加载数据...')
-    if (taskId.value) {
-      await loadJsonFiles(taskId.value)
+    // 切换到业务语义结构树 - 加载 agent 数据
+    console.log('🔄 切换到业务语义结构树...')
+    if (taskId.value && agentTreeData.value.length === 0) {
+      console.log('🔄 加载 agent 数据...')
+      await loadAgentData(taskId.value)
     }
   }
 })
@@ -1678,7 +1683,103 @@ const convertAPITreeData = (nodes: any[]): any[] => {
   return nodes.map(convertNode)
 }
 
-// 读取 JSON 文件（从 API 接口）
+// 加载 agent 数据（业务语义结构树专用）
+const loadAgentData = async (taskId: string) => {
+  try {
+    const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=agent`
+    console.log(`🔄 加载 agent 数据:`, apiUrl)
+    const response = await fetch(apiUrl)
+    if (response.ok) {
+      let agentData = await response.json()
+
+      // 为 agent 数据添加 line_id 和 text 字段
+      const addLineIdToNodes = (nodes: any[], startId: number = 0): number => {
+        let currentId = startId
+        nodes.forEach(node => {
+          const pidMatch = node.pid?.match(/\d+/)
+          node.line_id = pidMatch ? parseInt(pidMatch[0]) : currentId++
+
+          if (!node.text) {
+            if (node.title && node.title.trim()) {
+              node.text = node.title
+            } else if (node.content && node.content.trim()) {
+              node.text = node.content.substring(0, 50).trim()
+            }
+          }
+
+          if (node.children && Array.isArray(node.children) && node.children.length > 0) {
+            currentId = addLineIdToNodes(node.children, currentId)
+          }
+        })
+        return currentId
+      }
+
+      const processedAgentData = Array.isArray(agentData) ? agentData : [agentData]
+      addLineIdToNodes(processedAgentData)
+
+      agentTreeData.value = processedAgentData
+      console.log('✅ agentTreeData 已保存，节点数:', agentTreeData.value.length)
+
+      // 构建业务语义结构树
+      await buildTreeByLabel()
+    }
+  } catch (e) {
+    console.error('❌ agent API 加载失败:', e)
+  }
+}
+
+// 加载 ontology 数据（知识图谱专用）
+const loadOntologyData = async (taskId: string) => {
+  try {
+    const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology`
+    console.log(`🔄 加载 ontology 数据:`, apiUrl)
+    const response = await fetch(apiUrl)
+    if (response.ok) {
+      const jsonData = await response.json()
+
+      // 处理 API 格式
+      let treeData
+      if (jsonData.success && jsonData.data && jsonData.data.dataList) {
+        treeData = jsonData.data.dataList
+      } else if (jsonData.tree) {
+        treeData = jsonData.tree
+      } else {
+        treeData = jsonData
+      }
+
+      const processedData = Array.isArray(treeData) ? treeData : [treeData]
+      prebuiltTreeData.value = processedData
+
+      // 转换格式
+      prebuiltTreeData.value = convertAPITreeData(prebuiltTreeData.value)
+      sortTreeByHierarchy(prebuiltTreeData.value)
+      rawTreeData.value = prebuiltTreeData.value
+
+      // 扁平化用于知识图谱
+      const flattenTree = (nodes: any[]): any[] => {
+        const result: any[] = []
+        const traverse = (node: any) => {
+          result.push(node)
+          if (node.children && Array.isArray(node.children)) {
+            node.children.forEach(traverse)
+          }
+        }
+        nodes.forEach(traverse)
+        return result
+      }
+
+      structuredData.value = flattenTree(rawTreeData.value)
+      console.log('✅ ontology 数据已保存，节点数:', structuredData.value.length)
+
+      // 生成知识图谱
+      await buildGraphData()
+    }
+  } catch (e) {
+    console.error('❌ ontology API 加载失败:', e)
+  }
+}
+
+// 读取 JSON 文件（从 API 接口）- 保留用于兼容
 const loadJsonFiles = async (taskId: string) => {
   try {
     console.log('📦 开始加载 JSON 文件，taskId:', taskId)
