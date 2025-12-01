@@ -145,19 +145,19 @@ const extractAllAnnotations = async () => {
   const allAnnotations = []
   let annotationIdCounter = 0
 
-  console.log(`
-═══════════════════════════════════════════════════════
-    开始提取 PDF 全量批注数据
-    PDF 总页数: ${numPages.value}
-═══════════════════════════════════════════════════════
-`)
+  // console.log(`
+  // ═══════════════════════════════════════════════════════
+  //     开始提取 PDF 全量批注数据
+  //     PDF 总页数: ${numPages.value}
+  // ═══════════════════════════════════════════════════════
+  // `)
 
   try {
     for (let pageIndex = 1; pageIndex <= numPages.value; pageIndex++) {
       const page = await pdfDoc.value.getPage(pageIndex)
       const annotationsData = await page.getAnnotations()
 
-      console.log(`📄 第 ${pageIndex} 页 - 找到 ${annotationsData.length} 个批注`)
+      // console.log(`📄 第 ${pageIndex} 页 - 找到 ${annotationsData.length} 个批注`)
 
       annotationsData.forEach((annotation, idx) => {
         const annotationObj = {
@@ -178,62 +178,62 @@ const extractAllAnnotations = async () => {
           原始数据: annotation // 完整的原始数据
         }
 
-        console.log(`  ✓ 批注 #${idx + 1}:`, {
-          pageNum: pageIndex,
-          subtype: annotationObj.subtype,
-          name: annotationObj.name,
-          contents: annotationObj.contents,
-          title: annotationObj.title,
-          rect: annotationObj.rect,
-          color: annotationObj.color,
-          pdfAnnotationId: annotationObj.pdfAnnotationId,
-          creationDate: annotationObj.creationDate,
-          modificationDate: annotationObj.modificationDate,
-          原始数据: annotationObj.原始数据
-        })
+        // console.log(`  ✓ 批注 #${idx + 1}:`, {
+        //   pageNum: pageIndex,
+        //   subtype: annotationObj.subtype,
+        //   name: annotationObj.name,
+        //   contents: annotationObj.contents,
+        //   title: annotationObj.title,
+        //   rect: annotationObj.rect,
+        //   color: annotationObj.color,
+        //   pdfAnnotationId: annotationObj.pdfAnnotationId,
+        //   creationDate: annotationObj.creationDate,
+        //   modificationDate: annotationObj.modificationDate,
+        //   原始数据: annotationObj.原始数据
+        // })
 
         allAnnotations.push(annotationObj)
       })
     }
 
-    console.log(`
-═══════════════════════════════════════════════════════
-    ✅ 批注提取完成
-    总批注数: ${allAnnotations.length} 条
-═══════════════════════════════════════════════════════
-`)
+    // console.log(`
+    // ═══════════════════════════════════════════════════════
+    //     ✅ 批注提取完成
+    //     总批注数: ${allAnnotations.length} 条
+    // ═══════════════════════════════════════════════════════
+    // `)
 
-    // 打印全量批注汇总表格
-    if (allAnnotations.length > 0) {
-      console.log('\n📊 All Annotations Table:')
-      console.table(allAnnotations.map(a => ({
-        id: a.id,
-        pageNum: a.pageNum,
-        subtype: a.subtype,
-        name: a.name,
-        title: a.title,
-        contents: a.contents?.substring(0, 30) + (a.contents?.length > 30 ? '...' : ''),
-        modificationDate: a.modificationDate
-      })))
+    // // 打印全量批注汇总表格
+    // if (allAnnotations.length > 0) {
+    //   console.log('\n📊 All Annotations Table:')
+    //   console.table(allAnnotations.map(a => ({
+    //     id: a.id,
+    //     pageNum: a.pageNum,
+    //     subtype: a.subtype,
+    //     name: a.name,
+    //     title: a.title,
+    //     contents: a.contents?.substring(0, 30) + (a.contents?.length > 30 ? '...' : ''),
+    //     modificationDate: a.modificationDate
+    //   })))
 
-      // 按页码统计批注数量
-      const pageStats = {}
-      allAnnotations.forEach(a => {
-        pageStats[a.pageNum] = (pageStats[a.pageNum] || 0) + 1
-      })
-      console.log('\n📈 Annotations by Page:')
-      console.table(pageStats)
+    //   // 按页码统计批注数量
+    //   const pageStats = {}
+    //   allAnnotations.forEach(a => {
+    //     pageStats[a.pageNum] = (pageStats[a.pageNum] || 0) + 1
+    //   })
+    //   console.log('\n📈 Annotations by Page:')
+    //   console.table(pageStats)
 
-      // 按类型统计批注数量
-      const typeStats = {}
-      allAnnotations.forEach(a => {
-        typeStats[a.subtype] = (typeStats[a.subtype] || 0) + 1
-      })
-      console.log('\n📊 Annotations by Type:')
-      console.table(typeStats)
-    } else {
-      console.log('⚠️  未找到任何批注')
-    }
+    //   // 按类型统计批注数量
+    //   const typeStats = {}
+    //   allAnnotations.forEach(a => {
+    //     typeStats[a.subtype] = (typeStats[a.subtype] || 0) + 1
+    //   })
+    //   console.log('\n📊 Annotations by Type:')
+    //   console.table(typeStats)
+    // } else {
+    //   console.log('⚠️  未找到任何批注')
+    // }
 
     return allAnnotations
   } catch (err) {
@@ -274,9 +274,9 @@ const loadPdfFromUrl = async (url) => {
     console.log('PDF 加载成功, 总页数:', numPages.value)
 
     // 提取全量批注
-    console.log('🔍 准备提取批注...')
+    // console.log('🔍 准备提取批注...')
     const allAnnotations = await extractAllAnnotations()
-    console.log('🔍 批注提取完成，返回结果:', allAnnotations)
+    // console.log('🔍 批注提取完成，返回结果:', allAnnotations)
 
     // 触发事件，传递批注数据给父组件
     emit('annotationsLoaded', allAnnotations)

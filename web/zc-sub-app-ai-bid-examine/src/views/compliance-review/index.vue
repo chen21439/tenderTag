@@ -1602,25 +1602,15 @@ watch(treeGroupMode, async () => {
   console.log('🔄 树形结构分组模式切换:', treeGroupMode.value)
 
   if (treeGroupMode.value === 'original') {
-    // 切换到采购标签图谱 - 加载 ontology 数据用于知识图谱
+    // 切换到采购标签图谱
     console.log('📊 切换到采购标签图谱...')
-    if (taskId.value && rawTreeData.value.length === 0) {
-      console.log('🔄 加载 ontology 数据...')
-      await loadOntologyData(taskId.value)
-    }
     console.log('  - graphNodes 数量:', graphNodes.value.length)
     console.log('  - graphEdges 数量:', graphEdges.value.length)
-    if (graphNodes.value.length === 0) {
-      console.warn('⚠️ 图谱数据为空，尝试重新生成...')
-      await buildGraphData()
-    }
   } else if (treeGroupMode.value === 'label') {
-    // 切换到业务语义结构树 - 加载 agent 数据
+    // 切换到业务语义结构树
     console.log('🔄 切换到业务语义结构树...')
-    if (taskId.value && agentTreeData.value.length === 0) {
-      console.log('🔄 加载 agent 数据...')
-      await loadAgentData(taskId.value)
-    }
+    console.log('  - agentTreeData 数量:', agentTreeData.value.length)
+    console.log('  - builtTreeData 数量:', builtTreeData.value.length)
   }
 })
 
@@ -1690,15 +1680,34 @@ const loadAgentData = async (taskId: string) => {
     console.log(`🔄 加载 agent 数据:`, apiUrl)
     const response = await fetch(apiUrl)
     if (response.ok) {
-      let agentData = await response.json()
+      const jsonData = await response.json()
 
-      // 为 agent 数据添加 line_id 和 text 字段
+      // 处理 API 格式（与 ontology 相同的格式）
+      let treeData
+      if (jsonData.success && jsonData.data && jsonData.data.dataList) {
+        treeData = jsonData.data.dataList
+      } else if (jsonData.tree) {
+        treeData = jsonData.tree
+      } else {
+        treeData = jsonData
+      }
+
+      const processedData = Array.isArray(treeData) ? treeData : [treeData]
+
+      // 转换格式
+      const convertedData = convertAPITreeData(processedData)
+
+      // 为 agent 数据添加 line_id 和 text 字段（递归处理）
       const addLineIdToNodes = (nodes: any[], startId: number = 0): number => {
         let currentId = startId
         nodes.forEach(node => {
-          const pidMatch = node.pid?.match(/\d+/)
-          node.line_id = pidMatch ? parseInt(pidMatch[0]) : currentId++
+          // 如果节点已有 line_id，保留它；否则从 pid 提取或使用递增ID
+          if (!node.line_id) {
+            const pidMatch = node.pid?.match(/\d+/)
+            node.line_id = pidMatch ? parseInt(pidMatch[0]) : currentId++
+          }
 
+          // 确保有 text 字段用于显示
           if (!node.text) {
             if (node.title && node.title.trim()) {
               node.text = node.title
@@ -1714,10 +1723,9 @@ const loadAgentData = async (taskId: string) => {
         return currentId
       }
 
-      const processedAgentData = Array.isArray(agentData) ? agentData : [agentData]
-      addLineIdToNodes(processedAgentData)
+      addLineIdToNodes(convertedData)
 
-      agentTreeData.value = processedAgentData
+      agentTreeData.value = convertedData
       console.log('✅ agentTreeData 已保存，节点数:', agentTreeData.value.length)
 
       // 构建业务语义结构树
@@ -2591,12 +2599,12 @@ const buildGraphData = async () => {
     printLabelPathAnalysis(structuredData.value)
   }
 
-  // 构建要素节点和边
-  const { fieldNodes, fieldEdges } = buildFieldNodes(structuredData.value || [], nodes)
+  // 🎯 默认不构建要素节点（需要时再手动触发）
+  // const { fieldNodes, fieldEdges } = buildFieldNodes(structuredData.value || [], nodes)
+  // nodes.push(...fieldNodes)
+  // edges.push(...fieldEdges)
 
-  // 将要素节点和边添加到图谱数据中
-  nodes.push(...fieldNodes)
-  edges.push(...fieldEdges)
+  console.log('⚠️ 要素节点默认不加载，需要时请手动调用 buildFieldNodes')
 
   // 🔍 检查传递给 Cytoscape 的节点数据是否包含 location
   console.log(`\n🔍 检查传递给 Cytoscape 的前3个要素节点:`)
@@ -3027,10 +3035,16 @@ const refreshData = async () => {
   pdfAnnotations.value = []
   reviewListData.value = null
 
-  // 先加载 JSON 文件，再获取审查数据
+  // 并行加载 agent 和 ontology 数据，避免重复加载
   if (taskId.value) {
-    await loadJsonFiles(taskId.value)
+    console.log('📦 开始并行加载 agent 和 ontology 数据...')
+    await Promise.all([
+      loadAgentData(taskId.value),    // 业务语义结构树数据
+      loadOntologyData(taskId.value)  // 知识图谱数据
+    ])
+    console.log('✅ agent 和 ontology 数据加载完成')
   }
+
   await getData()
   await getFile()
   await getMarkList()

@@ -23,6 +23,16 @@
         <span class="legend-text">子节点</span>
       </div>
     </div>
+
+    <!-- Tooltip for node hover -->
+    <div
+      v-if="tooltipVisible"
+      class="node-tooltip"
+      :style="{ left: tooltipX + 'px', top: tooltipY + 'px' }"
+    >
+      <div class="tooltip-label">{{ tooltipContent.label }}</div>
+      <div v-if="tooltipContent.fieldValue" class="tooltip-value">{{ tooltipContent.fieldValue }}</div>
+    </div>
   </div>
 </template>
 
@@ -56,6 +66,12 @@ const emit = defineEmits(['node-click', 'edge-click', 'node-hover'])
 const cytoscapeRef = ref<HTMLElement | null>(null)
 let cy: Core | null = null
 const selectedNodeId = ref<string | null>(null) // Currently selected node
+
+// Tooltip state
+const tooltipVisible = ref(false)
+const tooltipX = ref(0)
+const tooltipY = ref(0)
+const tooltipContent = ref<{ label: string; fieldValue?: string }>({ label: '' })
 
 // Load concept data from ontology.json (with inferred edges from sameAs)
 const conceptDataCache = ref<{ nodes: any[]; edges: any[] } | null>(null)
@@ -163,10 +179,9 @@ const initCytoscape = () => {
   const elements: ElementDefinition[] = [
     ...data.nodes.map(node => ({
       data: {
-        id: node.id,
+        ...node, // 保留所有原始字段（包括 location, pid 等）
         label: node.label || node.id,
-        type: node.type || 'default',
-        level: node.level // 添加 level 属性
+        type: node.type || 'default'
       }
     })),
     ...data.edges.map(edge => ({
@@ -249,11 +264,31 @@ const bindEvents = () => {
 
   cy.on('mouseover', 'node', event => {
     const node = event.target
+    const nodeData = node.data()
+
     emit('node-hover', {
-      id: node.data('id'),
-      label: node.data('label'),
-      type: node.data('type')
+      id: nodeData.id,
+      label: nodeData.label,
+      type: nodeData.type
     })
+
+    // Show tooltip for element nodes (要素节点)
+    if (nodeData.type === 'element') {
+      const renderedPosition = node.renderedPosition()
+      tooltipX.value = renderedPosition.x + 10
+      tooltipY.value = renderedPosition.y - 10
+
+      tooltipContent.value = {
+        label: nodeData.label || nodeData.id,
+        fieldValue: nodeData.fieldValue
+      }
+
+      tooltipVisible.value = true
+    }
+  })
+
+  cy.on('mouseout', 'node', event => {
+    tooltipVisible.value = false
   })
 }
 
@@ -540,6 +575,34 @@ defineExpose({
         font-size: 12px;
         color: #595959;
       }
+    }
+  }
+
+  .node-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 1000;
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 300px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    .tooltip-label {
+      font-weight: 600;
+      margin-bottom: 4px;
+      white-space: normal;
+      word-break: break-all;
+    }
+
+    .tooltip-value {
+      font-size: 11px;
+      color: #d4d4d4;
+      white-space: normal;
+      word-break: break-all;
     }
   }
 }
