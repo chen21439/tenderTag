@@ -72,17 +72,63 @@
         <!-- JSON树形结构展示 -->
         <div class="review-items tree-view">
           <!-- 采购标签图谱模式：显示 Cytoscape 组件 -->
-          <div v-if="treeGroupMode === 'original'" class="graph-view" style="height: 100%; flex: 1; position: relative">
-            <CytoscapeComponent
-              :use-sample-data="false"
-              :nodes="graphNodes"
-              :edges="graphEdges"
-              layout="cose"
-              @node-click="handleNodeClick"
-              @edge-click="handleEdgeClick"
-            />
-            <div style="position: absolute; bottom: 16px; left: 16px; z-index: 10">
-              <GraphLegend />
+          <div v-if="treeGroupMode === 'original'" class="graph-view-container">
+            <!-- 顶部控制栏 -->
+            <div class="graph-toolbar">
+              <div class="toolbar-right">
+                <a-button
+                  type="default"
+                  size="small"
+                  :class="{ 'active': !isNavCollapsed }"
+                  @click="toggleNavPanel"
+                >
+                  <template #icon>
+                    <ApartmentOutlined />
+                  </template>
+                </a-button>
+
+                <a-divider type="vertical" style="height: 24px; margin: 0 8px" />
+
+                <GraphControls
+                  @reset="handleGraphReset"
+                  @fit="handleGraphFit"
+                  @zoomIn="handleGraphZoomIn"
+                  @zoomOut="handleGraphZoomOut"
+                />
+              </div>
+            </div>
+
+            <!-- 导航面板 (可折叠) -->
+            <div v-show="!isNavCollapsed" class="graph-nav-panel-wrapper">
+              <div class="graph-nav-panel">
+                <div v-if="graphTreeData.length > 0" class="nav-tree-list">
+                  <GraphNavNode
+                    v-for="node in graphTreeData"
+                    :key="node.id"
+                    :node="node"
+                    :depth="0"
+                    :selected-id="selectedGraphNodeId"
+                    @select="handleNavNodeSelect"
+                  />
+                </div>
+                <a-empty v-else description="暂无数据" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+              </div>
+            </div>
+
+            <!-- 图谱画布 -->
+            <div class="graph-canvas">
+              <CytoscapeComponent
+                ref="cytoscapeRef"
+                :use-sample-data="false"
+                :nodes="graphNodes"
+                :edges="graphEdges"
+                layout="cose"
+                @node-click="handleNodeClick"
+                @edge-click="handleEdgeClick"
+              />
+              <div style="position: absolute; bottom: 16px; left: 16px; z-index: 10">
+                <GraphLegend />
+              </div>
             </div>
           </div>
 
@@ -130,7 +176,8 @@
 import { ref, computed, reactive, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { DownOutlined } from '@ant-design/icons-vue'
+import { ApartmentOutlined } from '@ant-design/icons-vue'
+import { Empty } from 'ant-design-vue'
 import { CornerUpLeft, Clock8, Calendar1, Download, ClockFading } from 'lucide-vue-next'
 import { SKELETON_CONFIG, createFilterTabs, DEFAULT_REVIEW_RESULT, exportOptionsList } from '@/views/hooks/examine'
 import { useExport } from '@/views/hooks/use-export'
@@ -144,10 +191,12 @@ import HistoryFilesModal from './components/HistoryFilesModal.vue'
 import ReviewItem from './components/ReviewItem.vue'
 import ReviewTreeNode from './components/ReviewTreeNode.vue'
 import TreeNode from './components/TreeNode.vue'
+import GraphNavNode from './components/GraphNavNode.vue'
 import CytoscapeComponent from './components/CytoscapeComponent.vue'
 import GraphLegend from '../../components/knowledge-graph/GraphLegend.vue'
-import { getGraphData } from '@/components/knowledge-graph/graphData'
-import { buildFieldNodes, printLabelPathAnalysis } from '../../components/knowledge-graph/fieldNodesBuilder'
+import GraphControls from '../../components/knowledge-graph/GraphControls.vue'
+import { getGraphData } from '../../components/knowledge-graph/graphData'
+import { addEdgeIdPrefix } from '../../components/knowledge-graph/useGraphDataBuilder'
 import config from '../../config'
 import { useOntologyTree } from './components/ontology/useOntologyTree'
 
@@ -1186,6 +1235,12 @@ const structuredData = ref<any[]>([])
 // 图谱数据
 const graphNodes = ref<Array<{ id: string; label: string; type: string }>>([])
 const graphEdges = ref<Array<{ id: string; source: string; target: string; label: string }>>([])
+
+// 图谱导航面板
+const isNavCollapsed = ref(false)
+const graphTreeData = ref<any[]>([])
+const selectedGraphNodeId = ref<string | null>(null)
+const cytoscapeRef = ref<any>(null)
 
 // 标签层级顺序（从 label_hierarchy.json 加载）
 const labelHierarchy = ref<{ label: string; children: string[] }[]>([])
@@ -2459,400 +2514,33 @@ const extractFieldsFromStructuredData = () => {
   return fieldsMap
 }
 
-//生成知识图谱数据（基于标签分组数据）
+//生成知识图谱数据（基于 graph API）
 const buildGraphData = async () => {
-  console.log('🔧 开始生成知识图谱数据')
+  console.log('🔧 开始生成知识图谱数据 (使用 graph API)')
 
-  // Get concept nodes and edges (with inferred edges from sameAs) from ontology.json
-  const { nodes: conceptNodes, edges: conceptEdges } = await getGraphData()
+  try {
+    // 从 graph API 获取节点和边
+    const { nodes, edges } = await getGraphData()
 
-  console.log('📊 原始数据:')
-  console.log('  - 概念节点数:', conceptNodes.length)
-  console.log('  - 概念边数（含推理）:', conceptEdges.length)
-  console.log('  - 前3个节点:', conceptNodes.slice(0, 3))
-  console.log('  - 前3条边:', conceptEdges.slice(0, 3))
+    console.log('📊 从 graph API 获取:')
+    console.log('  - 节点数:', nodes.length)
+    console.log('  - 边数:', edges.length)
 
-  // 🎯 过滤逻辑1：API 数据中不展示 hasAttribute 关系（要素节点会在后面单独添加）
-  const excludedEdgeTypes = new Set(['hasAttribute'])
-  const filteredEdgesByType = conceptEdges.filter((e: any) => !excludedEdgeTypes.has(e.label))
+    // 给边添加唯一前缀，避免ID冲突
+    const edgesWithPrefix = addEdgeIdPrefix(edges)
 
-  console.log(`📊 过滤 API 边类型后: ${conceptEdges.length} -> ${filteredEdgesByType.length} 条边`)
+    graphNodes.value = nodes
+    graphEdges.value = edgesWithPrefix
 
-  // 初始化节点和边数组
-  const nodes: Array<{ id: string; label: string; type: string }> = []
-  const edges: Array<{ id: string; source: string; target: string; label: string }> = []
+    console.log('✅ 图谱数据构建完成')
+    console.log('  节点数:', nodes.length, '| 边数:', edgesWithPrefix.length)
 
-  // 先添加 API 过滤后的边
-  edges.push(...filteredEdgesByType)
-
-  // 🎯 收集涉及的节点ID（从边中）
-  const relatedNodeIds = new Set<string>()
-  edges.forEach((edge: any) => {
-    relatedNodeIds.add(edge.source)
-    relatedNodeIds.add(edge.target)
-  })
-
-  // 添加概念节点（从 API 获取的，只添加有边连接的）
-  conceptNodes.forEach((n: any) => {
-    if (relatedNodeIds.has(n.id)) {
-      nodes.push(n)
-    }
-  })
-
-  console.log('📊 过滤后数据:')
-  console.log('  - 节点数:', nodes.length)
-  console.log('  - 边数:', edges.length)
-  console.log(
-    '  - 节点列表:',
-    nodes.map(n => `${n.id}:${n.label}`)
-  )
-  console.log(
-    '  - 边列表:',
-    edges.map(e => `${e.source}->${e.target}(${e.label})`)
-  )
-
-  console.log('🔍 数据结构详细检查:')
-  if (nodes.length > 0) {
-    console.log('  节点示例 (第1个):', JSON.stringify(nodes[0], null, 2))
-  }
-  if (edges.length > 0) {
-    console.log('  边示例 (第1个):', JSON.stringify(edges[0], null, 2))
-  }
-
-  // 检查所有边的完整字段
-  console.log('  所有边的字段检查:')
-  edges.forEach((e: any, idx: number) => {
-    console.log(
-      `    ${idx + 1}. id=${e.id}, source=${e.source}, target=${e.target}, label=${e.label}, inferred=${
-        e.inferred
-      }, 其他字段:`,
-      Object.keys(e).filter(k => !['id', 'source', 'target', 'label', 'inferred'].includes(k))
-    )
-  })
-
-  console.log('🔍 过滤后的边详情:')
-  console.log(`  总共 ${edges.length} 条边`)
-  edges.forEach(e => {
-    const sourceNode = nodes.find(n => n.id === e.source)
-    const targetNode = nodes.find(n => n.id === e.target)
-    console.log(`  [${e.id}] ${sourceNode?.label || e.source} --${e.label}--> ${targetNode?.label || e.target}`)
-  })
-
-  console.log('🔍 过滤后的节点详情:')
-  console.log(`  总共 ${nodes.length} 个节点`)
-  nodes.forEach(n => {
-    console.log(`  [${n.id}] ${n.label}`)
-  })
-
-  const nodeIds = new Set<string>(nodes.map((n: any) => n.id))
-  let edgeIdCounter = edges.length
-
-  let paragraphNodesAdded = 0
-
-  console.log('过滤后概念节点数:', nodes.length)
-  console.log('过滤后概念边数:', edges.length)
-
-  // 🎯 使用过滤后的节点构建映射表（只包含采购包相关的节点）
-  const labelToConceptMap = new Map<string, string>()
-  nodes.forEach((node: any) => {
-    if (node.label) {
-      labelToConceptMap.set(node.label, node.id)
-    }
-  })
-  console.log(
-    '📋 过滤后概念节点标签映射表（共 ' + labelToConceptMap.size + ' 个）:',
-    Array.from(labelToConceptMap.keys())
-  )
-
-  // 🎯 加载要素节点（从扁平化的 structuredData 中提取 fields）
-  console.log('📊 使用业务语义结构树数据构建 fields')
-  console.log('📋 structuredData 节点数:', structuredData.value?.length || 0)
-
-  // 🔍 分析 rawTreeData 的结构
-  console.log('\n🔍 rawTreeData 结构分析:')
-  console.log('  - 根节点数:', rawTreeData.value?.length || 0)
-  if (rawTreeData.value && rawTreeData.value.length > 0) {
-    console.log('  - 第一个根节点:', rawTreeData.value[0])
-    console.log('  - 第一个根节点的子节点数:', rawTreeData.value[0]?.children?.length || 0)
-    if (rawTreeData.value[0]?.children?.length > 0) {
-      console.log('  - 第一个子节点:', rawTreeData.value[0].children[0])
-      console.log('  - 第一个子节点是否有 fields:', !!rawTreeData.value[0].children[0]?.fields)
-      console.log('  - 第一个子节点的 label:', rawTreeData.value[0].children[0]?.label)
-    }
-  }
-
-  // 🔍 分析 structuredData 的结构
-  console.log('\n🔍 structuredData 结构分析:')
-  if (structuredData.value && structuredData.value.length > 0) {
-    console.log('  - 第一个节点:', structuredData.value[0])
-    console.log('  - 第一个节点是否有 fields:', !!structuredData.value[0]?.fields)
-    console.log('  - 第一个节点的 label:', structuredData.value[0]?.label)
-  }
-
-  // 统计有 fields 的节点
-  const nodesWithFields = structuredData.value?.filter(
-    (n: any) => n.fields && Object.keys(n.fields).length > 0
-  ) || []
-  console.log('\n📋 有 fields 的节点数:', nodesWithFields.length)
-
-  if (nodesWithFields.length > 0) {
-    printLabelPathAnalysis(structuredData.value)
-  }
-
-  // 🎯 默认不构建要素节点（需要时再手动触发）
-  // const { fieldNodes, fieldEdges } = buildFieldNodes(structuredData.value || [], nodes)
-  // nodes.push(...fieldNodes)
-  // edges.push(...fieldEdges)
-
-  console.log('⚠️ 要素节点默认不加载，需要时请手动调用 buildFieldNodes')
-
-  // 🔍 检查传递给 Cytoscape 的节点数据是否包含 location
-  console.log(`\n🔍 检查传递给 Cytoscape 的前3个要素节点:`)
-  const fieldNodesInGraph = nodes.filter(n => n.type === 'element').slice(0, 3)
-  fieldNodesInGraph.forEach((node, index) => {
-    const nodeData = node as any // 类型断言
-    console.log(`  节点 ${index + 1}:`, {
-      id: nodeData.id,
-      label: nodeData.label,
-      type: nodeData.type,
-      pid: nodeData.pid,
-      hasLocation: !!nodeData.location,
-      locationLength: nodeData.location?.length
-    })
-  })
-
-  // 节点已经在前面添加好了，这里不需要再添加
-  console.log(`📊 最终节点数: ${nodes.length} (概念节点 + 要素节点)`)
-
-  console.log(`📊 最终展示节点数: ${nodes.length} (概念节点 + 要素节点)`)
-  console.log(`📊 最终展示边数: ${edges.length}`)
-
-  /*
-  // Extract fields from structured data
-  const fieldsMap = extractFieldsFromStructuredData()
-
-  // 提取段落数据：优先使用 rawTreeData，如果为空则从 builtTreeData 中提取
-  let filteredData: any[] = []
-  if (rawTreeData.value && rawTreeData.value.length > 0) {
-    // 使用 rawTreeData（扁平数据）
-    console.log('📋 使用 rawTreeData，原始节点数:', rawTreeData.value.length)
-
-    // 统计有 label 的节点数
-    const nodesWithLabel = rawTreeData.value.filter(n => n.label && n.label !== '')
-    console.log(`   其中有 label 的节点数: ${nodesWithLabel.length}`)
-    if (nodesWithLabel.length > 0) {
-      console.log(
-        '   示例 label:',
-        nodesWithLabel.slice(0, 3).map(n => n.label)
-      )
-    }
-
-    const mergedData = mergeParagraphs(rawTreeData.value)
-    filteredData = mergedData.filter(n => n.relation !== 'meta' && n.class !== 'footer')
-    console.log('📋 合并段落后，节点数:', filteredData.length)
-  } else if (builtTreeData.value && builtTreeData.value.length > 0) {
-    // 从 builtTreeData（预构建树）中提取所有节点
-    console.log('📋 从 builtTreeData（预构建树）提取段落')
-    const extractAllNodes = (nodes: any[]): any[] => {
-      const result: any[] = []
-      nodes.forEach(node => {
-        if (!node.isVirtual) {
-          result.push(node)
-        }
-        if (node.children && node.children.length > 0) {
-          result.push(...extractAllNodes(node.children))
-        }
-      })
-      return result
-    }
-    const allNodes = extractAllNodes(builtTreeData.value)
-    filteredData = allNodes.filter(n => n.relation !== 'meta' && n.class !== 'footer')
-    console.log('📋 从预构建树提取节点数:', filteredData.length)
-
-    // 统计提取的节点中有 fields 的数量
-    const nodesWithFields = filteredData.filter(n => n.fields && Object.keys(n.fields).length > 0)
-    console.log(`   其中包含 fields 的节点数: ${nodesWithFields.length}`)
-    if (nodesWithFields.length > 0) {
-      console.log('   示例节点:', nodesWithFields[0])
-    }
-  } else {
-    console.warn('⚠️ 没有可用的数据源（rawTreeData 和 builtTreeData 都为空）')
-    filteredData = []
-  }
-
-  // Merge fields into items
-  console.log('🔄 合并 fields 到段落数据...')
-  filteredData.forEach(item => {
-    if (item.line_id !== undefined && fieldsMap.has(item.line_id)) {
-      item.fields = fieldsMap.get(item.line_id)
-      console.log(`  ✓ 合并 fields 到 line_id=${item.line_id}`, item.fields)
-    }
-  })
-
-  // Group by label_level1 and label_level2
-  const paragraphsByLabel = new Map<string, any[]>()
-
-  filteredData.forEach(item => {
-    // 兼容新旧两种标签格式
-    let label = ''
-    if (item.label && typeof item.label === 'string' && item.label.includes('/')) {
-      // 新格式：label = "一级标签/二级标签"，提取二级标签
-      const parts = item.label.split('/')
-      label = parts[parts.length - 1] // 取最后一部分（二级标签）
-    } else {
-      // 旧格式：使用 label_level2 或 label_level1
-      label = item.label_level2 || item.label_level1 || item.label || ''
-    }
-
-    // Skip nodes without valid labels
-    if (!label || label === '无' || label === '未分类' || label === '') return
-
-    if (!paragraphsByLabel.has(label)) {
-      paragraphsByLabel.set(label, [])
-    }
-    paragraphsByLabel.get(label)!.push(item)
-  })
-
-  console.log('📊 按标签分组的段落数:', paragraphsByLabel.size)
-  console.log('📋 实际数据中的标签:', Array.from(paragraphsByLabel.keys()))
-
-  // Extract paragraphs for each matched label (max 3 per label)
-  paragraphsByLabel.forEach((items, labelText) => {
-    const conceptId = labelToConceptMap.get(labelText)
-    if (!conceptId) {
-      console.log(`  ⚠️ 未匹配标签: "${labelText}"`)
-      return
-    }
-
-    console.log(`  ✓ 标签 "${labelText}" → ${items.length} 个段落`)
-
-    // Sort: prioritize items with fields, then take first 3
-    const sortedItems = items.sort((a, b) => {
-      const aHasFields = a.fields && Object.keys(a.fields).length > 0
-      const bHasFields = b.fields && Object.keys(b.fields).length > 0
-      if (aHasFields && !bHasFields) return -1
-      if (!aHasFields && bHasFields) return 1
-      return 0
-    })
-
-    const paragraphsToAdd = sortedItems.slice(0, 3)
-    const withFieldsCount = paragraphsToAdd.filter(item => item.fields && Object.keys(item.fields).length > 0).length
-    console.log(`    → 取前3个 (其中 ${withFieldsCount} 个有fields)`)
-
-    paragraphsToAdd.forEach(item => {
-      const paragraphId = `doc_${item.line_id}`
-      const text = item.text || ''
-      const label = text.length > 5 ? text.substring(0, 5) + '...' : text
-
-      // Add paragraph node
-      if (!nodeIds.has(paragraphId)) {
-        nodes.push({
-          id: paragraphId,
-          label,
-          type: 'doc'
-        })
-        nodeIds.add(paragraphId)
-        paragraphNodesAdded++
-
-        // Add instanceOf edge
-        edges.push({
-          id: `e${edgeIdCounter++}`,
-          source: paragraphId,
-          target: conceptId,
-          label: 'instanceOf'
-        })
-
-        // If item has fields, create field nodes
-        if (item.fields && typeof item.fields === 'object') {
-          const fieldCount = Object.keys(item.fields).length
-          console.log(`      📋 段落 ${item.line_id} 有 ${fieldCount} 个字段:`, item.fields)
-
-          Object.entries(item.fields).forEach(([fieldKey, fieldValue]) => {
-            const fieldId = `field_${item.line_id}_${fieldKey}`
-            const fieldLabel = `${fieldKey}: ${fieldValue}`
-
-            if (!nodeIds.has(fieldId)) {
-              nodes.push({
-                id: fieldId,
-                label: fieldLabel.length > 20 ? fieldLabel.substring(0, 20) + '...' : fieldLabel,
-                type: 'element' // 要素节点
-              })
-              nodeIds.add(fieldId)
-              paragraphNodesAdded++
-
-              console.log(`        ✓ 创建要素节点: ${fieldLabel}`)
-
-              // Add hasAttribute edge from paragraph to field
-              edges.push({
-                id: `e${edgeIdCounter++}`,
-                source: paragraphId,
-                target: fieldId,
-                label: 'hasAttribute'
-              })
-            }
-          })
-        } else {
-          console.log(`      ⚠️ 段落 ${item.line_id} 无 fields 字段`)
-        }
-      }
-    })
-  })
-  */
-
-  // ✅ 修复：给所有边的 ID 加上前缀，避免与节点 ID 冲突
-  // Cytoscape 要求所有元素（节点+边）的 ID 必须全局唯一
-  const edgesWithUniqueId = edges.map((edge: any) => ({
-    ...edge,
-    id: 'edge_' + edge.id  // 给边 ID 加上前缀
-  }))
-
-  graphNodes.value = nodes
-  graphEdges.value = edgesWithUniqueId
-
-  console.log('✅ 已修复边 ID 冲突问题')
-  console.log('  节点数:', nodes.length, '| 边数:', edgesWithUniqueId.length)
-
-  // Count different node types
-  const finalNodes = graphNodes.value
-  const finalEdges = graphEdges.value
-  const docNodes = finalNodes.filter(n => n.type === 'doc').length
-  const elementNodes = finalNodes.filter(n => n.type === 'element').length
-  const normalNodes = finalNodes.filter(n => n.type === 'normal').length
-
-  console.log('\n' + '='.repeat(60))
-  console.log('✅ 知识图谱数据生成完成')
-  console.log('  - 概念节点数:', normalNodes)
-  console.log('  - 段落节点数:', docNodes)
-  console.log('  - 要素节点数:', elementNodes, '🩷')
-  console.log('  - 总节点数:', finalNodes.length)
-  console.log('  - 总边数:', finalEdges.length)
-
-  // 调试：检查节点和边的 ID 匹配情况
-  console.log('\n' + '🔍 调试信息：')
-  console.log(
-    '前5个节点的ID:',
-    finalNodes.slice(0, 5).map(n => ({ id: n.id, label: n.label, type: n.type }))
-  )
-  console.log(
-    '前5条边:',
-    finalEdges.slice(0, 5).map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label }))
-  )
-
-  // 检查边的 source/target 是否能匹配到节点
-  const allNodeIds = new Set(finalNodes.map(n => n.id))
-  const unmatchedEdges = finalEdges.filter(e => !allNodeIds.has(e.source) || !allNodeIds.has(e.target))
-  console.log('无法匹配的边数量:', unmatchedEdges.length, '/', finalEdges.length)
-  if (unmatchedEdges.length > 0) {
-    console.log(
-      '前5条无法匹配的边:',
-      unmatchedEdges.slice(0, 5).map(e => ({
-        source: e.source,
-        target: e.target,
-        label: e.label,
-        sourceExists: allNodeIds.has(e.source),
-        targetExists: allNodeIds.has(e.target)
-      }))
-    )
+    // 构建导航树数据
+    buildGraphTreeData()
+  } catch (error) {
+    console.error('❌ 图谱数据构建失败:', error)
+    graphNodes.value = []
+    graphEdges.value = []
   }
 }
 
@@ -2930,6 +2618,103 @@ const handleNodeClick = (nodeData: { id: string; label: string; type: string }) 
 // 处理图谱边点击
 const handleEdgeClick = (edgeData: { id: string; source: string; target: string; label: string }) => {
   console.log('🔗 图谱边被点击:', edgeData)
+}
+
+// 切换导航面板
+const toggleNavPanel = () => {
+  isNavCollapsed.value = !isNavCollapsed.value
+}
+
+// 图谱控制函数
+const handleGraphReset = () => {
+  cytoscapeRef.value?.resetLayout()
+}
+
+const handleGraphFit = () => {
+  cytoscapeRef.value?.fitView()
+}
+
+const handleGraphZoomIn = () => {
+  cytoscapeRef.value?.zoomIn()
+}
+
+const handleGraphZoomOut = () => {
+  cytoscapeRef.value?.zoomOut()
+}
+
+// 构建图谱树形导航数据
+const buildGraphTreeData = () => {
+  console.log('🌲 开始构建图谱树形导航数据')
+
+  const nodes = graphNodes.value
+  const edges = graphEdges.value
+
+  if (nodes.length === 0) {
+    console.log('⚠️ 没有节点数据')
+    graphTreeData.value = []
+    return
+  }
+
+  // 构建父子关系映射
+  const childrenMap = new Map<string, string[]>()
+  const parentMap = new Map<string, string>()
+
+  // hasPart, hasMember 表示父子关系
+  edges.forEach(edge => {
+    if (edge.label === 'hasPart' || edge.label === 'hasMember') {
+      const parent = edge.source
+      const child = edge.target
+
+      if (!childrenMap.has(parent)) {
+        childrenMap.set(parent, [])
+      }
+      childrenMap.get(parent)!.push(child)
+      parentMap.set(child, parent)
+    }
+  })
+
+  // 找到根节点（没有父节点的节点）
+  const rootNodeIds = nodes
+    .filter(node => !parentMap.has(node.id))
+    .map(node => node.id)
+
+  console.log('📌 根节点数:', rootNodeIds.length)
+  console.log('📌 根节点列表:', rootNodeIds)
+
+  // 递归构建树
+  const buildTree = (nodeId: string): any => {
+    const node = nodes.find(n => n.id === nodeId)
+    if (!node) return null
+
+    const children = childrenMap.get(nodeId) || []
+    const childrenNodes = children.map(childId => buildTree(childId)).filter(Boolean)
+
+    return {
+      id: node.id,
+      label: node.label,
+      nodeType: node.type,
+      children: childrenNodes.length > 0 ? childrenNodes : undefined
+    }
+  }
+
+  const treeData = rootNodeIds.map(id => buildTree(id)).filter(Boolean)
+
+  graphTreeData.value = treeData
+  console.log('✅ 图谱树形数据构建完成:', treeData.length, '个根节点')
+}
+
+// 处理导航节点选择
+const handleNavNodeSelect = (nodeId: string) => {
+  console.log('🎯 导航选中节点:', nodeId)
+
+  // 更新选中状态
+  selectedGraphNodeId.value = nodeId
+
+  // 触发图谱节点点击（模拟）
+  const node = graphNodes.value.find(n => n.id === nodeId)
+  if (node) {
+    handleNodeClick(node)
+  }
 }
 
 // 处理段落点击
@@ -3628,6 +3413,105 @@ onBeforeUnmount(() => {
 .side-menu-item {
   text-align: left;
   padding: 0 8px;
+}
+
+// 图谱视图容器
+.graph-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  position: relative;
+}
+
+// 顶部工具栏
+.graph-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #e5e6eb;
+  flex-shrink: 0;
+
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0;
+
+    :deep(.ant-btn) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+
+      &.active {
+        background: #e6f7ff;
+        color: #1890ff;
+        border-color: #91d5ff;
+      }
+
+      &:hover {
+        border-color: #1890ff;
+        color: #1890ff;
+      }
+    }
+  }
+}
+
+// 导航面板包装器
+.graph-nav-panel-wrapper {
+  position: absolute;
+  top: 48px;
+  right: 16px;
+  z-index: 10;
+  max-width: 400px;
+  max-height: 400px;
+  background: #ffffff;
+  border: 1px solid #e5e6eb;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+// 导航面板
+.graph-nav-panel {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+
+  .nav-tree-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  // 自定义滚动条
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
+}
+
+// 图谱画布
+.graph-canvas {
+  flex: 1;
+  position: relative;
+  min-height: 0;
 }
 </style>
 

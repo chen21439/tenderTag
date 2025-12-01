@@ -2,16 +2,6 @@
   <div class="cytoscape-wrapper">
     <div class="cytoscape-container" ref="cytoscapeRef"></div>
 
-    <!-- 控制按钮 -->
-    <div class="control-panel">
-      <GraphControls
-        @reset="resetLayout"
-        @fit="fitView"
-        @zoomIn="zoomIn"
-        @zoomOut="zoomOut"
-      />
-    </div>
-
     <div v-if="selectedNodeId" class="legend-panel">
       <div class="legend-title">图例</div>
       <div class="legend-item">
@@ -41,7 +31,6 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import cytoscape, { type Core, type ElementDefinition } from 'cytoscape'
 import { getGraphData, getConceptNodes, getConceptEdges } from '@/components/knowledge-graph/graphData'
 import { getGraphStyles } from '@/components/knowledge-graph/graphStyles'
-import GraphControls from '@/components/knowledge-graph/GraphControls.vue'
 
 defineOptions({
   name: 'CytoscapeComponent'
@@ -519,13 +508,6 @@ defineExpose({
   .cytoscape-container {
     width: 100%;
     height: 100%;
-  }
-
-  .control-panel {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 10;
   }
 
   .legend-panel {
