@@ -1170,6 +1170,7 @@ const handleAnnotationsLoaded = (annotations: any[]) => {
 
 // 树形结构的原始数据
 const rawTreeData = ref<any[]>([])
+const agentTreeData = ref<any[]>([])  // 业务语义结构树专用数据源（agent API）
 const allTreeNodes = ref<any[]>([])
 const builtTreeData = ref<any[]>([])
 // 预构建的树数据（从 _labeled_tree.json 加载的）
@@ -1405,13 +1406,29 @@ const buildTree = async () => {
 
 // 构建按标签分组的树形结构
 const buildTreeByLabel = async () => {
-  if (!rawTreeData.value.length) {
+  // 业务语义结构树优先使用 agentTreeData（已包含 children 的树形结构）
+  const useAgentData = agentTreeData.value.length > 0
+  const dataSource = useAgentData ? agentTreeData.value : rawTreeData.value
+
+  if (!dataSource.length) {
     console.log('⚠️ 原始数据为空，无法构建树')
     return
   }
 
-  // 使用本体树构建逻辑
-  const labelRoots = buildOntologyTree(rawTreeData.value)
+  console.log('🏗️ 业务语义结构树数据源:', useAgentData ? 'agentTreeData' : 'rawTreeData')
+  console.log('   - 数据节点数:', dataSource.length)
+
+  let labelRoots
+
+  if (useAgentData) {
+    // agent 数据已经是完整的树形结构，直接使用
+    console.log('📦 agent 数据已包含 children 结构，直接使用')
+    labelRoots = dataSource
+  } else {
+    // ontology 数据需要通过 buildOntologyTree 构建
+    console.log('🔨 使用 buildOntologyTree 构建树形结构')
+    labelRoots = buildOntologyTree(dataSource)
+  }
 
   // 如果没有标签，回退到原始结构
   if (!labelRoots || labelRoots.length === 0) {
@@ -1669,8 +1686,25 @@ const loadJsonFiles = async (taskId: string) => {
     let treeDataUrl = ''
     let jsonData = null
     let isTreeJson = false
+    let agentData = null  // 业务语义结构树专用数据源
 
-    // 统一从 ontology API 加载数据（包含 label 和 fields）
+    // 1. 加载 agent 数据（业务语义结构树专用）
+    try {
+      const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=agent`
+      console.log(`🔄 从 API 加载数据 (result_type=agent):`, apiUrl)
+      const response = await fetch(apiUrl)
+      if (response.ok) {
+        agentData = await response.json()
+        console.log(`✅ 业务语义结构树数据源: API (result_type=agent)`)
+        console.log(`   - agent 数据类型:`, typeof agentData, Array.isArray(agentData) ? '(数组)' : '(非数组)')
+        console.log(`   - agent 数据内容:`, agentData)
+        console.log(`   - agent 数据节点数:`, Array.isArray(agentData) ? agentData.length : 0)
+      }
+    } catch (e) {
+      console.log('⚠️ agent API 加载失败:', e)
+    }
+
+    // 2. 加载 ontology 数据（知识标签图谱专用，包含 label 和 fields）
     try {
       const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology`
       console.log(`🔄 从 API 加载数据 (result_type=ontology):`, apiUrl)
@@ -1679,10 +1713,10 @@ const loadJsonFiles = async (taskId: string) => {
         jsonData = await response.json()
         treeDataUrl = apiUrl
         isTreeJson = true
-        console.log(`✅ 数据源: API (result_type=ontology)`)
+        console.log(`✅ 知识标签图谱数据源: API (result_type=ontology)`)
       }
     } catch (e) {
-      console.log('⚠️ API 加载失败，尝试从 public 目录加载:', e)
+      console.log('⚠️ ontology API 加载失败，尝试从 public 目录加载:', e)
     }
 
     // 如果 API 加载失败，回退到 public 目录
@@ -1846,6 +1880,51 @@ const loadJsonFiles = async (taskId: string) => {
 
       // 构建树形结构（使用统一入口，支持切换模式）
       rebuildTree()
+    }
+
+    // 保存 agentData 到 agentTreeData（业务语义结构树专用）
+    if (agentData) {
+      // 为 agent 数据添加 line_id 和 text 字段
+      const addLineIdToNodes = (nodes: any[], startId: number = 0): number => {
+        let currentId = startId
+        nodes.forEach(node => {
+          // 将 pid 转换为数字 line_id（提取 pid 中的数字部分）
+          const pidMatch = node.pid?.match(/\d+/)
+          node.line_id = pidMatch ? parseInt(pidMatch[0]) : currentId++
+
+          // 将 title 或 content 映射为 text（TreeNode 组件需要 text 或 title 字段）
+          // 优先使用 title，如果 title 为空则使用 content 的前 50 个字符
+          if (!node.text) {
+            if (node.title && node.title.trim()) {
+              node.text = node.title
+            } else if (node.content && node.content.trim()) {
+              // 截取 content 的前 50 个字符作为显示文本
+              node.text = node.content.substring(0, 50).trim()
+            }
+          }
+
+          // 递归处理 children
+          if (node.children && Array.isArray(node.children) && node.children.length > 0) {
+            currentId = addLineIdToNodes(node.children, currentId)
+          }
+        })
+        return currentId
+      }
+
+      const processedAgentData = Array.isArray(agentData) ? agentData : [agentData]
+      addLineIdToNodes(processedAgentData)
+
+      agentTreeData.value = processedAgentData
+      console.log('✅ agentTreeData 已保存，节点数:', agentTreeData.value.length)
+      console.log('   - 已为所有节点添加 line_id 字段')
+      console.log('   - 第一个根节点:', {
+        pid: processedAgentData[0]?.pid,
+        line_id: processedAgentData[0]?.line_id,
+        title: processedAgentData[0]?.title,
+        text: processedAgentData[0]?.text,
+        content: processedAgentData[0]?.content?.substring(0, 50),
+        children数量: processedAgentData[0]?.children?.length
+      })
     }
 
     console.log('📦 JSON 文件加载完成')
