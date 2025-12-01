@@ -223,6 +223,7 @@ const initCytoscape = () => {
 const bindEvents = () => {
   if (!cy) return
 
+  // 左键点击节点：高亮
   cy.on('tap', 'node', event => {
     const node = event.target
     const nodeId = node.data('id')
@@ -232,6 +233,16 @@ const bindEvents = () => {
 
     // 传递完整的节点数据（包括 location、pid 等自定义字段）
     emit('node-click', node.data())
+  })
+
+  // 右键点击节点：切换要素节点展开/折叠
+  cy.on('cxttap', 'node', event => {
+    event.preventDefault()
+    const node = event.target
+    const nodeId = node.data('id')
+
+    // 切换要素节点显示状态
+    toggleFieldNodes(nodeId)
   })
 
   // Click on background to clear highlights
@@ -278,6 +289,54 @@ const bindEvents = () => {
 
   cy.on('mouseout', 'node', event => {
     tooltipVisible.value = false
+  })
+}
+
+// 切换要素节点展开/折叠（右键点击）
+const toggleFieldNodes = (nodeId: string) => {
+  if (!cy) return
+
+  const data = graphData.value
+
+  // 查找所有 hasAttribute 边，source 是当前节点
+  const fieldEdges = data.edges.filter((e: any) => e.source === nodeId && e.label === 'hasAttribute')
+
+  if (fieldEdges.length === 0) return
+
+  // 检查第一个要素节点是否可见，以此判断当前状态
+  const firstFieldNodeId = fieldEdges[0].target
+  const firstFieldNode = cy.getElementById(firstFieldNodeId)
+  const isExpanded = firstFieldNode.visible()
+
+  if (isExpanded) {
+    console.log(`🔒 折叠节点 ${nodeId} 的要素节点，共 ${fieldEdges.length} 个`)
+  } else {
+    console.log(`🔓 展开节点 ${nodeId} 的要素节点，共 ${fieldEdges.length} 个`)
+  }
+
+  // 切换显示/隐藏
+  fieldEdges.forEach((edge: any) => {
+    const fieldNodeId = edge.target
+    const fieldNode = cy.getElementById(fieldNodeId)
+    const fieldEdge = cy.getElementById(edge.id)
+
+    if (isExpanded) {
+      // 当前已展开，执行折叠
+      if (fieldNode.length > 0) {
+        fieldNode.hide()
+      }
+      if (fieldEdge.length > 0) {
+        fieldEdge.hide()
+      }
+    } else {
+      // 当前已折叠，执行展开
+      if (fieldNode.length > 0) {
+        fieldNode.show()
+      }
+      if (fieldEdge.length > 0) {
+        fieldEdge.show()
+      }
+    }
   })
 }
 
@@ -459,6 +518,21 @@ const updateGraph = () => {
 
   console.log('  - elements 数量:', elements.length)
   cy.add(elements)
+
+  // 默认隐藏所有要素节点
+  cy.nodes().forEach(node => {
+    if (node.data('type') === 'element') {
+      node.hide()
+    }
+  })
+
+  // 隐藏 hasAttribute 边
+  cy.edges().forEach(edge => {
+    if (edge.data('label') === 'hasAttribute') {
+      edge.hide()
+    }
+  })
+
   resetLayout()
 }
 

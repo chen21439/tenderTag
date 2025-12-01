@@ -2608,20 +2608,30 @@ const buildGraphData = async () => {
   let fieldNodeCount = 0
   let fieldEdgeCount = 0
 
+  console.log('🏷️ 开始构建要素节点...')
+
   if (nodesWithFields.value && nodesWithFields.value.length > 0) {
-    nodesWithFields.value.forEach((ontologyNode: any) => {
+    nodesWithFields.value.forEach((ontologyNode: any, index: number) => {
       if (!ontologyNode.label || ontologyNode.label.trim() === '') return
 
       // 提取路径的最后一个标签：'采购项目/采购包' -> '采购包'
       const pathSegments = ontologyNode.label.split('/').map((s: string) => s.trim()).filter((s: string) => s !== '')
       const lastLabel = pathSegments[pathSegments.length - 1]
 
+      console.log(`\n📋 处理第 ${index + 1} 个有 fields 的节点:`)
+      console.log(`   路径: "${ontologyNode.label}"`)
+      console.log(`   最后一个标签: "${lastLabel}"`)
+      console.log(`   fields 数量: ${Object.keys(ontologyNode.fields || {}).length}`)
+
       // 检查这个标签对应的概念节点是否在图谱中
       const conceptNode = nodes.find(n => n.label === lastLabel)
       if (!conceptNode) {
-        console.log(`⚠️ 未找到概念节点: ${lastLabel} (来自路径: ${ontologyNode.label})`)
+        console.log(`   ⚠️ 未找到概念节点`)
         return
       }
+
+      console.log(`   ✅ 找到概念节点: ${conceptNode.id} (${conceptNode.label})`)
+      console.log(`   要挂载的 fields:`, Object.keys(ontologyNode.fields))
 
       // 遍历 fields，为每个 field 创建要素节点
       if (ontologyNode.fields && typeof ontologyNode.fields === 'object') {
