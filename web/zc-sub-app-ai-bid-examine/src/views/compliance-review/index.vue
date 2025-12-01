@@ -1234,6 +1234,9 @@ const graphTreeData = ref<any[]>([])
 const selectedGraphNodeId = ref<string | null>(null)
 const cytoscapeRef = ref<any>(null)
 
+// 是否启用 ontology 字段过滤（控制是否只显示 fields 不为空的节点）
+const enableOntologyFieldFilter = ref(false)
+
 // 标签层级顺序（从 label_hierarchy.json 加载）
 const labelHierarchy = ref<{ label: string; children: string[] }[]>([])
 const labelOrderMap = ref<Map<string, number>>(new Map())
@@ -2548,11 +2551,13 @@ const buildGraphData = async () => {
 
   console.log(`📊 从 ontology 提取的允许标签数: ${allowedLabels.size}`)
   console.log(`   前10个允许的标签:`, Array.from(allowedLabels).slice(0, 10))
+  console.log(`📊 Ontology 字段过滤开关: ${enableOntologyFieldFilter.value ? '开启' : '关闭'}`)
 
-  // 过滤节点：排除指定标签 + 只保留在允许列表中的标签
+  // 过滤节点：排除指定标签 + (可选) 只保留在允许列表中的标签
   const filteredNodes = conceptNodes.filter((n: any) => {
     if (excludedNodeLabels.has(n.label)) return false
-    if (allowedLabels.size > 0 && !allowedLabels.has(n.label)) return false
+    // 只有在开关开启时才应用 ontology 字段过滤
+    if (enableOntologyFieldFilter.value && allowedLabels.size > 0 && !allowedLabels.has(n.label)) return false
     return true
   })
 
@@ -2598,7 +2603,11 @@ const buildGraphData = async () => {
   let fieldNodeCount = 0
   let fieldEdgeCount = 0
 
+  // 统计每个概念节点的要素节点数量（用于显示标签）
+  const nodeFieldCountMap = new Map<string, number>()
+
   console.log('🏷️ 开始构建要素节点...')
+  console.log(`   开关状态: ${enableOntologyFieldFilter.value ? '开启（会添加要素节点）' : '关闭（不添加要素节点）'}`)
 
   if (nodesWithFields.value && nodesWithFields.value.length > 0) {
     nodesWithFields.value.forEach((ontologyNode: any, index: number) => {
@@ -2623,8 +2632,17 @@ const buildGraphData = async () => {
       console.log(`   ✅ 找到概念节点: ${conceptNode.id} (${conceptNode.label})`)
       console.log(`   要挂载的 fields:`, Object.keys(ontologyNode.fields))
 
-      // 遍历 fields，为每个 field 创建要素节点
-      if (ontologyNode.fields && typeof ontologyNode.fields === 'object') {
+      // 统计要素节点数量
+      const fieldsCount = ontologyNode.fields && typeof ontologyNode.fields === 'object'
+        ? Object.keys(ontologyNode.fields).filter(key => ontologyNode.fields[key]).length
+        : 0
+
+      if (fieldsCount > 0) {
+        nodeFieldCountMap.set(conceptNode.id, fieldsCount)
+      }
+
+      // 只有在开关开启时才实际添加要素节点
+      if (enableOntologyFieldFilter.value && ontologyNode.fields && typeof ontologyNode.fields === 'object') {
         Object.entries(ontologyNode.fields).forEach(([fieldKey, fieldValue]) => {
           if (!fieldValue) return
 
@@ -2657,6 +2675,21 @@ const buildGraphData = async () => {
       }
     })
   }
+
+  // 为有要素节点的概念节点添加 displayLabel
+  nodes.forEach((node: any) => {
+    if (node.type !== 'element') {
+      const fieldCount = nodeFieldCountMap.get(node.id)
+      if (fieldCount && fieldCount > 0) {
+        node.displayLabel = `${node.label} (${fieldCount})`
+      } else {
+        node.displayLabel = node.label
+      }
+    } else {
+      // 要素节点保持原 label
+      node.displayLabel = node.label
+    }
+  })
 
   console.log('📊 过滤后数据:')
   console.log('  - 概念节点数:', nodes.length - fieldNodeCount)

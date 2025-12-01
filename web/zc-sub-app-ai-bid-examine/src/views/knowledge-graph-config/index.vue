@@ -11,6 +11,17 @@
         </a-button>
         <h2>知识图谱配置</h2>
       </div>
+      <div class="toolbar-right">
+        <GraphToolbar
+          show-nav-button
+          :nav-collapsed="isNavCollapsed"
+          @reset="resetLayout"
+          @fit="fitView"
+          @zoomIn="zoomIn"
+          @zoomOut="zoomOut"
+          @toggleNav="toggleNavPanel"
+        />
+      </div>
     </div>
 
     <!-- 主内容区 -->
@@ -169,28 +180,29 @@
 
       <!-- 右侧图谱画布 -->
       <div class="graph-canvas-wrapper">
-        <!-- 控制按钮 - 固定在右上角 -->
-        <div class="controls-wrapper">
-          <GraphControls
-            @reset="resetLayout"
-            @fit="fitView"
-            @zoomIn="zoomIn"
-            @zoomOut="zoomOut"
-          />
-        </div>
+        <!-- 使用共享的图谱导航面板组件（浮动布局） -->
+        <GraphNavigationPanel
+          :tree-data="graphTreeData"
+          :selected-node-id="selectedGraphNodeId"
+          :collapsed="isNavCollapsed"
+          layout="floating"
+          @node-select="handleNavNodeSelect"
+        >
+          <template #graph>
+            <div ref="cytoscapeContainer" class="cytoscape-container"></div>
+            <div class="canvas-tips" v-if="currentMode === 'connect'">
+              点击第一个节点，然后点击第二个节点创建连接
+            </div>
+            <div class="canvas-tips" v-if="currentMode === 'add'">
+              左键点击画布创建节点，右键取消
+            </div>
 
-        <div ref="cytoscapeContainer" class="cytoscape-container"></div>
-        <div class="canvas-tips" v-if="currentMode === 'connect'">
-          点击第一个节点，然后点击第二个节点创建连接
-        </div>
-        <div class="canvas-tips" v-if="currentMode === 'add'">
-          左键点击画布创建节点，右键取消
-        </div>
-
-        <!-- 图例 - 固定在右下角 -->
-        <div class="legend-wrapper">
-          <GraphLegend />
-        </div>
+            <!-- 图例 - 固定在右下角 -->
+            <div class="legend-wrapper">
+              <GraphLegend />
+            </div>
+          </template>
+        </GraphNavigationPanel>
       </div>
     </div>
 
@@ -210,9 +222,10 @@ import {
   highlightAllAncestorsDescendants,
   clearHighlights,
   getGraphStyles,
-  GraphLegend
+  GraphLegend,
+  GraphToolbar,
+  GraphNavigationPanel
 } from '@/components/knowledge-graph'
-import GraphControls from '@/components/knowledge-graph/GraphControls.vue'
 import type { GraphNode, GraphEdge } from '@/components/knowledge-graph'
 
 const router = useRouter()
@@ -227,8 +240,8 @@ const currentMode = ref<'select' | 'connect' | 'delete' | 'add'>('select')
 // 添加节点时选择的类型
 const addNodeType = ref<'normal' | 'element'>('normal')
 
-// 可见的节点类型（默认全部选中）
-const visibleNodeTypes = ref<string[]>(['normal', 'element'])
+// 可见的节点类型（默认仅选中标签节点）
+const visibleNodeTypes = ref<string[]>(['normal'])
 
 // 高亮模式：'none' | 'direct' | 'recursive'
 // none: 展示所有节点（无高亮）
@@ -258,6 +271,11 @@ let nodeCounter = 0
 
 // 初始化图谱数据（从 API 加载，包含概念节点和要素节点）
 const graphData = ref<{ nodes: any[]; edges: any[] }>({ nodes: [], edges: [] })
+
+// 导航面板相关
+const isNavCollapsed = ref(true)
+const graphTreeData = ref<any[]>([])
+const selectedGraphNodeId = ref<string | null>(null)
 
 // localStorage 存储键名
 const STORAGE_KEY_GRAPH = 'knowledge_graph_data'
@@ -295,6 +313,9 @@ const initGraphData = async () => {
   graphData.value = await getGraphData()
 
   console.log(`✅ API 数据加载完成: ${graphData.value.nodes.length} 个节点, ${graphData.value.edges.length} 条边`)
+
+  // 构建树形导航数据
+  buildGraphTreeData()
 }
 
 // 初始化 Cytoscape
@@ -339,6 +360,9 @@ const initCytoscape = () => {
 
   // 初始化节点可拖拽状态
   updateNodeGrabbable()
+
+  // 应用节点类型过滤
+  handleNodeTypeFilterChange()
 
   // 居中显示图谱
   cy.fit(undefined, 50)
@@ -621,6 +645,104 @@ const getRelatedElements = (nodeId: string) => {
   return graphData.value.nodes.filter((node: any) =>
     elementNodeIds.has(node.id) && node.type === 'element'
   )
+}
+
+// 切换导航面板
+const toggleNavPanel = () => {
+  isNavCollapsed.value = !isNavCollapsed.value
+}
+
+// 处理导航节点选择
+const handleNavNodeSelect = (nodeId: string) => {
+  selectedGraphNodeId.value = nodeId
+
+  // 在 Cytoscape 中高亮选中的节点
+  if (cy && nodeId) {
+    const node = cy.getElementById(nodeId)
+    if (node.length > 0) {
+      // 清除之前的高亮
+      cy.elements().removeClass('highlighted')
+
+      // 高亮当前节点
+      node.addClass('highlighted')
+
+      // 居中显示节点
+      cy.animate({
+        center: { eles: node },
+        zoom: 1.5
+      }, {
+        duration: 500
+      })
+    }
+  }
+}
+
+// 构建图谱树形导航数据
+const buildGraphTreeData = () => {
+  console.log('🌲 开始构建图谱树形导航数据')
+
+  const nodes = graphData.value.nodes
+  const edges = graphData.value.edges
+
+  if (nodes.length === 0) {
+    console.log('⚠️ 没有节点数据')
+    graphTreeData.value = []
+    return
+  }
+
+  // 创建节点映射
+  const nodeMap = new Map()
+  nodes.forEach(node => {
+    nodeMap.set(node.id, {
+      id: node.id,
+      label: node.label,
+      nodeType: node.type,
+      children: []
+    })
+  })
+
+  // 找到所有父子关系
+  const childToParentMap = new Map()
+  edges.forEach(edge => {
+    // 使用 hasPart, hasMember, hasAttribute 等关系构建树
+    if (['hasPart', 'hasMember', 'hasAttribute'].includes(edge.label)) {
+      const childId = edge.target
+      const parentId = edge.source
+
+      if (!childToParentMap.has(childId)) {
+        childToParentMap.set(childId, [])
+      }
+      childToParentMap.get(childId).push(parentId)
+    }
+  })
+
+  // 构建树结构
+  const rootNodes: any[] = []
+  const addedNodes = new Set()
+
+  nodeMap.forEach((treeNode, nodeId) => {
+    const parents = childToParentMap.get(nodeId)
+
+    if (!parents || parents.length === 0) {
+      // 没有父节点，是根节点
+      if (!addedNodes.has(nodeId)) {
+        rootNodes.push(treeNode)
+        addedNodes.add(nodeId)
+      }
+    } else {
+      // 有父节点，添加到父节点的 children
+      parents.forEach(parentId => {
+        const parentNode = nodeMap.get(parentId)
+        if (parentNode && !addedNodes.has(nodeId)) {
+          parentNode.children.push(treeNode)
+          addedNodes.add(nodeId)
+        }
+      })
+    }
+  })
+
+  graphTreeData.value = rootNodes
+  console.log(`✅ 树形数据构建完成，根节点数: ${rootNodes.length}`)
 }
 
 // 返回首页
@@ -994,6 +1116,11 @@ onUnmounted(() => {
   color: #333;
 }
 
+.toolbar-right {
+  display: flex;
+  align-items: center;
+}
+
 .nav-btn {
   display: flex;
   align-items: center;
@@ -1029,15 +1156,6 @@ onUnmounted(() => {
   border-right: 1px solid #e8e8e8;
   overflow-y: auto;
   padding: 20px;
-}
-
-.controls-wrapper {
-  position: absolute;
-  right: 16px;
-  top: 8px;
-  z-index: 10;
-  display: flex;
-  align-items: center;
 }
 
 .legend-wrapper {
@@ -1123,7 +1241,7 @@ onUnmounted(() => {
   font-size: 12px;
 }
 
-.graph-canvas {
+.graph-canvas-wrapper {
   flex: 1;
   position: relative;
   background: #fff;

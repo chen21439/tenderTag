@@ -31,6 +31,7 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import cytoscape, { type Core, type ElementDefinition } from 'cytoscape'
 import { getGraphData, getConceptNodes, getConceptEdges } from '@/components/knowledge-graph/graphData'
 import { getGraphStyles } from '@/components/knowledge-graph/graphStyles'
+import { highlightAllAncestorsDescendants, clearHighlights as clearGraphHighlights } from '@/components/knowledge-graph/graphHighlight'
 
 defineOptions({
   name: 'CytoscapeComponent'
@@ -362,89 +363,14 @@ const toggleFieldNodes = (nodeId: string) => {
   })
 }
 
-// Highlight parent and child nodes of selected node
+// Highlight all related nodes (高亮所有关联节点)
 const highlightNodeChildren = (nodeId: string) => {
   if (!cy) return
 
-  // Clear previous highlights
-  clearHighlights()
-
   selectedNodeId.value = nodeId
-  const data = graphData.value
 
-  const parentNodeIds = new Set<string>()
-  const childNodeIds = new Set<string>()
-  const relatedEdges: string[] = []
-
-  // Process all edges to find parents and children
-  // Direction depends on edge type:
-  // - instanceOf: source (instance) -> target (concept), so source is child, target is parent
-  // - hasField: source (paragraph) -> target (field), so source is parent, target is child
-  // - hasPart/hasMember: source (whole) -> target (part), so source is parent, target is child
-  data.edges.forEach(edge => {
-    const isInstanceOf = edge.label === 'instanceOf'
-
-    if (edge.source === nodeId) {
-      // This node is source
-      if (isInstanceOf) {
-        // For instanceOf: source is child (instance), target is parent (concept)
-        parentNodeIds.add(edge.target)
-      } else {
-        // For hasPart/hasMember/hasField/etc: source is parent, target is child
-        childNodeIds.add(edge.target)
-      }
-      relatedEdges.push(edge.id)
-    } else if (edge.target === nodeId) {
-      // This node is target
-      if (isInstanceOf) {
-        // For instanceOf: target is parent (concept), source is child (instance)
-        childNodeIds.add(edge.source)
-      } else {
-        // For hasPart/hasMember/hasField/etc: target is child, source is parent
-        parentNodeIds.add(edge.source)
-      }
-      relatedEdges.push(edge.id)
-    }
-  })
-
-  console.log(`🎯 Selected node: ${nodeId}`)
-  console.log(`   ⬆️  ${parentNodeIds.size} parent(s):`, Array.from(parentNodeIds))
-  console.log(`   ⬇️  ${childNodeIds.size} child(ren):`, Array.from(childNodeIds))
-
-  // Dim all nodes and edges
-  cy.nodes().addClass('dimmed')
-  cy.edges().addClass('dimmed')
-
-  // Highlight selected node (remove dimming)
-  const selectedNode = cy.getElementById(nodeId)
-  selectedNode.removeClass('dimmed')
-
-  // Highlight parent nodes (different style from children)
-  parentNodeIds.forEach(parentId => {
-    const parentNode = cy.getElementById(parentId)
-    if (parentNode.length > 0) {
-      parentNode.removeClass('dimmed')
-      parentNode.addClass('highlighted-parent')
-    }
-  })
-
-  // Highlight child nodes
-  childNodeIds.forEach(childId => {
-    const childNode = cy.getElementById(childId)
-    if (childNode.length > 0) {
-      childNode.removeClass('dimmed')
-      childNode.addClass('highlighted-child')
-    }
-  })
-
-  // Highlight related edges
-  relatedEdges.forEach(edgeId => {
-    const edgeElement = cy.getElementById(edgeId)
-    if (edgeElement.length > 0) {
-      edgeElement.removeClass('dimmed')
-      edgeElement.addClass('highlighted')
-    }
-  })
+  // 使用共享的高亮方法（递归高亮所有祖先和后代）
+  highlightAllAncestorsDescendants(cy, nodeId, graphData.value.edges)
 }
 
 // Clear all highlights
@@ -453,11 +379,8 @@ const clearHighlights = () => {
 
   selectedNodeId.value = null
 
-  // Remove all highlight classes
-  cy.nodes().removeClass('dimmed highlighted-parent highlighted-child')
-  cy.edges().removeClass('dimmed highlighted')
-
-  console.log('✨ Cleared all highlights')
+  // 使用共享的清除高亮方法
+  clearGraphHighlights(cy)
 }
 
 const resetLayout = () => {
