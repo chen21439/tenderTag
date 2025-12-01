@@ -196,7 +196,6 @@ import CytoscapeComponent from './components/CytoscapeComponent.vue'
 import GraphLegend from '../../components/knowledge-graph/GraphLegend.vue'
 import GraphControls from '../../components/knowledge-graph/GraphControls.vue'
 import { getGraphData } from '../../components/knowledge-graph/graphData'
-import { addEdgeIdPrefix } from '../../components/knowledge-graph/useGraphDataBuilder'
 import config from '../../config'
 import { useOntologyTree } from './components/ontology/useOntologyTree'
 
@@ -2514,34 +2513,63 @@ const extractFieldsFromStructuredData = () => {
   return fieldsMap
 }
 
-//生成知识图谱数据（基于 graph API）
+//生成知识图谱数据（基于 ontology 数据）
 const buildGraphData = async () => {
-  console.log('🔧 开始生成知识图谱数据 (使用 graph API)')
+  console.log('🔧 开始生成知识图谱数据')
 
-  try {
-    // 从 graph API 获取节点和边
-    const { nodes, edges } = await getGraphData()
+  // Get concept nodes and edges (with inferred edges from sameAs) from ontology.json
+  const { nodes: conceptNodes, edges: conceptEdges } = await getGraphData()
 
-    console.log('📊 从 graph API 获取:')
-    console.log('  - 节点数:', nodes.length)
-    console.log('  - 边数:', edges.length)
+  console.log('📊 原始数据:')
+  console.log('  - 概念节点数:', conceptNodes.length)
+  console.log('  - 概念边数（含推理）:', conceptEdges.length)
+  console.log('  - 前3个节点:', conceptNodes.slice(0, 3))
+  console.log('  - 前3条边:', conceptEdges.slice(0, 3))
 
-    // 给边添加唯一前缀，避免ID冲突
-    const edgesWithPrefix = addEdgeIdPrefix(edges)
+  // 🎯 过滤逻辑1：API 数据中不展示 hasAttribute 关系（要素节点会在后面单独添加）
+  const excludedEdgeTypes = new Set(['hasAttribute'])
+  const filteredEdgesByType = conceptEdges.filter((e: any) => !excludedEdgeTypes.has(e.label))
 
-    graphNodes.value = nodes
-    graphEdges.value = edgesWithPrefix
+  console.log(`📊 过滤 API 边类型后: ${conceptEdges.length} -> ${filteredEdgesByType.length} 条边`)
 
-    console.log('✅ 图谱数据构建完成')
-    console.log('  节点数:', nodes.length, '| 边数:', edgesWithPrefix.length)
+  // 初始化节点和边数组
+  const nodes: Array<{ id: string; label: string; type: string }> = []
+  const edges: Array<{ id: string; source: string; target: string; label: string }> = []
 
-    // 构建导航树数据
-    buildGraphTreeData()
-  } catch (error) {
-    console.error('❌ 图谱数据构建失败:', error)
-    graphNodes.value = []
-    graphEdges.value = []
-  }
+  // 先添加 API 过滤后的边
+  edges.push(...filteredEdgesByType)
+
+  // 🎯 收集涉及的节点ID（从边中）
+  const relatedNodeIds = new Set<string>()
+  edges.forEach((edge: any) => {
+    relatedNodeIds.add(edge.source)
+    relatedNodeIds.add(edge.target)
+  })
+
+  // 添加概念节点（从 API 获取的，只添加有边连接的）
+  conceptNodes.forEach((n: any) => {
+    if (relatedNodeIds.has(n.id)) {
+      nodes.push(n)
+    }
+  })
+
+  console.log('📊 过滤后数据:')
+  console.log('  - 节点数:', nodes.length)
+  console.log('  - 边数:', edges.length)
+  console.log(
+    '  - 节点列表:',
+    nodes.map(n => `${n.id}:${n.label}`)
+  )
+  console.log(
+    '  - 边列表:',
+    edges.map(e => `${e.source}->${e.target}(${e.label})`)
+  )
+
+  graphNodes.value = nodes
+  graphEdges.value = edges
+
+  // 构建导航树数据
+  buildGraphTreeData()
 }
 
 // 处理图谱节点点击
