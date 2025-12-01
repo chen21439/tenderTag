@@ -1669,20 +1669,34 @@ const loadJsonFiles = async (taskId: string) => {
     let treeDataUrl = ''
     let jsonData = null
     let isTreeJson = false
+    let ontologyData = null  // 用于知识图谱的 ontology 数据
 
-    // 统一从 ontology API 加载数据（包含 label 和 fields）
+    // 1. 加载 agent 数据（用于业务语义结构树）
+    try {
+      const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=agent`
+      console.log(`🔄 从 API 加载数据 (result_type=agent):`, apiUrl)
+      const response = await fetch(apiUrl)
+      if (response.ok) {
+        jsonData = await response.json()
+        treeDataUrl = apiUrl
+        isTreeJson = false  // agent 返回的是扁平数组，不是树形结构
+        console.log(`✅ 业务语义结构树数据源: API (result_type=agent)`)
+      }
+    } catch (e) {
+      console.log('⚠️ agent API 加载失败:', e)
+    }
+
+    // 2. 加载 ontology 数据（用于知识标签图谱）
     try {
       const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology`
       console.log(`🔄 从 API 加载数据 (result_type=ontology):`, apiUrl)
       const response = await fetch(apiUrl)
       if (response.ok) {
-        jsonData = await response.json()
-        treeDataUrl = apiUrl
-        isTreeJson = true
-        console.log(`✅ 数据源: API (result_type=ontology)`)
+        ontologyData = await response.json()
+        console.log(`✅ 知识标签图谱数据源: API (result_type=ontology)`)
       }
     } catch (e) {
-      console.log('⚠️ API 加载失败，尝试从 public 目录加载:', e)
+      console.log('⚠️ ontology API 加载失败:', e)
     }
 
     // 如果 API 加载失败，回退到 public 目录
@@ -1782,7 +1796,8 @@ const loadJsonFiles = async (taskId: string) => {
       }
       extractNodes(builtTreeData.value)
 
-      // 🎯 使用 rawTreeData 作为知识图谱 fields 数据源（包含原始的 label 和 fields）
+      // 🎯 使用 ontologyData 作为知识图谱 fields 数据源（包含原始的 label 和 fields）
+      // 如果有 ontologyData，优先使用；否则使用 rawTreeData（向后兼容）
       const flattenTree = (nodes: any[]): any[] => {
         const result: any[] = []
         const traverse = (node: any) => {
@@ -1797,7 +1812,8 @@ const loadJsonFiles = async (taskId: string) => {
         return result
       }
 
-      const flattenedData = flattenTree(rawTreeData.value)
+      const graphDataSource = ontologyData || rawTreeData.value
+      const flattenedData = flattenTree(Array.isArray(graphDataSource) ? graphDataSource : [graphDataSource])
       structuredData.value = flattenedData
 
       console.log('✅ 扁平化 rawTreeData，节点数:', flattenedData.length)

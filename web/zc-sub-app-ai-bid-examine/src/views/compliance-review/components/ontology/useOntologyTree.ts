@@ -19,9 +19,10 @@ export function useOntologyTree() {
         // 先保存原始 children 用于递归
         const originalChildren = node.children
 
-        // 创建节点副本，清除原始 children 和 content
+        // 创建节点深拷贝，清除原始 children 和 content
+        // 使用 JSON 深拷贝避免污染原始数据（特别是 location、fields 等引用类型）
         const cleanedNode = {
-          ...node,
+          ...JSON.parse(JSON.stringify(node)),
           children: [], // 清空 children
           content: undefined // 清除 content
         }
