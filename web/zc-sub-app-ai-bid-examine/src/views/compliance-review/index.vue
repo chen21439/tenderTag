@@ -1231,6 +1231,9 @@ const nodeMap = ref<Record<number, any>>({})
 // 结构化数据（包含 fields 信息，用于知识图谱）
 const structuredData = ref<any[]>([])
 
+// 有 fields 的节点（用于过滤图谱）
+const nodesWithFields = ref<any[]>([])
+
 // 图谱数据
 const graphNodes = ref<Array<{ id: string; label: string; type: string }>>([])
 const graphEdges = ref<Array<{ id: string; source: string; target: string; label: string }>>([])
@@ -1999,6 +2002,7 @@ const loadJsonFiles = async (taskId: string) => {
 
       console.log('✅ 扁平化 rawTreeData，节点数:', flattenedData.length)
       const nodesWithFieldsArray = flattenedData.filter(n => n.fields && Object.keys(n.fields).length > 0)
+      nodesWithFields.value = nodesWithFieldsArray  // 保存到 ref 变量
       console.log('   其中包含 fields 的节点数:', nodesWithFieldsArray.length)
       console.log('   📋 前3个包含 fields 的节点:', nodesWithFieldsArray.slice(0, 3).map(n => ({
         pid: n.pid,
@@ -2526,18 +2530,52 @@ const buildGraphData = async () => {
   console.log('  - 前3个节点:', conceptNodes.slice(0, 3))
   console.log('  - 前3条边:', conceptEdges.slice(0, 3))
 
-  // 🎯 过滤逻辑1：API 数据中不展示 hasAttribute 关系（要素节点会在后面单独添加）
-  const excludedEdgeTypes = new Set(['hasAttribute'])
-  const filteredEdgesByType = conceptEdges.filter((e: any) => !excludedEdgeTypes.has(e.label))
+  // 🎯 过滤逻辑1：只保留有 fields 的节点对应的标签
+  const excludedNodeLabels = new Set(['其他关键信息', '招标文件', '文本片段', '文本章节'])
 
-  console.log(`📊 过滤 API 边类型后: ${conceptEdges.length} -> ${filteredEdgesByType.length} 条边`)
+  // 从 ontology 数据中提取有 fields 的节点的 label
+  const allowedLabels = new Set<string>()
+  if (nodesWithFields.value && nodesWithFields.value.length > 0) {
+    nodesWithFields.value.forEach((node: any) => {
+      if (node.label && node.label.trim() !== '') {
+        allowedLabels.add(node.label)
+      }
+    })
+  }
+
+  console.log(`📊 从 ontology 提取的允许标签数: ${allowedLabels.size}`)
+  console.log(`   前10个允许的标签:`, Array.from(allowedLabels).slice(0, 10))
+
+  // 过滤节点：排除指定标签 + 只保留在允许列表中的标签
+  const filteredNodes = conceptNodes.filter((n: any) => {
+    if (excludedNodeLabels.has(n.label)) return false
+    if (allowedLabels.size > 0 && !allowedLabels.has(n.label)) return false
+    return true
+  })
+
+  console.log(`📊 过滤节点后: ${conceptNodes.length} -> ${filteredNodes.length} 个节点`)
+
+  // 获取过滤后的节点ID集合
+  const filteredNodeIds = new Set(filteredNodes.map((n: any) => n.id))
+
+  // 🎯 过滤逻辑2：过滤边
+  // - 排除 hasAttribute 关系
+  // - 只保留两端节点都在过滤后节点集合中的边
+  const excludedEdgeTypes = new Set(['hasAttribute'])
+  const filteredEdges = conceptEdges.filter((e: any) => {
+    return !excludedEdgeTypes.has(e.label) &&
+           filteredNodeIds.has(e.source) &&
+           filteredNodeIds.has(e.target)
+  })
+
+  console.log(`📊 过滤边后: ${conceptEdges.length} -> ${filteredEdges.length} 条边`)
 
   // 初始化节点和边数组
   const nodes: Array<{ id: string; label: string; type: string }> = []
   const edges: Array<{ id: string; source: string; target: string; label: string }> = []
 
-  // 先添加 API 过滤后的边
-  edges.push(...filteredEdgesByType)
+  // 添加边
+  edges.push(...filteredEdges)
 
   // 🎯 收集涉及的节点ID（从边中）
   const relatedNodeIds = new Set<string>()
@@ -2546,16 +2584,67 @@ const buildGraphData = async () => {
     relatedNodeIds.add(edge.target)
   })
 
-  // 添加概念节点（从 API 获取的，只添加有边连接的）
-  conceptNodes.forEach((n: any) => {
+  // 添加节点（只添加有边连接的）
+  filteredNodes.forEach((n: any) => {
     if (relatedNodeIds.has(n.id)) {
       nodes.push(n)
     }
   })
 
+  // 🎯 添加要素节点（从 nodesWithFields 中提取 fields）
+  let fieldNodeCount = 0
+  let fieldEdgeCount = 0
+
+  if (nodesWithFields.value && nodesWithFields.value.length > 0) {
+    nodesWithFields.value.forEach((ontologyNode: any) => {
+      const conceptLabel = ontologyNode.label
+
+      // 检查这个 label 对应的概念节点是否在图谱中
+      const conceptNode = nodes.find(n => n.label === conceptLabel)
+      if (!conceptNode) return
+
+      // 遍历 fields，为每个 field 创建要素节点
+      if (ontologyNode.fields && typeof ontologyNode.fields === 'object') {
+        Object.entries(ontologyNode.fields).forEach(([fieldKey, fieldValue]) => {
+          if (!fieldValue) return
+
+          // 创建要素节点
+          const fieldNodeId = `field_${ontologyNode.pid}_${fieldKey}`
+          const fieldNode = {
+            id: fieldNodeId,
+            label: `${fieldKey}: ${String(fieldValue).substring(0, 30)}${String(fieldValue).length > 30 ? '...' : ''}`,
+            type: 'element',
+            location: ontologyNode.location || [],
+            pid: ontologyNode.pid,
+            fieldKey: fieldKey,
+            fieldValue: fieldValue
+          }
+
+          nodes.push(fieldNode as any)
+          fieldNodeCount++
+
+          // 创建 hasAttribute 边：概念节点 -> 要素节点
+          const fieldEdge = {
+            id: `edge_field_${edges.length + fieldEdgeCount}`,
+            source: conceptNode.id,
+            target: fieldNodeId,
+            label: 'hasAttribute'
+          }
+
+          edges.push(fieldEdge)
+          fieldEdgeCount++
+        })
+      }
+    })
+  }
+
   console.log('📊 过滤后数据:')
-  console.log('  - 节点数:', nodes.length)
-  console.log('  - 边数:', edges.length)
+  console.log('  - 概念节点数:', nodes.length - fieldNodeCount)
+  console.log('  - 要素节点数:', fieldNodeCount)
+  console.log('  - 总节点数:', nodes.length)
+  console.log('  - 概念边数:', edges.length - fieldEdgeCount)
+  console.log('  - 要素边数:', fieldEdgeCount)
+  console.log('  - 总边数:', edges.length)
   console.log(
     '  - 节点列表:',
     nodes.map(n => `${n.id}:${n.label}`)
@@ -2737,6 +2826,12 @@ const handleNavNodeSelect = (nodeId: string) => {
 
   // 更新选中状态
   selectedGraphNodeId.value = nodeId
+
+  // 高亮图谱节点
+  if (cytoscapeRef.value) {
+    cytoscapeRef.value.highlightNode?.(nodeId)
+    cytoscapeRef.value.centerNode?.(nodeId)
+  }
 
   // 触发图谱节点点击（模拟）
   const node = graphNodes.value.find(n => n.id === nodeId)

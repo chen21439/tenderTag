@@ -492,7 +492,20 @@ defineExpose({
   zoomOut,
   getCytoscape: () => cy,
   getConceptNodes,
-  getConceptEdges
+  getConceptEdges,
+  highlightNode: highlightNodeChildren,
+  centerNode: (nodeId: string) => {
+    if (!cy) return
+    const node = cy.getElementById(nodeId)
+    if (node.length > 0) {
+      cy.animate({
+        zoom: 1.0,
+        center: { eles: node }
+      }, {
+        duration: 300
+      })
+    }
+  }
 })
 </script>
 
