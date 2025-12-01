@@ -1836,6 +1836,15 @@ const loadOntologyData = async (taskId: string) => {
       structuredData.value = flattenTree(rawTreeData.value)
       console.log('✅ ontology 数据已保存，节点数:', structuredData.value.length)
 
+      // 提取 fields 不为空的节点
+      const nodesWithFieldsArray = structuredData.value.filter((n: any) => n.fields && Object.keys(n.fields).length > 0)
+      nodesWithFields.value = nodesWithFieldsArray
+      console.log('   其中包含 fields 的节点数:', nodesWithFieldsArray.length)
+      console.log('   📋 所有包含 fields 的节点:')
+      nodesWithFieldsArray.forEach((n: any, index: number) => {
+        console.log(`      ${index + 1}. label: "${n.label}", fields: ${Object.keys(n.fields).length}个 (${Object.keys(n.fields).join(', ')})`)
+      })
+
       // 生成知识图谱
       await buildGraphData()
     }
@@ -2533,12 +2542,16 @@ const buildGraphData = async () => {
   // 🎯 过滤逻辑1：只保留有 fields 的节点对应的标签
   const excludedNodeLabels = new Set(['其他关键信息', '招标文件', '文本片段', '文本章节'])
 
-  // 从 ontology 数据中提取有 fields 的节点的 label
+  // 从 ontology 数据中提取有 fields 的节点的 label，并拆分路径
   const allowedLabels = new Set<string>()
   if (nodesWithFields.value && nodesWithFields.value.length > 0) {
     nodesWithFields.value.forEach((node: any) => {
       if (node.label && node.label.trim() !== '') {
-        allowedLabels.add(node.label)
+        // 拆分路径：'采购项目/采购包' -> ['采购项目', '采购包']
+        const pathSegments = node.label.split('/').map((s: string) => s.trim()).filter((s: string) => s !== '')
+        pathSegments.forEach((segment: string) => {
+          allowedLabels.add(segment)
+        })
       }
     })
   }
@@ -2597,11 +2610,18 @@ const buildGraphData = async () => {
 
   if (nodesWithFields.value && nodesWithFields.value.length > 0) {
     nodesWithFields.value.forEach((ontologyNode: any) => {
-      const conceptLabel = ontologyNode.label
+      if (!ontologyNode.label || ontologyNode.label.trim() === '') return
 
-      // 检查这个 label 对应的概念节点是否在图谱中
-      const conceptNode = nodes.find(n => n.label === conceptLabel)
-      if (!conceptNode) return
+      // 提取路径的最后一个标签：'采购项目/采购包' -> '采购包'
+      const pathSegments = ontologyNode.label.split('/').map((s: string) => s.trim()).filter((s: string) => s !== '')
+      const lastLabel = pathSegments[pathSegments.length - 1]
+
+      // 检查这个标签对应的概念节点是否在图谱中
+      const conceptNode = nodes.find(n => n.label === lastLabel)
+      if (!conceptNode) {
+        console.log(`⚠️ 未找到概念节点: ${lastLabel} (来自路径: ${ontologyNode.label})`)
+        return
+      }
 
       // 遍历 fields，为每个 field 创建要素节点
       if (ontologyNode.fields && typeof ontologyNode.fields === 'object') {
@@ -2772,11 +2792,14 @@ const buildGraphTreeData = () => {
     return
   }
 
+  // 🎯 过滤掉要素节点，只保留概念节点
+  const conceptNodes = nodes.filter(node => node.type !== 'element')
+
   // 构建父子关系映射
   const childrenMap = new Map<string, string[]>()
   const parentMap = new Map<string, string>()
 
-  // hasPart, hasMember 表示父子关系
+  // hasPart, hasMember 表示父子关系（排除 hasAttribute）
   edges.forEach(edge => {
     if (edge.label === 'hasPart' || edge.label === 'hasMember') {
       const parent = edge.source
@@ -2790,17 +2813,17 @@ const buildGraphTreeData = () => {
     }
   })
 
-  // 找到根节点（没有父节点的节点）
-  const rootNodeIds = nodes
+  // 找到根节点（没有父节点的节点，且是概念节点）
+  const rootNodeIds = conceptNodes
     .filter(node => !parentMap.has(node.id))
     .map(node => node.id)
 
   console.log('📌 根节点数:', rootNodeIds.length)
   console.log('📌 根节点列表:', rootNodeIds)
 
-  // 递归构建树
+  // 递归构建树（只包含概念节点）
   const buildTree = (nodeId: string): any => {
-    const node = nodes.find(n => n.id === nodeId)
+    const node = conceptNodes.find(n => n.id === nodeId)
     if (!node) return null
 
     const children = childrenMap.get(nodeId) || []
