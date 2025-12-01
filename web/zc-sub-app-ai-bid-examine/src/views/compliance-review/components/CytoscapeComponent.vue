@@ -136,9 +136,31 @@ const sampleGraphData = ref<{ nodes: any[]; edges: any[] }>({ nodes: [], edges: 
 
 const loadSampleGraphData = async () => {
   const conceptData = await loadConceptData()
+
+  // 创建 label -> id 的映射
+  const labelToId = new Map<string, string>()
+  conceptData.nodes.forEach(node => {
+    if (node.label) {
+      labelToId.set(node.label, node.id)
+    }
+  })
+
+  // 获取测试实例节点和边
+  const instanceNodes = getSampleInstanceNodes()
+  const instanceEdges = getSampleInstanceEdges()
+
+  // 修正边的引用：将 label 转换为真实 ID
+  const fixedEdges = instanceEdges.map(edge => {
+    return {
+      ...edge,
+      source: labelToId.get(edge.source) || edge.source,
+      target: labelToId.get(edge.target) || edge.target
+    }
+  })
+
   sampleGraphData.value = {
-    nodes: [...conceptData.nodes, ...getSampleInstanceNodes()],
-    edges: [...conceptData.edges, ...getSampleInstanceEdges()]
+    nodes: [...conceptData.nodes, ...instanceNodes],
+    edges: [...conceptData.edges, ...fixedEdges]
   }
 }
 

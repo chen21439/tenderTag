@@ -98,38 +98,29 @@
               </div>
             </div>
 
-            <!-- 导航面板 (可折叠) -->
-            <div v-show="!isNavCollapsed" class="graph-nav-panel-wrapper">
-              <div class="graph-nav-panel">
-                <div v-if="graphTreeData.length > 0" class="nav-tree-list">
-                  <GraphNavNode
-                    v-for="node in graphTreeData"
-                    :key="node.id"
-                    :node="node"
-                    :depth="0"
-                    :selected-id="selectedGraphNodeId"
-                    @select="handleNavNodeSelect"
-                  />
+            <!-- 使用共享的图谱导航面板组件（浮动布局） -->
+            <GraphNavigationPanel
+              :tree-data="graphTreeData"
+              :selected-node-id="selectedGraphNodeId"
+              :collapsed="isNavCollapsed"
+              layout="floating"
+              @node-select="handleNavNodeSelect"
+            >
+              <template #graph>
+                <CytoscapeComponent
+                  ref="cytoscapeRef"
+                  :use-sample-data="false"
+                  :nodes="graphNodes"
+                  :edges="graphEdges"
+                  layout="cose"
+                  @node-click="handleNodeClick"
+                  @edge-click="handleEdgeClick"
+                />
+                <div style="position: absolute; bottom: 16px; left: 16px; z-index: 10">
+                  <GraphLegend />
                 </div>
-                <a-empty v-else description="暂无数据" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
-              </div>
-            </div>
-
-            <!-- 图谱画布 -->
-            <div class="graph-canvas">
-              <CytoscapeComponent
-                ref="cytoscapeRef"
-                :use-sample-data="false"
-                :nodes="graphNodes"
-                :edges="graphEdges"
-                layout="cose"
-                @node-click="handleNodeClick"
-                @edge-click="handleEdgeClick"
-              />
-              <div style="position: absolute; bottom: 16px; left: 16px; z-index: 10">
-                <GraphLegend />
-              </div>
-            </div>
+              </template>
+            </GraphNavigationPanel>
           </div>
 
           <!-- 正常模式：显示标签树或原始树 -->
@@ -191,9 +182,8 @@ import HistoryFilesModal from './components/HistoryFilesModal.vue'
 import ReviewItem from './components/ReviewItem.vue'
 import ReviewTreeNode from './components/ReviewTreeNode.vue'
 import TreeNode from './components/TreeNode.vue'
-import GraphNavNode from './components/GraphNavNode.vue'
 import CytoscapeComponent from './components/CytoscapeComponent.vue'
-import GraphLegend from '../../components/knowledge-graph/GraphLegend.vue'
+import { GraphLegend, GraphNavigationPanel } from '../../components/knowledge-graph'
 import GraphControls from '../../components/knowledge-graph/GraphControls.vue'
 import { getGraphData } from '../../components/knowledge-graph/graphData'
 import config from '../../config'
