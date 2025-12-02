@@ -201,6 +201,18 @@
             <div class="legend-wrapper">
               <GraphLegend />
             </div>
+
+            <!-- Tooltip for element nodes -->
+            <div
+              v-if="tooltipState.visible"
+              class="node-tooltip"
+              :style="{ left: tooltipState.x + 'px', top: tooltipState.y + 'px' }"
+            >
+              <div class="tooltip-label">{{ tooltipState.content.label }}</div>
+              <div v-if="tooltipState.content.fieldValue" class="tooltip-value">
+                {{ tooltipState.content.fieldValue }}
+              </div>
+            </div>
           </template>
         </GraphNavigationPanel>
       </div>
@@ -222,11 +234,20 @@ import {
   highlightAllAncestorsDescendants,
   clearHighlights,
   getGraphStyles,
+  registerHtmlLabelPlugin,
+  applyHtmlLabels,
+  toggleFieldNodes,
+  hideAllFieldNodes,
+  bindTooltipEvents,
+  unbindTooltipEvents,
   GraphLegend,
   GraphToolbar,
   GraphNavigationPanel
 } from '@/components/knowledge-graph'
-import type { GraphNode, GraphEdge } from '@/components/knowledge-graph'
+
+// 注册 HTML 标签插件
+registerHtmlLabelPlugin(cytoscape)
+import type { GraphNode, GraphEdge, TooltipState } from '@/components/knowledge-graph'
 
 const router = useRouter()
 
@@ -259,6 +280,17 @@ const connectEdgeType = ref('attachedTo')
 const selectedNode = ref<any>(null)
 const selectedEdge = ref<any>(null)
 
+// Tooltip 状态
+const tooltipState = ref<TooltipState>({
+  visible: false,
+  x: 0,
+  y: 0,
+  content: {
+    label: '',
+    fieldValue: ''
+  }
+})
+
 // 连接模式的临时变量
 let connectSourceNode: any = null
 let tempEdge: any = null // 临时预览边
@@ -273,7 +305,7 @@ let nodeCounter = 0
 const graphData = ref<{ nodes: any[]; edges: any[] }>({ nodes: [], edges: [] })
 
 // 导航面板相关
-const isNavCollapsed = ref(true)
+const isNavCollapsed = ref(false) // 默认展开
 const graphTreeData = ref<any[]>([])
 const selectedGraphNodeId = ref<string | null>(null)
 
@@ -328,7 +360,8 @@ const initCytoscape = () => {
         id: node.id,
         label: node.label,
         type: node.type,
-        level: node.level
+        level: node.level,
+        fieldCount: (node as any).fieldCount || 0  // 添加要素节点数量
       }
     })),
     ...graphData.value.edges.map(edge => ({
@@ -355,6 +388,12 @@ const initCytoscape = () => {
     }
   })
 
+  // 应用 HTML 标签（显示要素节点数量徽章）
+  applyHtmlLabels(cy)
+
+  // 默认隐藏所有要素节点（使用共享函数）
+  hideAllFieldNodes(cy)
+
   // 绑定事件
   bindEvents()
 
@@ -372,6 +411,9 @@ const initCytoscape = () => {
 const bindEvents = () => {
   if (!cy) return
 
+  // 绑定 tooltip 事件（使用共享函数）
+  bindTooltipEvents(cy, tooltipState.value)
+
   // 节点点击事件
   cy.on('tap', 'node', (evt) => {
     // 添加模式下不处理节点点击，让画布点击事件处理
@@ -386,6 +428,16 @@ const bindEvents = () => {
   cy.on('tap', 'edge', (evt) => {
     const edge = evt.target
     handleEdgeClick(edge)
+  })
+
+  // 右键点击节点：切换要素节点展开/折叠
+  cy.on('cxttap', 'node', (evt) => {
+    evt.preventDefault()
+    const node = evt.target
+    const nodeId = node.data('id')
+
+    // 使用共享的 toggleFieldNodes 函数
+    toggleFieldNodes(cy, nodeId, graphData.value.edges)
   })
 
   // 画布点击事件（取消选择或添加节点）
@@ -660,11 +712,17 @@ const handleNavNodeSelect = (nodeId: string) => {
   if (cy && nodeId) {
     const node = cy.getElementById(nodeId)
     if (node.length > 0) {
-      // 清除之前的高亮
-      cy.elements().removeClass('highlighted')
+      // 更新选中节点状态
+      selectedNode.value = {
+        id: node.data('id'),
+        label: node.data('label'),
+        type: node.data('type') || 'normal',
+        level: node.data('level') || 1
+      }
+      selectedEdge.value = null
 
-      // 高亮当前节点
-      node.addClass('highlighted')
+      // 导航点击时始终递归高亮所有关联节点（不受左侧模式影响）
+      highlightAllAncestorsDescendants(cy, nodeId, graphData.value.edges)
 
       // 居中显示节点
       cy.animate({
@@ -1079,6 +1137,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (cy) {
+    // 解绑 tooltip 事件
+    unbindTooltipEvents(cy)
     cy.destroy()
   }
 })
@@ -1119,6 +1179,7 @@ onUnmounted(() => {
 .toolbar-right {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .nav-btn {
@@ -1137,11 +1198,6 @@ onUnmounted(() => {
 
 .nav-btn .icon {
   flex-shrink: 0;
-}
-
-.toolbar-right {
-  display: flex;
-  gap: 12px;
 }
 
 .main-content {
@@ -1302,5 +1358,62 @@ onUnmounted(() => {
   text-align: center;
   color: #8c8c8c;
   font-size: 13px;
+}
+
+/* HTML 标签样式（要素节点数量徽章） */
+:deep(.node-html-label) {
+  pointer-events: none;
+}
+
+:deep(.node-badge-container) {
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+:deep(.node-badge) {
+  position: absolute;
+  top: -35px;
+  right: -35px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #ff4d4f;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid #fff;
+}
+
+/* Tooltip 样式 */
+.node-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 1000;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 300px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip-label {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.tooltip-value {
+  font-size: 11px;
+  color: #d4d4d4;
+  white-space: normal;
+  word-break: break-all;
 }
 </style>

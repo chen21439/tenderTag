@@ -2607,23 +2607,94 @@ const buildGraphData = async () => {
   const nodeFieldCountMap = new Map<string, number>()
 
   console.log('🏷️ 开始构建要素节点...')
-  console.log(`   开关状态: ${enableOntologyFieldFilter.value ? '开启（会添加要素节点）' : '关闭（不添加要素节点）'}`)
+  console.log(`   开关状态: ${enableOntologyFieldFilter.value ? '开启（节点过滤）' : '关闭（显示所有节点）'}`)
+  console.log(`   注意: 要素节点始终会创建，开关只控制概念节点的过滤`)
 
   if (nodesWithFields.value && nodesWithFields.value.length > 0) {
     nodesWithFields.value.forEach((ontologyNode: any, index: number) => {
       if (!ontologyNode.label || ontologyNode.label.trim() === '') return
 
-      // 提取路径的最后一个标签：'采购项目/采购包' -> '采购包'
+      // 提取路径：'采购项目/采购包' -> ['采购项目', '采购包']
       const pathSegments = ontologyNode.label.split('/').map((s: string) => s.trim()).filter((s: string) => s !== '')
       const lastLabel = pathSegments[pathSegments.length - 1]
 
       console.log(`\n📋 处理第 ${index + 1} 个有 fields 的节点:`)
       console.log(`   路径: "${ontologyNode.label}"`)
+      console.log(`   路径段: [${pathSegments.join(', ')}]`)
       console.log(`   最后一个标签: "${lastLabel}"`)
       console.log(`   fields 数量: ${Object.keys(ontologyNode.fields || {}).length}`)
 
-      // 检查这个标签对应的概念节点是否在图谱中
-      const conceptNode = nodes.find(n => n.label === lastLabel)
+      // 查找匹配路径的概念节点
+      // 策略：找到所有 label 匹配的节点，然后通过路径验证找到正确的那个
+      let conceptNode = null
+
+      if (pathSegments.length === 1) {
+        // 只有一层，直接匹配 label
+        conceptNode = nodes.find(n => n.label === lastLabel)
+      } else {
+        // 多层路径，需要验证父节点路径
+        // 先找到所有 label 匹配的候选节点
+        const candidates = nodes.filter(n => n.label === lastLabel)
+
+        if (candidates.length === 1) {
+          // 只有一个候选，直接使用
+          conceptNode = candidates[0]
+        } else if (candidates.length > 1) {
+          // 多个候选，通过路径验证
+          console.log(`   ⚠️ 找到 ${candidates.length} 个同名节点: [${candidates.map(c => c.id).join(', ')}]`)
+          console.log(`   尝试通过父节点路径验证...`)
+
+          // 向上遍历，验证路径是否匹配
+          for (const candidate of candidates) {
+            const parentPath: string[] = []
+            let currentNodeId = candidate.id
+
+            // 向上查找父节点，构建路径（最多查找 pathSegments.length - 1 层）
+            for (let i = 0; i < pathSegments.length - 1; i++) {
+              const parentEdge = edges.find(e =>
+                e.target === currentNodeId &&
+                (e.label === 'hasPart' || e.label === 'hasMember' || e.label === 'attachedTo')
+              )
+
+              if (!parentEdge) break
+
+              const parentNode = nodes.find(n => n.id === parentEdge.source)
+              if (!parentNode) break
+
+              parentPath.unshift(parentNode.label)
+              currentNodeId = parentNode.id
+            }
+
+            // 验证路径是否匹配
+            const fullPath = [...parentPath, candidate.label]
+            console.log(`   候选节点 ${candidate.id}: 路径 = [${fullPath.join('/')}]`)
+
+            // 检查路径是否匹配（从后往前匹配）
+            let pathMatches = true
+            for (let i = 0; i < Math.min(pathSegments.length, fullPath.length); i++) {
+              const segmentIndex = pathSegments.length - 1 - i
+              const pathIndex = fullPath.length - 1 - i
+              if (pathSegments[segmentIndex] !== fullPath[pathIndex]) {
+                pathMatches = false
+                break
+              }
+            }
+
+            if (pathMatches && fullPath.length >= pathSegments.length) {
+              conceptNode = candidate
+              console.log(`   ✅ 路径匹配成功！使用节点: ${candidate.id}`)
+              break
+            }
+          }
+
+          // 如果没有匹配到，使用第一个候选
+          if (!conceptNode) {
+            conceptNode = candidates[0]
+            console.log(`   ⚠️ 路径验证失败，使用第一个候选节点: ${conceptNode.id}`)
+          }
+        }
+      }
+
       if (!conceptNode) {
         console.log(`   ⚠️ 未找到概念节点`)
         return
@@ -2632,17 +2703,18 @@ const buildGraphData = async () => {
       console.log(`   ✅ 找到概念节点: ${conceptNode.id} (${conceptNode.label})`)
       console.log(`   要挂载的 fields:`, Object.keys(ontologyNode.fields))
 
-      // 统计要素节点数量
+      // 统计要素节点数量（需要累加，因为可能多个 ontology 节点映射到同一个概念节点）
       const fieldsCount = ontologyNode.fields && typeof ontologyNode.fields === 'object'
         ? Object.keys(ontologyNode.fields).filter(key => ontologyNode.fields[key]).length
         : 0
 
       if (fieldsCount > 0) {
-        nodeFieldCountMap.set(conceptNode.id, fieldsCount)
+        const currentCount = nodeFieldCountMap.get(conceptNode.id) || 0
+        nodeFieldCountMap.set(conceptNode.id, currentCount + fieldsCount)
       }
 
-      // 只有在开关开启时才实际添加要素节点
-      if (enableOntologyFieldFilter.value && ontologyNode.fields && typeof ontologyNode.fields === 'object') {
+      // 添加要素节点（总是创建，不受开关控制）
+      if (ontologyNode.fields && typeof ontologyNode.fields === 'object') {
         Object.entries(ontologyNode.fields).forEach(([fieldKey, fieldValue]) => {
           if (!fieldValue) return
 
@@ -2650,12 +2722,12 @@ const buildGraphData = async () => {
           const fieldNodeId = `field_${ontologyNode.pid}_${fieldKey}`
           const fieldNode = {
             id: fieldNodeId,
-            label: `${fieldKey}: ${String(fieldValue).substring(0, 30)}${String(fieldValue).length > 30 ? '...' : ''}`,
+            label: fieldKey,  // label 只显示 key（字段名）
             type: 'element',
             location: ontologyNode.location || [],
             pid: ontologyNode.pid,
             fieldKey: fieldKey,
-            fieldValue: fieldValue
+            fieldValue: fieldValue  // value 存储在 fieldValue 中，用于 tooltip 显示
           }
 
           nodes.push(fieldNode as any)
@@ -2676,11 +2748,12 @@ const buildGraphData = async () => {
     })
   }
 
-  // 为有要素节点的概念节点添加 displayLabel
+  // 为有要素节点的概念节点添加 displayLabel 和 fieldCount
   nodes.forEach((node: any) => {
     if (node.type !== 'element') {
-      const fieldCount = nodeFieldCountMap.get(node.id)
-      if (fieldCount && fieldCount > 0) {
+      const fieldCount = nodeFieldCountMap.get(node.id) || 0
+      node.fieldCount = fieldCount  // 直接存储数量，供 HTML 标签使用
+      if (fieldCount > 0) {
         node.displayLabel = `${node.label} (${fieldCount})`
       } else {
         node.displayLabel = node.label
@@ -2688,6 +2761,7 @@ const buildGraphData = async () => {
     } else {
       // 要素节点保持原 label
       node.displayLabel = node.label
+      node.fieldCount = 0
     }
   })
 

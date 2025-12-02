@@ -31,7 +31,20 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import cytoscape, { type Core, type ElementDefinition } from 'cytoscape'
 import { getGraphData, getConceptNodes, getConceptEdges } from '@/components/knowledge-graph/graphData'
 import { getGraphStyles } from '@/components/knowledge-graph/graphStyles'
-import { highlightAllAncestorsDescendants, clearHighlights as clearGraphHighlights } from '@/components/knowledge-graph/graphHighlight'
+import {
+  highlightAllAncestorsDescendants,
+  clearHighlights as clearGraphHighlights,
+  toggleFieldNodes as toggleFieldNodesShared,
+  hideAllFieldNodes
+} from '@/components/knowledge-graph/graphHighlight'
+import {
+  registerHtmlLabelPlugin,
+  applyHtmlLabels,
+  getHtmlLabelStyles
+} from '@/components/knowledge-graph/graphHtmlLabel'
+
+// 注册 HTML 标签插件
+registerHtmlLabelPlugin(cytoscape)
 
 defineOptions({
   name: 'CytoscapeComponent'
@@ -318,49 +331,8 @@ const bindEvents = () => {
 // 切换要素节点展开/折叠（右键点击）
 const toggleFieldNodes = (nodeId: string) => {
   if (!cy) return
-
-  const data = graphData.value
-
-  // 查找所有 hasAttribute 边，source 是当前节点
-  const fieldEdges = data.edges.filter((e: any) => e.source === nodeId && e.label === 'hasAttribute')
-
-  if (fieldEdges.length === 0) return
-
-  // 检查第一个要素节点是否可见，以此判断当前状态
-  const firstFieldNodeId = fieldEdges[0].target
-  const firstFieldNode = cy.getElementById(firstFieldNodeId)
-  const isExpanded = firstFieldNode.visible()
-
-  if (isExpanded) {
-    console.log(`🔒 折叠节点 ${nodeId} 的要素节点，共 ${fieldEdges.length} 个`)
-  } else {
-    console.log(`🔓 展开节点 ${nodeId} 的要素节点，共 ${fieldEdges.length} 个`)
-  }
-
-  // 切换显示/隐藏
-  fieldEdges.forEach((edge: any) => {
-    const fieldNodeId = edge.target
-    const fieldNode = cy.getElementById(fieldNodeId)
-    const fieldEdge = cy.getElementById(edge.id)
-
-    if (isExpanded) {
-      // 当前已展开，执行折叠
-      if (fieldNode.length > 0) {
-        fieldNode.hide()
-      }
-      if (fieldEdge.length > 0) {
-        fieldEdge.hide()
-      }
-    } else {
-      // 当前已折叠，执行展开
-      if (fieldNode.length > 0) {
-        fieldNode.show()
-      }
-      if (fieldEdge.length > 0) {
-        fieldEdge.show()
-      }
-    }
-  })
+  // 使用共享的 toggleFieldNodes 函数
+  toggleFieldNodesShared(cy, nodeId, graphData.value.edges)
 }
 
 // Highlight all related nodes (高亮所有关联节点)
@@ -464,19 +436,11 @@ const updateGraph = () => {
   console.log('  - elements 数量:', elements.length)
   cy.add(elements)
 
-  // 默认隐藏所有要素节点
-  cy.nodes().forEach(node => {
-    if (node.data('type') === 'element') {
-      node.hide()
-    }
-  })
+  // 默认隐藏所有要素节点（使用共享函数）
+  hideAllFieldNodes(cy)
 
-  // 隐藏 hasAttribute 边
-  cy.edges().forEach(edge => {
-    if (edge.data('label') === 'hasAttribute') {
-      edge.hide()
-    }
-  })
+  // 应用 HTML 标签（显示要素节点数量徽章）
+  applyHtmlLabels(cy)
 
   resetLayout()
 }
@@ -618,6 +582,36 @@ defineExpose({
       white-space: normal;
       word-break: break-all;
     }
+  }
+
+  // HTML 标签样式（要素节点数量徽章）
+  :deep(.node-html-label) {
+    pointer-events: none;
+  }
+
+  :deep(.node-badge-container) {
+    position: relative;
+    width: 0;
+    height: 0;
+  }
+
+  :deep(.node-badge) {
+    position: absolute;
+    top: -35px;
+    right: -35px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: #ff4d4f;
+    color: #fff;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 2px solid #fff;
   }
 }
 </style>
