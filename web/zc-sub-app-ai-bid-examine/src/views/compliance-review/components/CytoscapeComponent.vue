@@ -55,13 +55,15 @@ interface Props {
   edges?: Array<{ id: string; source: string; target: string; label?: string }>
   layout?: string
   useSampleData?: boolean
+  elementLabelMode?: 'key' | 'value' // 要素节点标签模式：key=字段名, value=字段值
 }
 
 const props = withDefaults(defineProps<Props>(), {
   nodes: () => [],
   edges: () => [],
   layout: 'cose',
-  useSampleData: true
+  useSampleData: true,
+  elementLabelMode: 'key' // 默认显示字段名
 })
 
 const emit = defineEmits(['node-click', 'edge-click', 'node-hover'])
@@ -202,13 +204,21 @@ const initCytoscape = () => {
   console.log('  - 前3条边 (映射后):', data.edges.slice(0, 3).map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label })))
 
   const elements: ElementDefinition[] = [
-    ...data.nodes.map(node => ({
-      data: {
-        ...node, // 保留所有原始字段（包括 location, pid 等）
-        label: node.label || node.id,
-        type: node.type || 'default'
+    ...data.nodes.map(node => {
+      // 根据 elementLabelMode 决定要素节点显示的 label
+      let displayLabel = node.label || node.id
+      if (node.type === 'element' && props.elementLabelMode === 'value') {
+        displayLabel = node.fieldValue || node.label || node.id
       }
-    })),
+
+      return {
+        data: {
+          ...node, // 保留所有原始字段（包括 location, pid, fieldKey, fieldValue 等）
+          label: displayLabel,
+          type: node.type || 'default'
+        }
+      }
+    }),
     ...data.edges.map(edge => ({
       data: {
         id: edge.id,
@@ -277,8 +287,8 @@ const bindEvents = () => {
     const node = event.target
     const nodeId = node.data('id')
 
-    // 切换要素节点显示状态
-    toggleFieldNodes(nodeId)
+    // 切换要素节点显示状态，传递布局参数
+    toggleFieldNodesShared(cy, nodeId, graphData.value.edges, props.layout)
   })
 
   // Click on background to clear highlights
@@ -314,8 +324,9 @@ const bindEvents = () => {
       tooltipX.value = renderedPosition.x + 10
       tooltipY.value = renderedPosition.y - 10
 
+      // tooltip 显示：key（显示名称），value（详细信息）
       tooltipContent.value = {
-        label: nodeData.label || nodeData.id,
+        label: nodeData.fieldKey || nodeData.label || nodeData.id,
         fieldValue: nodeData.fieldValue
       }
 
@@ -326,13 +337,6 @@ const bindEvents = () => {
   cy.on('mouseout', 'node', event => {
     tooltipVisible.value = false
   })
-}
-
-// 切换要素节点展开/折叠（右键点击）
-const toggleFieldNodes = (nodeId: string) => {
-  if (!cy) return
-  // 使用共享的 toggleFieldNodes 函数
-  toggleFieldNodesShared(cy, nodeId, graphData.value.edges)
 }
 
 // Highlight all related nodes (高亮所有关联节点)
@@ -414,15 +418,24 @@ const updateGraph = () => {
   console.log('  - nodes:', data.nodes.length)
   console.log('  - edges:', data.edges.length)
   console.log('  - useSampleData:', props.useSampleData)
+  console.log('  - elementLabelMode:', props.elementLabelMode)
 
   const elements: ElementDefinition[] = [
-    ...data.nodes.map(node => ({
-      data: {
-        ...node, // 保留所有原始字段（包括 location, pid 等）
-        label: node.label || node.id,
-        type: node.type || 'default'
+    ...data.nodes.map(node => {
+      // 根据 elementLabelMode 决定要素节点显示的 label
+      let displayLabel = node.label || node.id
+      if (node.type === 'element' && props.elementLabelMode === 'value') {
+        displayLabel = node.fieldValue || node.label || node.id
       }
-    })),
+
+      return {
+        data: {
+          ...node, // 保留所有原始字段（包括 location, pid, fieldKey, fieldValue 等）
+          label: displayLabel,
+          type: node.type || 'default'
+        }
+      }
+    }),
     ...data.edges.map(edge => ({
       data: {
         id: edge.id,

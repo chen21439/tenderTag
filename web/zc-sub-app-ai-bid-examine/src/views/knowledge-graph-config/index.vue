@@ -436,8 +436,8 @@ const bindEvents = () => {
     const node = evt.target
     const nodeId = node.data('id')
 
-    // 使用共享的 toggleFieldNodes 函数
-    toggleFieldNodes(cy, nodeId, graphData.value.edges)
+    // 使用共享的 toggleFieldNodes 函数，传递布局参数
+    toggleFieldNodes(cy, nodeId, graphData.value.edges, 'cose')
   })
 
   // 画布点击事件（取消选择或添加节点）

@@ -113,6 +113,7 @@
                   :nodes="graphNodes"
                   :edges="graphEdges"
                   layout="cose"
+                  element-label-mode="value"
                   @node-click="handleNodeClick"
                   @edge-click="handleEdgeClick"
                 />
