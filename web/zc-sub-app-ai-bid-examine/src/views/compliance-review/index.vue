@@ -72,7 +72,7 @@
         <!-- JSON树形结构展示 -->
         <div class="review-items tree-view">
           <!-- 采购标签图谱模式：显示 Cytoscape 组件 -->
-          <div v-if="treeGroupMode === 'original'" class="graph-view-container">
+          <div v-show="treeGroupMode === 'original'" class="graph-view-container">
             <!-- 顶部控制栏 -->
             <div class="graph-toolbar">
               <div class="toolbar-right">
@@ -125,7 +125,7 @@
           </div>
 
           <!-- 正常模式：显示标签树或原始树 -->
-          <div v-else-if="builtTreeData.length > 0" class="tree-list">
+          <div v-show="treeGroupMode !== 'original' && builtTreeData.length > 0" class="tree-list">
             <TreeNode
               v-for="node in builtTreeData"
               :key="node.line_id"
@@ -141,7 +141,7 @@
             />
           </div>
 
-          <div v-else style="padding: 20px; text-align: center; color: #999">暂无数据</div>
+          <div v-show="treeGroupMode !== 'original' && builtTreeData.length === 0" style="padding: 20px; text-align: center; color: #999">暂无数据</div>
         </div>
       </div>
     </div>

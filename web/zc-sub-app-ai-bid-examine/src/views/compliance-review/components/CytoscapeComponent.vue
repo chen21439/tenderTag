@@ -263,6 +263,12 @@ const initCytoscape = () => {
     wheelSensitivity: 0.2
   })
 
+  // 默认隐藏所有要素节点
+  hideAllFieldNodes(cy)
+
+  // 应用 HTML 标签（显示要素节点数量徽章）
+  applyHtmlLabels(cy)
+
   bindEvents()
 }
 
