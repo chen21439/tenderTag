@@ -65,6 +65,8 @@
             <a-radio-group v-model:value="treeGroupMode" size="middle" button-style="solid">
               <a-radio-button value="label">业务语义结构树</a-radio-button>
               <a-radio-button value="original">采购标签图谱</a-radio-button>
+              <a-radio-button value="entity">业务实体图谱</a-radio-button>
+              <a-radio-button value="folder">文件夹</a-radio-button>
             </a-radio-group>
           </div>
         </div>
@@ -124,8 +126,68 @@
             </GraphNavigationPanel>
           </div>
 
+          <!-- 业务实体图谱模式 -->
+          <div v-show="treeGroupMode === 'entity'" class="graph-view-container">
+            <!-- 顶部控制栏 -->
+            <div class="graph-toolbar">
+              <div class="toolbar-right">
+                <a-button
+                  type="default"
+                  size="small"
+                  :class="{ 'active': !isEntityNavCollapsed }"
+                  @click="toggleEntityNavPanel"
+                >
+                  <template #icon>
+                    <ApartmentOutlined />
+                  </template>
+                </a-button>
+
+                <a-divider type="vertical" style="height: 24px; margin: 0 8px" />
+
+                <GraphControls
+                  @reset="handleEntityGraphReset"
+                  @fit="handleEntityGraphFit"
+                  @zoomIn="handleEntityGraphZoomIn"
+                  @zoomOut="handleEntityGraphZoomOut"
+                />
+              </div>
+            </div>
+
+            <!-- 使用共享的图谱导航面板组件（浮动布局） -->
+            <GraphNavigationPanel
+              :tree-data="entityGraphTreeData"
+              :selected-node-id="selectedEntityGraphNodeId"
+              :collapsed="isEntityNavCollapsed"
+              layout="floating"
+              @node-select="handleEntityNavNodeSelect"
+            >
+              <template #graph>
+                <CytoscapeComponent
+                  ref="entityCytoscapeRef"
+                  :use-sample-data="false"
+                  :nodes="entityGraphNodes"
+                  :edges="entityGraphEdges"
+                  layout="cose"
+                  element-label-mode="key"
+                  @node-click="handleEntityNodeClick"
+                  @edge-click="handleEntityEdgeClick"
+                />
+                <div style="position: absolute; bottom: 16px; left: 16px; z-index: 10">
+                  <GraphLegend />
+                </div>
+              </template>
+            </GraphNavigationPanel>
+          </div>
+
+          <!-- 文件夹模式 -->
+          <div v-show="treeGroupMode === 'folder'" class="folder-view-container">
+            <FolderTree
+              @node-select="handleFolderNodeSelect"
+            />
+          </div>
+
           <!-- 正常模式：显示标签树或原始树 -->
-          <div v-show="treeGroupMode !== 'original' && builtTreeData.length > 0" class="tree-list">
+          <div v-show="treeGroupMode === 'label' && builtTreeData.length > 0" class="tree-list">
             <TreeNode
               v-for="node in builtTreeData"
               :key="node.line_id"
@@ -183,6 +245,7 @@ import HistoryFilesModal from './components/HistoryFilesModal.vue'
 import ReviewItem from './components/ReviewItem.vue'
 import ReviewTreeNode from './components/ReviewTreeNode.vue'
 import TreeNode from './components/TreeNode.vue'
+import FolderTree from './components/FolderTree.vue'
 import CytoscapeComponent from './components/CytoscapeComponent.vue'
 import { GraphLegend, GraphNavigationPanel } from '../../components/knowledge-graph'
 import GraphControls from '../../components/knowledge-graph/GraphControls.vue'
@@ -208,8 +271,8 @@ const existRisk = ref(true)
 const taskId = ref((route.query.taskId as string) || '')
 // 视图模式切换：result | search
 const viewMode = ref<'result' | 'search'>('result')
-// 树形结构分组模式：original（原始结构）| label（按标签分组）
-const treeGroupMode = ref<'original' | 'label'>('original') // 🔧 临时修改：默认显示采购标签图谱
+// 树形结构分组模式：original（采购标签图谱）| label（业务语义结构树）| entity（业务实体图谱）| folder（文件夹）
+const treeGroupMode = ref<'original' | 'label' | 'entity' | 'folder'>('original') // 🔧 临时修改：默认显示采购标签图谱
 
 // 初始化本体树构建逻辑
 const { buildOntologyTree, expandMoreNode } = useOntologyTree()
@@ -1225,15 +1288,25 @@ const structuredData = ref<any[]>([])
 // 有 fields 的节点（用于过滤图谱）
 const nodesWithFields = ref<any[]>([])
 
-// 图谱数据
+// 采购标签图谱数据
 const graphNodes = ref<Array<{ id: string; label: string; type: string }>>([])
 const graphEdges = ref<Array<{ id: string; source: string; target: string; label: string }>>([])
 
-// 图谱导航面板
+// 采购标签图谱导航面板
 const isNavCollapsed = ref(false)
 const graphTreeData = ref<any[]>([])
 const selectedGraphNodeId = ref<string | null>(null)
 const cytoscapeRef = ref<any>(null)
+
+// 业务实体图谱数据
+const entityGraphNodes = ref<Array<{ id: string; label: string; type: string }>>([])
+const entityGraphEdges = ref<Array<{ id: string; source: string; target: string; label: string }>>([])
+
+// 业务实体图谱导航面板
+const isEntityNavCollapsed = ref(false)
+const entityGraphTreeData = ref<any[]>([])
+const selectedEntityGraphNodeId = ref<string | null>(null)
+const entityCytoscapeRef = ref<any>(null)
 
 // 是否启用 ontology 字段过滤（控制是否只显示 fields 不为空的节点）
 const enableOntologyFieldFilter = ref(false)
@@ -1662,6 +1735,14 @@ watch(treeGroupMode, async () => {
     console.log('🔄 切换到业务语义结构树...')
     console.log('  - agentTreeData 数量:', agentTreeData.value.length)
     console.log('  - builtTreeData 数量:', builtTreeData.value.length)
+  } else if (treeGroupMode.value === 'entity') {
+    // 切换到业务实体图谱
+    console.log('📊 切换到业务实体图谱...')
+    buildEntityGraphData()
+  } else if (treeGroupMode.value === 'folder') {
+    // 切换到文件夹视图
+    console.log('📁 切换到文件夹视图...')
+    // 文件夹数据由 FolderTree 组件自己管理，不需要在这里加载
   }
 })
 
@@ -2284,6 +2365,31 @@ const findFirstNonLabelNode = (node: any): any => {
 }
 
 // 选择树节点并跳转到PDF位置
+// 处理文件夹节点选择
+const handleFolderNodeSelect = async (nodeData: any) => {
+  console.log('📁 文件夹节点被选中:', nodeData)
+
+  // 调用原有的 selectTreeNode 逻辑
+  if (nodeData.line_id) {
+    await selectTreeNode(nodeData.line_id)
+  } else if (nodeData.location && nodeData.location.length > 0) {
+    // 使用 location 信息跳转
+    const firstLocation = nodeData.location[0]
+    const pageNum = firstLocation.page_index + 1
+    pdfData.currentPage = pageNum
+
+    // 高亮
+    const highlightRect = {
+      pageNum: pageNum,
+      box: firstLocation.bbox,
+      color: 'rgba(255, 255, 0, 0.3)'
+    }
+    pdfData.highlightRects = [highlightRect]
+
+    console.log('✅ 已跳转到页面', pageNum)
+  }
+}
+
 const selectTreeNode = async (nodeId: number) => {
   selectedNodeId.value = nodeId
   console.log('🎯 选中节点:', nodeId)
@@ -2789,6 +2895,91 @@ const buildGraphData = async () => {
   buildGraphTreeData()
 }
 
+// 构建业务实体图谱数据（模拟数据）
+const buildEntityGraphData = () => {
+  console.log('🎨 开始构建业务实体图谱数据（模拟）')
+
+  // 模拟业务实体节点
+  const nodes = [
+    // 概念节点
+    { id: 'entity_project', label: '采购项目', type: 'normal', fieldCount: 5 },
+    { id: 'entity_package', label: '采购包', type: 'normal', fieldCount: 3 },
+    { id: 'entity_supplier', label: '供应商', type: 'normal', fieldCount: 4 },
+    { id: 'entity_product', label: '采购商品', type: 'normal', fieldCount: 6 },
+
+    // 要素节点 - 采购项目
+    { id: 'field_project_name', label: '项目名称', type: 'element', fieldKey: '项目名称', fieldValue: '城市大数据中心物业管理服务' },
+    { id: 'field_project_code', label: '项目编号', type: 'element', fieldKey: '项目编号', fieldValue: 'PROJ-2024-001' },
+    { id: 'field_project_budget', label: '项目预算', type: 'element', fieldKey: '项目预算', fieldValue: '500万元' },
+    { id: 'field_project_date', label: '采购日期', type: 'element', fieldKey: '采购日期', fieldValue: '2024-01-15' },
+    { id: 'field_project_location', label: '项目地点', type: 'element', fieldKey: '项目地点', fieldValue: '北京市海淀区' },
+
+    // 要素节点 - 采购包
+    { id: 'field_package_name', label: '包名称', type: 'element', fieldKey: '包名称', fieldValue: '物业服务包' },
+    { id: 'field_package_amount', label: '包金额', type: 'element', fieldKey: '包金额', fieldValue: '300万元' },
+    { id: 'field_package_period', label: '服务期限', type: 'element', fieldKey: '服务期限', fieldValue: '12个月' },
+
+    // 要素节点 - 供应商
+    { id: 'field_supplier_name', label: '供应商名称', type: 'element', fieldKey: '供应商名称', fieldValue: 'XX物业管理有限公司' },
+    { id: 'field_supplier_code', label: '统一社会信用代码', type: 'element', fieldKey: '统一社会信用代码', fieldValue: '91110000XXXXXXXXXX' },
+    { id: 'field_supplier_contact', label: '联系人', type: 'element', fieldKey: '联系人', fieldValue: '张三' },
+    { id: 'field_supplier_phone', label: '联系电话', type: 'element', fieldKey: '联系电话', fieldValue: '010-12345678' },
+
+    // 要素节点 - 采购商品
+    { id: 'field_product_name', label: '商品名称', type: 'element', fieldKey: '商品名称', fieldValue: '物业管理服务' },
+    { id: 'field_product_spec', label: '规格型号', type: 'element', fieldKey: '规格型号', fieldValue: '标准服务' },
+    { id: 'field_product_unit', label: '计量单位', type: 'element', fieldKey: '计量单位', fieldValue: '月' },
+    { id: 'field_product_quantity', label: '采购数量', type: 'element', fieldKey: '采购数量', fieldValue: '12' },
+    { id: 'field_product_price', label: '单价', type: 'element', fieldKey: '单价', fieldValue: '25万元/月' },
+    { id: 'field_product_total', label: '总价', type: 'element', fieldKey: '总价', fieldValue: '300万元' }
+  ]
+
+  // 模拟边
+  const edges = [
+    // 概念节点之间的关系
+    { id: 'edge_1', source: 'entity_project', target: 'entity_package', label: 'hasPart' },
+    { id: 'edge_2', source: 'entity_package', target: 'entity_supplier', label: 'hasSupplier' },
+    { id: 'edge_3', source: 'entity_package', target: 'entity_product', label: 'contains' },
+
+    // 采购项目的要素边
+    { id: 'edge_field_1', source: 'entity_project', target: 'field_project_name', label: 'hasAttribute' },
+    { id: 'edge_field_2', source: 'entity_project', target: 'field_project_code', label: 'hasAttribute' },
+    { id: 'edge_field_3', source: 'entity_project', target: 'field_project_budget', label: 'hasAttribute' },
+    { id: 'edge_field_4', source: 'entity_project', target: 'field_project_date', label: 'hasAttribute' },
+    { id: 'edge_field_5', source: 'entity_project', target: 'field_project_location', label: 'hasAttribute' },
+
+    // 采购包的要素边
+    { id: 'edge_field_6', source: 'entity_package', target: 'field_package_name', label: 'hasAttribute' },
+    { id: 'edge_field_7', source: 'entity_package', target: 'field_package_amount', label: 'hasAttribute' },
+    { id: 'edge_field_8', source: 'entity_package', target: 'field_package_period', label: 'hasAttribute' },
+
+    // 供应商的要素边
+    { id: 'edge_field_9', source: 'entity_supplier', target: 'field_supplier_name', label: 'hasAttribute' },
+    { id: 'edge_field_10', source: 'entity_supplier', target: 'field_supplier_code', label: 'hasAttribute' },
+    { id: 'edge_field_11', source: 'entity_supplier', target: 'field_supplier_contact', label: 'hasAttribute' },
+    { id: 'edge_field_12', source: 'entity_supplier', target: 'field_supplier_phone', label: 'hasAttribute' },
+
+    // 采购商品的要素边
+    { id: 'edge_field_13', source: 'entity_product', target: 'field_product_name', label: 'hasAttribute' },
+    { id: 'edge_field_14', source: 'entity_product', target: 'field_product_spec', label: 'hasAttribute' },
+    { id: 'edge_field_15', source: 'entity_product', target: 'field_product_unit', label: 'hasAttribute' },
+    { id: 'edge_field_16', source: 'entity_product', target: 'field_product_quantity', label: 'hasAttribute' },
+    { id: 'edge_field_17', source: 'entity_product', target: 'field_product_price', label: 'hasAttribute' },
+    { id: 'edge_field_18', source: 'entity_product', target: 'field_product_total', label: 'hasAttribute' }
+  ]
+
+  console.log(`✅ 业务实体图谱数据构建完成:`)
+  console.log(`  - 节点数: ${nodes.length} (其中概念节点 4 个, 要素节点 ${nodes.length - 4} 个)`)
+  console.log(`  - 边数: ${edges.length}`)
+
+  entityGraphNodes.value = nodes
+  entityGraphEdges.value = edges
+
+  console.log('📊 业务实体图谱数据已设置')
+}
+
+// 文件夹模式已改为从后端 API 获取数据，不再需要本地 JSON 加载
+
 // 处理图谱节点点击
 const handleNodeClick = (nodeData: { id: string; label: string; type: string }) => {
   console.log('🎯 图谱节点被点击:', nodeData)
@@ -2885,6 +3076,42 @@ const handleGraphZoomIn = () => {
 
 const handleGraphZoomOut = () => {
   cytoscapeRef.value?.zoomOut()
+}
+
+// 业务实体图谱相关方法
+const toggleEntityNavPanel = () => {
+  isEntityNavCollapsed.value = !isEntityNavCollapsed.value
+}
+
+const handleEntityGraphReset = () => {
+  entityCytoscapeRef.value?.resetLayout()
+}
+
+const handleEntityGraphFit = () => {
+  entityCytoscapeRef.value?.fitView()
+}
+
+const handleEntityGraphZoomIn = () => {
+  entityCytoscapeRef.value?.zoomIn()
+}
+
+const handleEntityGraphZoomOut = () => {
+  entityCytoscapeRef.value?.zoomOut()
+}
+
+const handleEntityNodeClick = (nodeData: { id: string; label: string; type: string }) => {
+  console.log('🎯 业务实体图谱节点被点击:', nodeData)
+  // TODO: 实现业务实体节点点击逻辑
+}
+
+const handleEntityEdgeClick = (edgeData: { id: string; source: string; target: string; label: string }) => {
+  console.log('🔗 业务实体图谱边被点击:', edgeData)
+}
+
+const handleEntityNavNodeSelect = (nodeId: string) => {
+  console.log('🎯 业务实体图谱导航选中节点:', nodeId)
+  selectedEntityGraphNodeId.value = nodeId
+  // TODO: 实现导航节点选中逻辑
 }
 
 // 构建图谱树形导航数据
@@ -3676,6 +3903,15 @@ onBeforeUnmount(() => {
   height: 100%;
   flex: 1;
   position: relative;
+}
+
+// 文件夹视图容器
+.folder-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  overflow: hidden;
 }
 
 // 顶部工具栏
