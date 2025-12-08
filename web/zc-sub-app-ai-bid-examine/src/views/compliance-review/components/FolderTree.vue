@@ -173,9 +173,20 @@
       </a-spin>
     </div>
 
-    <!-- 图谱视图（待实现） -->
+    <!-- 图谱视图 -->
     <div v-if="viewMode === 'graph'" class="graph-view">
-      <a-empty description="图谱视图开发中..." />
+      <a-spin :spinning="loadingGraph">
+        <div v-if="graphNodes.length > 0" class="graph-container">
+          <CytoscapeComponent
+            :use-sample-data="false"
+            :nodes="graphNodes"
+            :edges="graphEdges"
+            layout="cose"
+            element-label-mode="value"
+          />
+        </div>
+        <a-empty v-else description="暂无图谱数据" />
+      </a-spin>
     </div>
   </div>
 </template>
@@ -196,6 +207,7 @@ import {
 } from '@ant-design/icons-vue'
 import { message, Modal } from 'ant-design-vue'
 import TreeNode from './TreeNode.vue'
+import CytoscapeComponent from './CytoscapeComponent.vue'
 
 defineOptions({
   name: 'FolderTree'
@@ -247,6 +259,11 @@ const loadingEntities = ref<boolean>(false)
 const expandedNodes = ref<Set<number>>(new Set())
 const selectedEntityId = ref<number | null>(null)
 const nodeMap = ref<Map<number, any>>(new Map())
+
+// 图谱相关状态
+const graphNodes = ref<any[]>([])
+const graphEdges = ref<any[]>([])
+const loadingGraph = ref<boolean>(false)
 
 // 获取文件夹列表（根据节点 ID）
 const loadFolderList = async (parentId: number | null = null) => {
@@ -615,6 +632,42 @@ const handleFileUpload = async (options: any) => {
   }
 }
 
+// 转换实体数据格式：适配 TreeNode 组件所需格式
+const transformEntityData = (nodes: any[]): any[] => {
+  return nodes.map(node => {
+    // 根据 type 决定显示文本（适配器模式：将不同字段适配到 text）
+    let displayText = ''
+    if (node.type === 'attribute') {
+      // attribute 类型：取 metadata.document_name
+      displayText = node.metadata?.document_name || node.label || ''
+    } else {
+      // 其他类型（label、aggregate 等）：显示 label
+      displayText = node.label || node.text || node.name || node.title || ''
+    }
+
+    const transformed: any = {
+      ...node,
+      // TreeNode 需要的字段
+      text: displayText,
+      title: displayText,
+      line_id: node.line_id || node.id,
+      pid: node.pid || node.parent_id,
+      // 保留原始字段
+      label: node.label,
+      label_node_entity: node.label_node_entity,
+      type: node.type,
+      id: node.id || node.line_id
+    }
+
+    // 递归转换子节点
+    if (node.children && Array.isArray(node.children) && node.children.length > 0) {
+      transformed.children = transformEntityData(node.children)
+    }
+
+    return transformed
+  })
+}
+
 // 加载实体列表
 const loadEntityList = async (folderId: number | null = null) => {
   if (folderId === null) {
@@ -631,11 +684,16 @@ const loadEntityList = async (folderId: number | null = null) => {
 
     console.log('📡 实体列表 API 返回:', result)
 
-    if (result.success && result.data) {
-      entityTreeData.value = result.data
+    if (result.success && result.data && result.data.dataList) {
+      const rawData = result.data.dataList
+
+      // 转换数据格式：将 label 字段转换为 text 字段
+      const treeData = transformEntityData(rawData)
+
+      entityTreeData.value = treeData
       // 构建 nodeMap
-      buildNodeMap(result.data)
-      console.log('✅ 实体列表加载成功')
+      buildNodeMap(treeData)
+      console.log('✅ 实体列表加载成功，节点数量:', treeData.length)
     } else {
       throw new Error(result.errMsg || '加载失败')
     }
@@ -682,13 +740,58 @@ const handleEntitySelect = (lineId: number) => {
   }
 }
 
+// 加载图谱数据（始终使用固定的 folder_id=1）
+const loadGraphData = async () => {
+  loadingGraph.value = true
+  try {
+    console.log('📊 开始加载图谱数据')
+
+    const response = await fetch('/python/api/document_system/folder/graph?folder_id=1')
+    const result = await response.json()
+
+    console.log('📡 图谱数据 API 返回:', result)
+
+    if (result.success && result.data && result.data.elements) {
+      // API 返回的格式是 { elements: { nodes: [{ data: {...} }], edges: [{ data: {...} }] } }
+      // 需要提取 data 字段
+      const nodesData = result.data.elements.nodes || []
+      const edgesData = result.data.elements.edges || []
+
+      graphNodes.value = nodesData.map((n: any) => n.data)
+      graphEdges.value = edgesData.map((e: any) => e.data)
+
+      console.log('✅ 图谱数据加载成功，节点:', graphNodes.value.length, '边:', graphEdges.value.length)
+    } else {
+      throw new Error(result.errMsg || '加载失败')
+    }
+  } catch (error) {
+    console.error('❌ 加载图谱数据失败:', error)
+    message.error('加载图谱数据失败')
+    graphNodes.value = []
+    graphEdges.value = []
+  } finally {
+    loadingGraph.value = false
+  }
+}
+
 // 监听 viewMode 变化
 watch(viewMode, (newMode) => {
   console.log('🔄 切换查看模式:', newMode)
   if (newMode === 'list') {
     // 切换到实体列表时加载数据
     loadEntityList(currentNodeId.value)
+  } else if (newMode === 'graph') {
+    // 切换到图谱时加载数据（固定使用 folder_id=1）
+    loadGraphData()
   }
+})
+
+// 监听 currentNodeId 变化，只在实体列表模式下重新加载数据
+watch(currentNodeId, (newId) => {
+  if (viewMode.value === 'list') {
+    loadEntityList(newId)
+  }
+  // 图谱模式不需要监听文件夹变化，始终使用固定数据
 })
 
 // 根据完整路径重建面包屑
@@ -869,9 +972,21 @@ onMounted(async () => {
   .graph-view {
     flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     background: #fafafa;
+    position: relative;
+
+    .graph-container {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    :deep(.ant-spin-nested-loading),
+    :deep(.ant-spin-container) {
+      height: 100%;
+    }
   }
 
   .file-list {

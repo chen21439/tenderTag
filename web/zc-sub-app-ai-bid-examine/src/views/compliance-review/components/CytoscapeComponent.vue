@@ -43,7 +43,7 @@ import {
   getHtmlLabelStyles
 } from '@/components/knowledge-graph/graphHtmlLabel'
 
-// 注册 HTML 标签插件
+// 注册扩展
 registerHtmlLabelPlugin(cytoscape)
 
 defineOptions({
@@ -324,20 +324,25 @@ const bindEvents = () => {
       type: nodeData.type
     })
 
-    // Show tooltip for element nodes (要素节点)
-    if (nodeData.type === 'element') {
-      const renderedPosition = node.renderedPosition()
-      tooltipX.value = renderedPosition.x + 10
-      tooltipY.value = renderedPosition.y - 10
+    // 显示完整标签的 tooltip（所有节点通用）
+    const renderedPosition = node.renderedPosition()
+    tooltipX.value = renderedPosition.x + 10
+    tooltipY.value = renderedPosition.y - 10
 
-      // tooltip 显示：key（显示名称），value（详细信息）
+    // element 类型节点显示特殊的 fieldValue，其他节点只显示 label
+    if (nodeData.type === 'element') {
       tooltipContent.value = {
         label: nodeData.fieldKey || nodeData.label || nodeData.id,
         fieldValue: nodeData.fieldValue
       }
-
-      tooltipVisible.value = true
+    } else {
+      // 非 element 节点：只显示完整的 label
+      tooltipContent.value = {
+        label: nodeData.label || nodeData.id
+      }
     }
+
+    tooltipVisible.value = true
   })
 
   cy.on('mouseout', 'node', event => {
