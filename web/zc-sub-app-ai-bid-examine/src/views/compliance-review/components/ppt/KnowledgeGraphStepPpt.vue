@@ -9,18 +9,16 @@
 
         <!-- 内容区域 -->
         <div class="content-area">
-          <!-- 左侧文字说明 -->
-          <div class="left-section">
+          <!-- 上方文字说明 -->
+          <div class="text-section">
             <div class="step-desc">
-              <div class="desc-item">
-                <h3>{{ stepConfig.title }}</h3>
-                <p>{{ stepConfig.description }}</p>
-              </div>
+              <h3>{{ stepConfig.title }}</h3>
+              <p>{{ stepConfig.description }}</p>
             </div>
           </div>
 
-          <!-- 右侧图谱容器 -->
-          <div class="right-section">
+          <!-- 下方图谱容器 -->
+          <div class="graph-section">
             <div class="graph-container-wrapper">
               <div class="graph-full-container" ref="graphContainer"></div>
             </div>
@@ -43,10 +41,14 @@ defineOptions({
 
 interface Props {
   step: number // 0: 信息孤岛, 1: 按项目聚合, 2: 按年份聚合
+  graphWidth?: string // 图谱容器宽度，如 '70%', '600px'
+  graphHeight?: string // 图谱容器高度，如 '420px', '500px'
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  step: 0
+  step: 0,
+  graphWidth: '70%',
+  graphHeight: '420px'
 })
 
 const graphContainer = ref<HTMLElement | null>(null)
@@ -88,7 +90,7 @@ onMounted(() => {
       classes: 'visible'
     })),
 
-    // 占位节点（用于信息孤岛阶段的网格布局）
+    // 占位节点（用于信息孤岛阶段的网格布局）- 5×5 需要 16 个白色占位格子
     { data: { id: 'placeholder_1', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
     { data: { id: 'placeholder_2', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
     { data: { id: 'placeholder_3', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
@@ -96,6 +98,15 @@ onMounted(() => {
     { data: { id: 'placeholder_5', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
     { data: { id: 'placeholder_6', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
     { data: { id: 'placeholder_7', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
+    { data: { id: 'placeholder_8', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
+    { data: { id: 'placeholder_9', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
+    { data: { id: 'placeholder_10', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
+    { data: { id: 'placeholder_11', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
+    { data: { id: 'placeholder_12', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
+    { data: { id: 'placeholder_13', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
+    { data: { id: 'placeholder_14', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
+    { data: { id: 'placeholder_15', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
+    { data: { id: 'placeholder_16', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
 
     // 项目节点
     { data: { id: 'proj_led_screen', label: 'LED显示屏', type: 'project', projectType: '框架协议采购项目', year: '2024-2025年度' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
@@ -134,41 +145,57 @@ onUnmounted(() => {
   }
 })
 
-// 步骤0：信息孤岛
+// 步骤0：信息孤岛 - 5×5 网格布局
 const showStep0 = () => {
   if (!cy) return
 
-  const gridSize = 80
+  const gridSize = 70
   const startX = 100
-  const startY = 100
+  const startY = 80
 
+  // 5×5 网格，9个橙色文档节点 + 16个白色占位节点（交错分布以体现孤岛效果）
   const positions: any = {
+    // 第1行 - 橙白橙白白
     'doc_p1_tender': { x: startX, y: startY },
-    'doc_p2_tender': { x: startX + gridSize, y: startY },
-    'placeholder_1': { x: startX + gridSize * 2, y: startY },
-    'doc_p3_tender': { x: startX + gridSize * 3, y: startY },
+    'placeholder_1': { x: startX + gridSize, y: startY },
+    'doc_p2_tender': { x: startX + gridSize * 2, y: startY },
+    'placeholder_2': { x: startX + gridSize * 3, y: startY },
+    'placeholder_3': { x: startX + gridSize * 4, y: startY },
 
-    'doc_p1_bid': { x: startX, y: startY + gridSize },
-    'placeholder_2': { x: startX + gridSize, y: startY + gridSize },
-    'doc_p2_bid': { x: startX + gridSize * 2, y: startY + gridSize },
-    'doc_p3_bid': { x: startX + gridSize * 3, y: startY + gridSize },
+    // 第2行 - 白橙白橙白
+    'placeholder_4': { x: startX, y: startY + gridSize },
+    'doc_p1_bid': { x: startX + gridSize, y: startY + gridSize },
+    'placeholder_5': { x: startX + gridSize * 2, y: startY + gridSize },
+    'doc_p3_tender': { x: startX + gridSize * 3, y: startY + gridSize },
+    'placeholder_6': { x: startX + gridSize * 4, y: startY + gridSize },
 
+    // 第3行 - 橙白白白橙
     'doc_p1_contract': { x: startX, y: startY + gridSize * 2 },
-    'placeholder_3': { x: startX + gridSize, y: startY + gridSize * 2 },
-    'placeholder_4': { x: startX + gridSize * 2, y: startY + gridSize * 2 },
-    'placeholder_5': { x: startX + gridSize * 3, y: startY + gridSize * 2 },
+    'placeholder_7': { x: startX + gridSize, y: startY + gridSize * 2 },
+    'placeholder_8': { x: startX + gridSize * 2, y: startY + gridSize * 2 },
+    'placeholder_9': { x: startX + gridSize * 3, y: startY + gridSize * 2 },
+    'doc_p2_bid': { x: startX + gridSize * 4, y: startY + gridSize * 2 },
 
-    'placeholder_6': { x: startX, y: startY + gridSize * 3 },
-    'doc_p2_contract': { x: startX + gridSize, y: startY + gridSize * 3 },
-    'placeholder_7': { x: startX + gridSize * 2, y: startY + gridSize * 3 },
-    'doc_p3_contract': { x: startX + gridSize * 3, y: startY + gridSize * 3 },
+    // 第4行 - 白白橙白橙
+    'placeholder_10': { x: startX, y: startY + gridSize * 3 },
+    'placeholder_11': { x: startX + gridSize, y: startY + gridSize * 3 },
+    'doc_p2_contract': { x: startX + gridSize * 2, y: startY + gridSize * 3 },
+    'placeholder_12': { x: startX + gridSize * 3, y: startY + gridSize * 3 },
+    'doc_p3_bid': { x: startX + gridSize * 4, y: startY + gridSize * 3 },
+
+    // 第5行 - 白橙白橙白
+    'placeholder_13': { x: startX, y: startY + gridSize * 4 },
+    'doc_p3_contract': { x: startX + gridSize, y: startY + gridSize * 4 },
+    'placeholder_14': { x: startX + gridSize * 2, y: startY + gridSize * 4 },
+    'placeholder_15': { x: startX + gridSize * 3, y: startY + gridSize * 4 },
+    'placeholder_16': { x: startX + gridSize * 4, y: startY + gridSize * 4 },
   }
 
   cy.layout({
     name: 'preset',
     positions: (node: any) => positions[node.id()] || { x: 0, y: 0 },
     fit: true,
-    padding: 60,
+    padding: 50,
     animate: true,
     animationDuration: 800,
   }).run()
@@ -210,7 +237,7 @@ const showStep1 = () => {
   const centerY = 200
   const spacing = 240
   const startX = 80
-  const docSpacing = 75
+  const docSpacing = 95  // 增加文档节点之间的间距，让箭头更长
 
   const positions: any = {
     'proj_led_screen': { x: startX, y: centerY },
@@ -293,8 +320,8 @@ const showStep2 = () => {
   const centerY = 180
   const spacing = 240
   const startX = 80
-  const docSpacing = 75
-  const yearY = 420
+  const docSpacing = 95  // 增加文档节点之间的间距，让箭头更长
+  const yearY = 450  // 增加年份节点的 Y 坐标，给箭头更多空间
 
   const positions: any = {
     'proj_led_screen': { x: startX, y: centerY },
@@ -371,49 +398,52 @@ const showStep2 = () => {
     .content-area {
       flex: 1;
       display: flex;
-      padding: 20px 40px 40px;
-      gap: 40px;
+      flex-direction: column;
+      padding: 20px 80px 60px;
+      gap: 32px;
       background: #F5FAFF;
 
-      .left-section {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+      .text-section {
+        padding: 20px 0 0;
 
         .step-desc {
-          .desc-item {
-            h3 {
-              font-size: 28px;
-              color: #1890ff;
-              margin-bottom: 20px;
-            }
+          text-align: left;
 
-            p {
-              font-size: 18px;
-              line-height: 1.8;
-              color: #333;
-              text-align: justify;
-            }
+          h3 {
+            font-size: 32px;
+            color: #1890ff;
+            margin-bottom: 12px;
+            font-weight: 600;
+          }
+
+          p {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #333;
+            text-align: justify;
+            max-width: 85%;
           }
         }
       }
 
-      .right-section {
+      .graph-section {
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
 
         .graph-container-wrapper {
-          width: 100%;
-          height: 70%;
-          position: relative;
+          width: v-bind(graphWidth);
+          height: v-bind(graphHeight);
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         }
 
         .graph-full-container {
           width: 100%;
           height: 100%;
+          border-radius: 12px;
         }
       }
     }

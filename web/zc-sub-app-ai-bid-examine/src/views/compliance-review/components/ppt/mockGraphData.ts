@@ -296,15 +296,15 @@ export const cytoscapeStyles = [
       'border-color': '#722ed1',
       'border-width': 2,
       'border-style': 'dashed',  // 虚线边框
-      'padding': '45px',  // 增大内边距
+      'padding': '45px',  // 恢复原来的内边距
       'text-valign': 'top',  // 标签在顶部
       'text-margin-y': -15,
       'font-size': '16px',  // 增大字体
       'font-weight': 'bold',
       'color': '#722ed1',
       shape: 'roundrectangle',
-      'min-width': '160px',  // 增大最小宽度
-      'min-height': '270px'  // 增大高度
+      'min-width': '160px',  // 恢复原来的最小宽度
+      'min-height': '270px'  // 恢复原来的高度
     }
   },
   {
@@ -392,7 +392,9 @@ export const cytoscapeStyles = [
       'target-arrow-shape': 'triangle',
       width: 2,
       'curve-style': 'bezier',
-      'line-style': 'solid'
+      'line-style': 'solid',
+      'arrow-scale': 1,
+      'target-arrow-fill': 'filled'
     }
   },
   {
