@@ -186,49 +186,20 @@
           />
 
           <!-- 问答图标按钮 -->
-          <a-tooltip title="智能问答" placement="left">
+          <a-tooltip :title="isQaActive ? '关闭问答' : '打开问答'" placement="left">
             <a-button
               class="qa-icon-button"
-              type="primary"
+              :class="{ active: isQaActive }"
+              :type="isQaActive ? 'primary' : 'default'"
               shape="circle"
               size="large"
-              @click="toggleQaPanel"
+              @click="toggleQaMode"
             >
               <template #icon>
                 <CommentOutlined />
               </template>
             </a-button>
           </a-tooltip>
-
-          <!-- 问答面板 -->
-          <div v-if="qaVisible" class="qa-panel">
-            <div class="qa-header">
-              <span class="qa-title">智能问答</span>
-              <a-button type="text" size="small" @click="toggleQaPanel">
-                <template #icon>
-                  <span style="color: #fff; font-size: 16px;">✕</span>
-                </template>
-              </a-button>
-            </div>
-            <div class="qa-content">
-              <div class="qa-messages" ref="qaMessagesRef">
-                <div v-for="(msg, index) in qaMessages" :key="index" class="qa-message" :class="msg.role">
-                  <div class="message-content">{{ msg.content }}</div>
-                </div>
-              </div>
-              <div class="qa-input">
-                <a-input
-                  v-model:value="qaInput"
-                  placeholder="输入问题..."
-                  @pressEnter="sendQaMessage"
-                  :disabled="qaSending"
-                />
-                <a-button type="primary" @click="sendQaMessage" :loading="qaSending">
-                  发送
-                </a-button>
-              </div>
-            </div>
-          </div>
         </div>
         <a-empty v-else description="暂无图谱数据" />
       </a-spin>
@@ -259,7 +230,7 @@ defineOptions({
   name: 'FolderTree'
 })
 
-const emit = defineEmits(['node-select'])
+const emit = defineEmits(['node-select', 'toggle-qa'])
 
 // 查看模式：folder（文件夹）、list（实体列表）、graph（图谱）
 const viewMode = ref<'folder' | 'list' | 'graph'>('folder')
@@ -311,12 +282,9 @@ const graphNodes = ref<any[]>([])
 const graphEdges = ref<any[]>([])
 const loadingGraph = ref<boolean>(false)
 
-// 问答层相关状态
-const qaVisible = ref<boolean>(false)
-const qaInput = ref<string>('')
-const qaSending = ref<boolean>(false)
-const qaMessages = ref<Array<{ role: 'user' | 'assistant'; content: string }>>([])
-const qaMessagesRef = ref<HTMLElement | null>(null)
+// 问答是否激活
+const isQaActive = ref<boolean>(false)
+
 
 // 获取文件夹列表（根据节点 ID）
 const loadFolderList = async (parentId: number | null = null) => {
@@ -847,69 +815,22 @@ watch(currentNodeId, (newId) => {
   // 图谱模式不需要监听文件夹变化，始终使用固定数据
 })
 
-// 切换问答面板展开/收起
-const toggleQaPanel = () => {
-  qaVisible.value = !qaVisible.value
+// 切换问答模式
+const toggleQaMode = () => {
+  isQaActive.value = !isQaActive.value
+  emit('toggle-qa', isQaActive.value)
 }
 
-// 发送问答消息
-const sendQaMessage = async () => {
-  const question = qaInput.value.trim()
-  if (!question || qaSending.value) return
-
-  // 添加用户消息
-  qaMessages.value.push({
-    role: 'user',
-    content: question
-  })
-
-  qaInput.value = ''
-  qaSending.value = true
-
-  try {
-    const response = await fetch('/python/api/graph_qa/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question })
-    })
-    const result = await response.json()
-
-    if (result.success && result.answer) {
-      // 添加助手回复
-      qaMessages.value.push({
-        role: 'assistant',
-        content: result.answer
-      })
-
-      // 如果返回了 subgraph，更新图谱数据
-      if (result.subgraph && result.subgraph.nodes && result.subgraph.edges) {
-        console.log('📊 更新图谱数据:', result.subgraph)
-        const nodesData = result.subgraph.nodes || []
-        const edgesData = result.subgraph.edges || []
-
-        graphNodes.value = nodesData.map((n: any) => n.data)
-        graphEdges.value = edgesData.map((e: any) => e.data)
-      }
-    } else {
-      qaMessages.value.push({
-        role: 'assistant',
-        content: result.error || '抱歉，问答失败，请重试。'
-      })
-    }
-
-    // 滚动到底部
-    nextTick(() => {
-      if (qaMessagesRef.value) {
-        qaMessagesRef.value.scrollTop = qaMessagesRef.value.scrollHeight
-      }
-    })
-  } catch (error) {
-    console.error('❌ 问答失败:', error)
-    message.error('问答失败')
-  } finally {
-    qaSending.value = false
-  }
+// 暴露方法供父组件调用
+const updateGraphData = (nodes: any[], edges: any[]) => {
+  console.log('📊 FolderTree 更新图谱数据:', nodes.length, '个节点,', edges.length, '条边')
+  graphNodes.value = nodes
+  graphEdges.value = edges
 }
+
+defineExpose({
+  updateGraphData
+})
 
 // 根据完整路径重建面包屑
 const rebuildPathHistory = (fullPath: string, currentId: number) => {
@@ -1115,105 +1036,25 @@ onMounted(async () => {
       width: 56px;
       height: 56px;
       font-size: 24px;
+      transition: all 0.3s ease;
 
       &:hover {
         transform: scale(1.1);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
+
+      &.active {
+        box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.3);
+        animation: pulse 2s infinite;
+      }
     }
 
-    // 问答面板
-    .qa-panel {
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      width: 400px;
-      height: 500px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-      display: flex;
-      flex-direction: column;
-      z-index: 9999;
-
-      .qa-header {
-        padding: 12px 16px;
-        background: #1890ff;
-        color: #fff;
-        border-radius: 8px 8px 0 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        user-select: none;
-
-        .qa-title {
-          font-weight: 500;
-          font-size: 14px;
-        }
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.3);
       }
-
-      .qa-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-
-        .qa-messages {
-          flex: 1;
-          overflow-y: auto;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-
-          .qa-message {
-            display: flex;
-
-            .message-content {
-              max-width: 80%;
-              padding: 8px 12px;
-              border-radius: 8px;
-              word-wrap: break-word;
-              line-height: 1.5;
-              font-size: 14px;
-            }
-
-            &.user {
-              justify-content: flex-end;
-
-              .message-content {
-                background: #1890ff;
-                color: #fff;
-                border-radius: 8px 8px 0 8px;
-              }
-            }
-
-            &.assistant {
-              justify-content: flex-start;
-
-              .message-content {
-                background: #f5f5f5;
-                color: #333;
-                border-radius: 8px 8px 8px 0;
-              }
-            }
-          }
-        }
-
-        .qa-input {
-          padding: 12px 16px;
-          border-top: 1px solid #e8e8e8;
-          display: flex;
-          gap: 8px;
-
-          :deep(.ant-input) {
-            flex: 1;
-          }
-
-          :deep(.ant-btn) {
-            flex-shrink: 0;
-          }
-        }
+      50% {
+        box-shadow: 0 0 0 6px rgba(24, 144, 255, 0.2);
       }
     }
   }
