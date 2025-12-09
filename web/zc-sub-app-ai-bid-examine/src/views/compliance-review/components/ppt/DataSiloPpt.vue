@@ -3,7 +3,7 @@
     <PptSlideBase>
       <!-- 左侧内容区 -->
       <div class="left-content">
-        <h1 class="title">打破数据孤岛</h1>
+        <h1 class="title">业务本体与项目知识图谱平台</h1>
 
         <div class="description">
           <p class="paragraph">
