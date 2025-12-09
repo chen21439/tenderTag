@@ -283,7 +283,7 @@ onUnmounted(() => {
   display: flex;
 
   .left-content {
-    flex: 1;
+    flex: 3;
     padding: 60px;
     display: flex;
     flex-direction: column;
