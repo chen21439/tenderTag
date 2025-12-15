@@ -290,6 +290,28 @@ export const cytoscapeStyles = [
     }
   },
   {
+    selector: 'node[type="grid_orange"]',
+    style: {
+      'background-color': '#fa8c16',
+      'border-color': '#d46b08',
+      'border-width': 2,
+      width: 45,
+      height: 45,
+      shape: 'rectangle'
+    }
+  },
+  {
+    selector: 'node[type="grid_white"]',
+    style: {
+      'background-color': '#fff',
+      'border-color': '#d9d9d9',
+      'border-width': 2,
+      width: 45,
+      height: 45,
+      shape: 'rectangle'
+    }
+  },
+  {
     selector: 'node[type="project"]',
     style: {
       'background-color': 'rgba(114, 46, 209, 0.08)',  // 更淡的半透明背景
@@ -406,6 +428,18 @@ export const cytoscapeStyles = [
       width: 3,
       'curve-style': 'bezier',
       'line-style': 'solid'
+    }
+  },
+  {
+    selector: '.grid-edge',
+    style: {
+      'line-color': '#faad14',
+      'target-arrow-color': '#faad14',
+      'target-arrow-shape': 'triangle',
+      width: 2,
+      'curve-style': 'bezier',
+      'line-style': 'solid',
+      opacity: 0.6
     }
   },
   {

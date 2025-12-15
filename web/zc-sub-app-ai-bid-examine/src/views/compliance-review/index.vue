@@ -52,7 +52,7 @@
             <a-radio-group v-model:value="treeGroupMode" size="middle" button-style="solid">
               <a-radio-button value="label">业务语义结构树</a-radio-button>
               <a-radio-button value="original">采购标签图谱</a-radio-button>
-              <a-radio-button value="folder">文件夹</a-radio-button>
+              <a-radio-button v-if="!hideDemoFeatures" value="folder">文件夹</a-radio-button>
             </a-radio-group>
           </div>
         </div>
@@ -202,6 +202,9 @@ const route = useRoute()
    - 仅调整判断，不改现有业务逻辑与数据加载 URL */
 const isDev = import.meta.env.DEV === true || import.meta.env.MODE === 'dev'
 
+// 隐藏演示功能（文件夹和演示模式按钮）- 所有环境都隐藏
+const hideDemoFeatures = true
+
 //是否存在风险
 const existRisk = ref(true)
 // 获取任务ID（初始为空，在 onMounted 中从 taskList.json 加载第一个）
@@ -209,7 +212,8 @@ const taskId = ref((route.query.taskId as string) || '')
 // 视图模式切换：result | search
 const viewMode = ref<'result' | 'search'>('result')
 // 树形结构分组模式：original（采购标签图谱）| label（业务语义结构树）| entity（业务实体图谱）| folder（文件夹）
-const treeGroupMode = ref<'original' | 'label' | 'entity' | 'folder'>('original') // 🔧 临时修改：默认显示采购标签图谱
+// 默认显示业务语义结构树
+const treeGroupMode = ref<'original' | 'label' | 'entity' | 'folder'>('label')
 
 // 初始化本体树构建逻辑
 const { buildOntologyTree, expandMoreNode } = useOntologyTree()
@@ -394,7 +398,7 @@ const filteredItems = computed(() => {
 // 点击审查项处理
 const pdfReaderRef = ref<InstanceType<typeof PdfViewer>>()
 const contentViewerRef = ref<any>(null)
-const leftContentType = ref<'pdf' | 'qa' | 'ppt'>('ppt')
+const leftContentType = ref<'pdf' | 'qa' | 'ppt'>('pdf')  // 默认显示PDF
 const folderTreeRef = ref<any>(null)
 const handleReviewItemClick = async (item: any) => {
   if (!item) return
@@ -2492,10 +2496,13 @@ const selectTreeNode = async (nodeId: number) => {
       pdfData.highlightRects = [highlightData]
 
       // 跳转并高亮
-      if (pdfReaderRef.value?.scrollToAnnotation) {
+      const pdfViewer = contentViewerRef.value?.pdfViewerRef
+      if (pdfViewer?.scrollToAnnotation) {
         await nextTick()
-        await pdfReaderRef.value.scrollToAnnotation(highlightData)
+        await pdfViewer.scrollToAnnotation(highlightData)
         console.log('✅ 已跳转到段落位置并高亮所有区域')
+      } else {
+        console.warn('❌ PDF查看器未就绪')
       }
     } else {
       // 尝试从 location 获取单个位置（兼容旧格式的 box）

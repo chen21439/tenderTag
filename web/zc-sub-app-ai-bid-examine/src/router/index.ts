@@ -30,6 +30,14 @@ export async function setupRouter(app: App) {
     component: () => import('@/views/compliance-review/index.vue')
   })
 
+  // 审查结果页面（简化版）
+  router.addRoute({
+    path: '/review',
+    name: 'Review',
+    meta: { title: '审查结果' },
+    component: () => import('@/views/review/index.vue')
+  })
+
   // 知识图谱配置页面
   router.addRoute({
     path: '/knowledge-graph-config',

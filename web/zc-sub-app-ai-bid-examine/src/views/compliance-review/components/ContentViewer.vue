@@ -11,7 +11,7 @@
         </a-button>
       </div>
       <div class="file-name">{{ fileName }}</div>
-      <div class="mode-buttons">
+      <div v-if="!hideDemoFeatures" class="mode-buttons">
         <a-button
           :type="contentType === 'ppt' ? 'primary' : 'default'"
           @click="togglePptMode"
@@ -42,11 +42,21 @@
             <div class="message-content">{{ msg.content }}</div>
           </div>
         </div>
+
+        <!-- 建议问题气泡 -->
+        <div v-if="inputFocused && !qaInput" class="qa-suggestions">
+          <div class="suggestion-bubble" @mousedown.prevent="fillSuggestion('德云天科技创新参与了哪些项目？')">
+            <span>德云天科技创新参与了哪些项目？</span>
+          </div>
+        </div>
+
         <div class="qa-input">
           <a-input
             v-model:value="qaInput"
             placeholder="输入问题..."
             @pressEnter="sendQaMessage"
+            @focus="inputFocused = true"
+            @blur="handleInputBlur"
             :disabled="qaSending"
           />
           <a-button type="primary" @click="sendQaMessage" :loading="qaSending">
@@ -69,7 +79,7 @@ import { message } from 'ant-design-vue'
 import { CornerUpLeft } from 'lucide-vue-next'
 import PdfViewer from '@/views/pdf/PdfViewer.vue'
 import BaseEmpty from '@/components/BaseEmpty/index.vue'
-import PptViewer from './PptViewer.vue'
+import PptViewer from './ppt/PptViewer.vue'
 
 defineOptions({
   name: 'ContentViewer'
@@ -100,6 +110,9 @@ const emit = defineEmits<{
   switchMode: [mode: 'pdf' | 'qa' | 'ppt']
 }>()
 
+// 隐藏演示功能 - 所有环境都隐藏
+const hideDemoFeatures = true
+
 // Refs
 const pdfViewerRef = ref<any>(null)
 const qaMessagesRef = ref<HTMLElement | null>(null)
@@ -108,6 +121,7 @@ const qaMessagesRef = ref<HTMLElement | null>(null)
 const qaInput = ref<string>('')
 const qaSending = ref<boolean>(false)
 const qaMessages = ref<Array<{ role: 'user' | 'assistant'; content: string }>>([])
+const inputFocused = ref<boolean>(false)
 
 // 方法
 const handleGoHome = () => {
@@ -126,6 +140,21 @@ const togglePptMode = () => {
     // 当前不是 PPT 模式,进入 PPT 模式
     emit('switchMode', 'ppt')
   }
+}
+
+// 处理输入框失焦
+const handleInputBlur = () => {
+  // 延迟关闭,给气泡点击事件时间执行
+  setTimeout(() => {
+    inputFocused.value = false
+  }, 200)
+}
+
+// 填充建议问题
+const fillSuggestion = (question: string) => {
+  qaInput.value = question
+  // 填充后保持焦点
+  inputFocused.value = true
 }
 
 const sendQaMessage = async () => {
@@ -302,6 +331,43 @@ defineExpose({
               color: #333;
               border-radius: 8px 8px 8px 0;
             }
+          }
+        }
+      }
+
+      // 建议问题气泡
+      .qa-suggestions {
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+
+        .suggestion-bubble {
+          display: inline-flex;
+          align-items: center;
+          padding: 10px 16px;
+          background: #e6f7ff;
+          color: #1890ff;
+          border: 1px solid #91d5ff;
+          border-radius: 20px;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+
+          &:hover {
+            background: #bae7ff;
+            border-color: #69c0ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+
+          span {
+            user-select: none;
           }
         }
       }

@@ -108,6 +108,51 @@ onMounted(() => {
     { data: { id: 'placeholder_15', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
     { data: { id: 'placeholder_16', label: '', type: 'placeholder' }, classes: props.step === 0 ? 'visible' : 'hidden' },
 
+    // 4×9 底层文档方块（在step>=1时显示）- 21个橙色 + 15个白色
+    // 第1行：橙 橙 白 橙 橙 白 橙 白 橙 (9列)
+    { data: { id: 'grid_orange_1', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_2', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_1', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_3', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_4', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_2', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_5', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_3', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_6', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+
+    // 第2行：橙 白 橙 橙 白 橙 白 橙 橙
+    { data: { id: 'grid_orange_7', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_4', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_8', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_9', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_5', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_10', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_6', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_11', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_12', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+
+    // 第3行：白 橙 白 白 橙 白 橙 橙 白
+    { data: { id: 'grid_white_7', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_13', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_8', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_9', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_14', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_10', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_15', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_16', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_11', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+
+    // 第4行：橙 橙 白 橙 白 白 橙 白 橙
+    { data: { id: 'grid_orange_17', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_18', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_12', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_19', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_13', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_14', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_20', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_white_15', label: '', type: 'grid_white' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+    { data: { id: 'grid_orange_21', label: '', type: 'grid_orange' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
+
     // 项目节点
     { data: { id: 'proj_led_screen', label: 'LED显示屏', type: 'project', projectType: '框架协议采购项目', year: '2024-2025年度' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
     { data: { id: 'proj_scanner', label: '扫描仪', type: 'project', projectType: '框架协议采购项目', year: '2025-2026年度' }, classes: props.step >= 1 ? 'visible' : 'hidden' },
@@ -117,6 +162,39 @@ onMounted(() => {
     { data: { id: 'year_2024', label: '2024年', type: 'year' }, classes: props.step === 2 ? 'visible' : 'hidden' },
     { data: { id: 'year_2025', label: '2025年', type: 'year' }, classes: props.step === 2 ? 'visible' : 'hidden' },
   ]
+
+  // 添加4×9方块到项目的连接边（step>=1时）
+  if (props.step >= 1) {
+    // 橙色方块连接到项目（21个橙色方块，每个项目7个）
+    elements.push(
+      // LED显示屏项目 (前7个橙色)
+      { data: { source: 'grid_orange_1', target: 'proj_led_screen' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_2', target: 'proj_led_screen' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_3', target: 'proj_led_screen' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_4', target: 'proj_led_screen' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_5', target: 'proj_led_screen' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_6', target: 'proj_led_screen' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_7', target: 'proj_led_screen' }, classes: 'grid-edge' },
+
+      // 扫描仪项目 (中间7个橙色)
+      { data: { source: 'grid_orange_8', target: 'proj_scanner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_9', target: 'proj_scanner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_10', target: 'proj_scanner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_11', target: 'proj_scanner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_12', target: 'proj_scanner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_13', target: 'proj_scanner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_14', target: 'proj_scanner' }, classes: 'grid-edge' },
+
+      // 空调机项目 (最后7个橙色)
+      { data: { source: 'grid_orange_15', target: 'proj_air_conditioner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_16', target: 'proj_air_conditioner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_17', target: 'proj_air_conditioner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_18', target: 'proj_air_conditioner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_19', target: 'proj_air_conditioner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_20', target: 'proj_air_conditioner' }, classes: 'grid-edge' },
+      { data: { source: 'grid_orange_21', target: 'proj_air_conditioner' }, classes: 'grid-edge' }
+    )
+  }
 
   cy = cytoscape({
     container: graphContainer.value,
@@ -234,16 +312,23 @@ const showStep1 = () => {
     }
   })
 
-  const centerY = 200
+  const centerY = 100  // 项目Y坐标向上移动
   const spacing = 240
   const startX = 80
-  const docSpacing = 95  // 增加文档节点之间的间距，让箭头更长
+  const docSpacing = 95
+
+  // 4×9 底层网格位置（与上方项目宽度一致）
+  const gridStartY = 320  // 底层网格向上移动
+  const gridStartX = startX
+  const gridSpacing = 65
 
   const positions: any = {
+    // 项目节点
     'proj_led_screen': { x: startX, y: centerY },
     'proj_scanner': { x: startX + spacing, y: centerY },
     'proj_air_conditioner': { x: startX + spacing * 2, y: centerY },
 
+    // 文档节点
     'doc_p1_tender': { x: startX, y: centerY - docSpacing },
     'doc_p1_bid': { x: startX, y: centerY },
     'doc_p1_contract': { x: startX, y: centerY + docSpacing },
@@ -255,6 +340,51 @@ const showStep1 = () => {
     'doc_p3_tender': { x: startX + spacing * 2, y: centerY - docSpacing },
     'doc_p3_bid': { x: startX + spacing * 2, y: centerY },
     'doc_p3_contract': { x: startX + spacing * 2, y: centerY + docSpacing },
+
+    // 4×9 底层网格布局
+    // 第1行：橙 橙 白 橙 橙 白 橙 白 橙
+    'grid_orange_1': { x: gridStartX, y: gridStartY },
+    'grid_orange_2': { x: gridStartX + gridSpacing, y: gridStartY },
+    'grid_white_1': { x: gridStartX + gridSpacing * 2, y: gridStartY },
+    'grid_orange_3': { x: gridStartX + gridSpacing * 3, y: gridStartY },
+    'grid_orange_4': { x: gridStartX + gridSpacing * 4, y: gridStartY },
+    'grid_white_2': { x: gridStartX + gridSpacing * 5, y: gridStartY },
+    'grid_orange_5': { x: gridStartX + gridSpacing * 6, y: gridStartY },
+    'grid_white_3': { x: gridStartX + gridSpacing * 7, y: gridStartY },
+    'grid_orange_6': { x: gridStartX + gridSpacing * 8, y: gridStartY },
+
+    // 第2行：橙 白 橙 橙 白 橙 白 橙 橙
+    'grid_orange_7': { x: gridStartX, y: gridStartY + gridSpacing },
+    'grid_white_4': { x: gridStartX + gridSpacing, y: gridStartY + gridSpacing },
+    'grid_orange_8': { x: gridStartX + gridSpacing * 2, y: gridStartY + gridSpacing },
+    'grid_orange_9': { x: gridStartX + gridSpacing * 3, y: gridStartY + gridSpacing },
+    'grid_white_5': { x: gridStartX + gridSpacing * 4, y: gridStartY + gridSpacing },
+    'grid_orange_10': { x: gridStartX + gridSpacing * 5, y: gridStartY + gridSpacing },
+    'grid_white_6': { x: gridStartX + gridSpacing * 6, y: gridStartY + gridSpacing },
+    'grid_orange_11': { x: gridStartX + gridSpacing * 7, y: gridStartY + gridSpacing },
+    'grid_orange_12': { x: gridStartX + gridSpacing * 8, y: gridStartY + gridSpacing },
+
+    // 第3行：白 橙 白 白 橙 白 橙 橙 白
+    'grid_white_7': { x: gridStartX, y: gridStartY + gridSpacing * 2 },
+    'grid_orange_13': { x: gridStartX + gridSpacing, y: gridStartY + gridSpacing * 2 },
+    'grid_white_8': { x: gridStartX + gridSpacing * 2, y: gridStartY + gridSpacing * 2 },
+    'grid_white_9': { x: gridStartX + gridSpacing * 3, y: gridStartY + gridSpacing * 2 },
+    'grid_orange_14': { x: gridStartX + gridSpacing * 4, y: gridStartY + gridSpacing * 2 },
+    'grid_white_10': { x: gridStartX + gridSpacing * 5, y: gridStartY + gridSpacing * 2 },
+    'grid_orange_15': { x: gridStartX + gridSpacing * 6, y: gridStartY + gridSpacing * 2 },
+    'grid_orange_16': { x: gridStartX + gridSpacing * 7, y: gridStartY + gridSpacing * 2 },
+    'grid_white_11': { x: gridStartX + gridSpacing * 8, y: gridStartY + gridSpacing * 2 },
+
+    // 第4行：橙 橙 白 橙 白 白 橙 白 橙
+    'grid_orange_17': { x: gridStartX, y: gridStartY + gridSpacing * 3 },
+    'grid_orange_18': { x: gridStartX + gridSpacing, y: gridStartY + gridSpacing * 3 },
+    'grid_white_12': { x: gridStartX + gridSpacing * 2, y: gridStartY + gridSpacing * 3 },
+    'grid_orange_19': { x: gridStartX + gridSpacing * 3, y: gridStartY + gridSpacing * 3 },
+    'grid_white_13': { x: gridStartX + gridSpacing * 4, y: gridStartY + gridSpacing * 3 },
+    'grid_white_14': { x: gridStartX + gridSpacing * 5, y: gridStartY + gridSpacing * 3 },
+    'grid_orange_20': { x: gridStartX + gridSpacing * 6, y: gridStartY + gridSpacing * 3 },
+    'grid_white_15': { x: gridStartX + gridSpacing * 7, y: gridStartY + gridSpacing * 3 },
+    'grid_orange_21': { x: gridStartX + gridSpacing * 8, y: gridStartY + gridSpacing * 3 },
   }
 
   cy.layout({
@@ -317,31 +447,83 @@ const showStep2 = () => {
     }
   })
 
-  const centerY = 180
+  const yearY = 30  // 年份在最顶层，向上移动
+  const projectY = 160  // 项目在中层，向上移动
   const spacing = 240
   const startX = 80
-  const docSpacing = 95  // 增加文档节点之间的间距，让箭头更长
-  const yearY = 450  // 增加年份节点的 Y 坐标，给箭头更多空间
+  const docSpacing = 95
+
+  // 4×9 底层网格位置（与上方项目宽度一致）
+  const gridStartY = 360  // 底层网格向上移动
+  const gridStartX = startX
+  const gridSpacing = 65
 
   const positions: any = {
-    'proj_led_screen': { x: startX, y: centerY },
-    'proj_scanner': { x: startX + spacing, y: centerY },
-    'proj_air_conditioner': { x: startX + spacing * 2, y: centerY },
-
-    'doc_p1_tender': { x: startX, y: centerY - docSpacing },
-    'doc_p1_bid': { x: startX, y: centerY },
-    'doc_p1_contract': { x: startX, y: centerY + docSpacing },
-
-    'doc_p2_tender': { x: startX + spacing, y: centerY - docSpacing },
-    'doc_p2_bid': { x: startX + spacing, y: centerY },
-    'doc_p2_contract': { x: startX + spacing, y: centerY + docSpacing },
-
-    'doc_p3_tender': { x: startX + spacing * 2, y: centerY - docSpacing },
-    'doc_p3_bid': { x: startX + spacing * 2, y: centerY },
-    'doc_p3_contract': { x: startX + spacing * 2, y: centerY + docSpacing },
-
-    'year_2024': { x: startX + spacing * 2, y: yearY },
+    // 年份节点在最顶层
     'year_2025': { x: startX + spacing * 0.5, y: yearY },
+    'year_2024': { x: startX + spacing * 2, y: yearY },
+
+    // 项目节点在中层
+    'proj_led_screen': { x: startX, y: projectY },
+    'proj_scanner': { x: startX + spacing, y: projectY },
+    'proj_air_conditioner': { x: startX + spacing * 2, y: projectY },
+
+    'doc_p1_tender': { x: startX, y: projectY - docSpacing },
+    'doc_p1_bid': { x: startX, y: projectY },
+    'doc_p1_contract': { x: startX, y: projectY + docSpacing },
+
+    'doc_p2_tender': { x: startX + spacing, y: projectY - docSpacing },
+    'doc_p2_bid': { x: startX + spacing, y: projectY },
+    'doc_p2_contract': { x: startX + spacing, y: projectY + docSpacing },
+
+    'doc_p3_tender': { x: startX + spacing * 2, y: projectY - docSpacing },
+    'doc_p3_bid': { x: startX + spacing * 2, y: projectY },
+    'doc_p3_contract': { x: startX + spacing * 2, y: projectY + docSpacing },
+
+    // 4×9 底层网格布局
+    // 第1行：橙 橙 白 橙 橙 白 橙 白 橙
+    'grid_orange_1': { x: gridStartX, y: gridStartY },
+    'grid_orange_2': { x: gridStartX + gridSpacing, y: gridStartY },
+    'grid_white_1': { x: gridStartX + gridSpacing * 2, y: gridStartY },
+    'grid_orange_3': { x: gridStartX + gridSpacing * 3, y: gridStartY },
+    'grid_orange_4': { x: gridStartX + gridSpacing * 4, y: gridStartY },
+    'grid_white_2': { x: gridStartX + gridSpacing * 5, y: gridStartY },
+    'grid_orange_5': { x: gridStartX + gridSpacing * 6, y: gridStartY },
+    'grid_white_3': { x: gridStartX + gridSpacing * 7, y: gridStartY },
+    'grid_orange_6': { x: gridStartX + gridSpacing * 8, y: gridStartY },
+
+    // 第2行：橙 白 橙 橙 白 橙 白 橙 橙
+    'grid_orange_7': { x: gridStartX, y: gridStartY + gridSpacing },
+    'grid_white_4': { x: gridStartX + gridSpacing, y: gridStartY + gridSpacing },
+    'grid_orange_8': { x: gridStartX + gridSpacing * 2, y: gridStartY + gridSpacing },
+    'grid_orange_9': { x: gridStartX + gridSpacing * 3, y: gridStartY + gridSpacing },
+    'grid_white_5': { x: gridStartX + gridSpacing * 4, y: gridStartY + gridSpacing },
+    'grid_orange_10': { x: gridStartX + gridSpacing * 5, y: gridStartY + gridSpacing },
+    'grid_white_6': { x: gridStartX + gridSpacing * 6, y: gridStartY + gridSpacing },
+    'grid_orange_11': { x: gridStartX + gridSpacing * 7, y: gridStartY + gridSpacing },
+    'grid_orange_12': { x: gridStartX + gridSpacing * 8, y: gridStartY + gridSpacing },
+
+    // 第3行：白 橙 白 白 橙 白 橙 橙 白
+    'grid_white_7': { x: gridStartX, y: gridStartY + gridSpacing * 2 },
+    'grid_orange_13': { x: gridStartX + gridSpacing, y: gridStartY + gridSpacing * 2 },
+    'grid_white_8': { x: gridStartX + gridSpacing * 2, y: gridStartY + gridSpacing * 2 },
+    'grid_white_9': { x: gridStartX + gridSpacing * 3, y: gridStartY + gridSpacing * 2 },
+    'grid_orange_14': { x: gridStartX + gridSpacing * 4, y: gridStartY + gridSpacing * 2 },
+    'grid_white_10': { x: gridStartX + gridSpacing * 5, y: gridStartY + gridSpacing * 2 },
+    'grid_orange_15': { x: gridStartX + gridSpacing * 6, y: gridStartY + gridSpacing * 2 },
+    'grid_orange_16': { x: gridStartX + gridSpacing * 7, y: gridStartY + gridSpacing * 2 },
+    'grid_white_11': { x: gridStartX + gridSpacing * 8, y: gridStartY + gridSpacing * 2 },
+
+    // 第4行：橙 橙 白 橙 白 白 橙 白 橙
+    'grid_orange_17': { x: gridStartX, y: gridStartY + gridSpacing * 3 },
+    'grid_orange_18': { x: gridStartX + gridSpacing, y: gridStartY + gridSpacing * 3 },
+    'grid_white_12': { x: gridStartX + gridSpacing * 2, y: gridStartY + gridSpacing * 3 },
+    'grid_orange_19': { x: gridStartX + gridSpacing * 3, y: gridStartY + gridSpacing * 3 },
+    'grid_white_13': { x: gridStartX + gridSpacing * 4, y: gridStartY + gridSpacing * 3 },
+    'grid_white_14': { x: gridStartX + gridSpacing * 5, y: gridStartY + gridSpacing * 3 },
+    'grid_orange_20': { x: gridStartX + gridSpacing * 6, y: gridStartY + gridSpacing * 3 },
+    'grid_white_15': { x: gridStartX + gridSpacing * 7, y: gridStartY + gridSpacing * 3 },
+    'grid_orange_21': { x: gridStartX + gridSpacing * 8, y: gridStartY + gridSpacing * 3 },
   }
 
   cy.layout({
@@ -370,7 +552,7 @@ const showStep2 = () => {
 
     .header {
       text-align: center;
-      padding: 40px 60px 20px;
+      padding: 10px 60px 10px;
 
       .title {
         font-size: 48px;
@@ -399,12 +581,12 @@ const showStep2 = () => {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 20px 80px 60px;
-      gap: 32px;
+      padding: 0 80px 40px;
+      gap: 16px;
       background: #F5FAFF;
 
       .text-section {
-        padding: 20px 0 0;
+        padding: 0;
 
         .step-desc {
           text-align: left;

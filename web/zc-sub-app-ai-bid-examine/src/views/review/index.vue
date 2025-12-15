@@ -90,99 +90,38 @@
         <BaseEmpty v-else description="暂无文档" />
       </div>
 
-      <!-- 审查结果面板 -->
+      <!-- JSON元素列表面板 -->
       <div class="review-panel" ref="review-panel">
         <div class="panel-header">
-          <span class="shrink-0 mr-[4px]">审查结果</span>
+          <span class="shrink-0 mr-[4px]">文档元素</span>
           <div class="statistics">
-            本次审查共
-            <span class="num">{{ statsData.sceneNum || 0 }}</span>
-            个审查场景、
-            <span class="num">{{ statsData.detailedSceneNum || 0 }}</span>
-            个审查点，发现风险
-            <span class="num error">{{ statsData.resultNum || 0 }}</span>
-            个
-          </div>
-          <a-button v-if="isDev" size="small" @click="toggleDevMode" :type="isDevMode ? 'primary' : 'default'">
-            {{ isDevMode ? '用户模式' : '开发模式' }}
-          </a-button>
-        </div>
-        <!-- 筛选标签 - 加载时显示骨架 -->
-        <div class="filter-tabs">
-          <div
-            v-for="tab in filterTabs"
-            :key="tab.key + '1'"
-            :class="['filter-tab', tab.key, { active: state.activeFilter === tab.key }]"
-            @click="setActiveFilter(tab.key)"
-          >
-            <span class="tab-label">{{ tab.label }}</span>
-            <span class="tab-count" :class="[{ active: state.activeFilter === tab.key }]">{{ tab.count || 0 }}</span>
+            共 <span class="num">{{ jsonElements.length }}</span> 个元素
           </div>
         </div>
 
-        <!-- 审查项目列表 -->
-        <div class="review-items">
-          <!-- 骨架屏状态 -->
-          <div v-if="state.loading" class="skeleton-container">
-            <div v-for="(category, index) in SKELETON_CONFIG.categories" :key="index" class="skeleton-item-group">
-              <div class="skeleton-title-bar">
-                <span class="item-index"></span>
-                <span class="item-title">{{ category.name }}</span>
+        <!-- 元素列表 -->
+        <div class="review-items json-elements-list">
+          <div v-if="jsonElements.length === 0" style="padding: 20px; text-align: center; color: #999">
+            暂无数据
+          </div>
+          <div v-else class="elements-container">
+            <div
+              v-for="(element, index) in jsonElements"
+              :key="index"
+              :class="['element-item', { active: selectedElement === element }]"
+              @click="handleElementClick(element)"
+            >
+              <div class="element-header">
+                <span class="element-index">#{{ index + 1 }}</span>
+                <span class="element-page">Page {{ element.page + 1 }}</span>
               </div>
-              <div class="skeleton-content">
-                <div v-for="n in category.itemCount" :key="n" class="skeleton-review-item">
-                  <div class="skeleton-line skeleton-line-long"></div>
-                  <div class="skeleton-line skeleton-line-medium"></div>
-                  <div class="skeleton-line skeleton-line-short"></div>
-                </div>
+              <div class="element-text">{{ element.text }}</div>
+              <div class="element-box">
+                {{ Math.round(element.box[0]) }}, {{ Math.round(element.box[1]) }} -
+                {{ Math.round(element.box[2]) }}, {{ Math.round(element.box[3]) }}
               </div>
             </div>
           </div>
-          <!-- 有数据内容 -->
-          <div v-else-if="filteredItems.length && resultData.reviewResult !== -1" class="items-list">
-            <div v-for="item in filteredItems" :key="item.reviewItemCode" class="item-group">
-              <div class="item-title-bar" @click="toggleItemExpand(item.reviewItemCode)">
-                <span class="item-index"></span>
-                <span class="item-title">{{ item.reviewItemName }}</span>
-                <span class="item-count">{{ item.pointNum || item.children?.length || 0 }}</span>
-                <span class="expand-text">
-                  {{ expandedState[item.reviewItemCode] === false ? '展开' : '收起' }}
-                </span>
-              </div>
-              <!-- 审查项目列表 -->
-              <div class="sub-items" v-show="expandedState[item.reviewItemCode] !== false">
-                <ReviewItem
-                  v-for="subItem in item.children || []"
-                  :key="subItem.uniqueId"
-                  :data="subItem"
-                  :active="activeItem.uniqueId"
-                  :task-id="taskId"
-                  @updateFinishNum="
-                    val => {
-                      statsData.resultFinishNum += val
-                    }
-                  "
-                  @clickItem="handleReviewItemClick"
-                  @showBestMatch="handleShowBestMatch"
-                  @showOriginalSpan="handleShowOriginalSpan"
-                  @update:data="val => Object.assign(subItem, val)"
-                />
-              </div>
-            </div>
-          </div>
-          <BaseEmpty v-else description="暂无数据" />
-        </div>
-        <!--  已处理         -->
-        <div class="handle-result">
-          <div class="tip">
-            <svg-icon icon="icon-tishi" class="icon" />
-            <span>采用AI辅助审查，最终结果需人工核对</span>
-          </div>
-          <a-divider type="vertical" />
-          <span>已处理</span>
-          <span class="num">{{ statsData.resultFinishNum || 0 }}/{{ statsData.resultNum || 0 }}</span>
-          <span>风险点</span>
-          <div class="percent-bar"><span class="percent" :style="{ width: resultBarWidth }"></span></div>
         </div>
       </div>
     </div>
@@ -277,6 +216,10 @@ const pdfData = reactive({
   currentPage: 1,
   highlightRects: [] as any[]
 })
+
+// JSON数据存储
+const jsonElements = ref<any[]>([])
+const selectedElement = ref<any>(null)
 
 const resultData = reactive<Record<string, any>>({ ...DEFAULT_REVIEW_RESULT })
 const activeItem = ref<Record<string, any>>({})
@@ -644,6 +587,52 @@ const toggleDevMode = () => {
   console.log('开发模式:', isDevMode.value ? '开启' : '关闭')
 }
 
+// 处理元素点击事件
+const handleElementClick = async (element: any) => {
+  selectedElement.value = element
+
+  // 构造高亮数据
+  const targetPage = element.page + 1  // JSON中page从0开始,PDF从1开始
+  const box = element.box  // [x1, y1, x2, y2]
+
+  // 转换为 quadPoints 格式 (8个点: 左上、右上、右下、左下的x,y坐标)
+  const quadPoints = [
+    box[0], box[1],  // 左上
+    box[2], box[1],  // 右上
+    box[2], box[3],  // 右下
+    box[0], box[3]   // 左下
+  ]
+
+  // 构造高亮矩形
+  const highlightRect = {
+    pageNum: targetPage,
+    rect: box,
+    quadPoints: quadPoints,
+    jump: true,
+    needsConversion: true  // 需要坐标转换 (屏幕坐标 → PDF坐标)
+  }
+
+  // 更新高亮区域
+  pdfData.highlightRects = [highlightRect]
+
+  // 跳转到对应页面并高亮
+  if (pdfReaderRef.value?.scrollToAnnotation) {
+    await pdfReaderRef.value.scrollToAnnotation(highlightRect)
+  } else {
+    // 回退方案: 简单页面跳转
+    pdfData.currentPage = -1
+    await nextTick()
+    pdfData.currentPage = targetPage
+  }
+
+  console.log('选中元素:', {
+    text: element.text,
+    page: targetPage,
+    box: box,
+    quadPoints: quadPoints
+  })
+}
+
 const pdfAnnotationsData = ref<any>(null)
 const reviewListData = ref<any>(null)
 const pdfAnnotations = ref<any[]>([])
@@ -936,6 +925,33 @@ const getFile = async () => {
   pdfData.highlightRects = []
   pdfData.pdfUrl = ''
 
+  // 从本地PDF服务器加载PDF文件
+  const pdfFileName = '少年宫.pdf'
+  pdfData.pdfUrl = `http://localhost:3000/pdf/${encodeURIComponent(pdfFileName)}`
+  console.log('使用 PDF 文件:', pdfData.pdfUrl)
+
+  // 更新文件名显示
+  statsData.value.fileName = pdfFileName
+
+  // 加载对应的JSON数据
+  try {
+    const jsonResp = await fetch(`http://localhost:3000/api/json/${encodeURIComponent(pdfFileName)}`)
+    if (jsonResp.ok) {
+      const jsonData = await jsonResp.json()
+      jsonElements.value = jsonData.data || []
+      console.log('加载JSON数据成功:', jsonData.total, '个元素')
+    } else {
+      console.error('JSON数据加载失败:', jsonResp.status)
+      jsonElements.value = []
+    }
+  } catch (error) {
+    console.error('JSON数据加载异常:', error)
+    jsonElements.value = []
+  }
+
+  return
+
+  // 原有逻辑保留但不执行
   if (reviewListData.value && taskId.value) {
     pdfData.pdfUrl = isDev
       ? `/task/${taskId.value}/${taskId.value}_highlighted.pdf`
@@ -1444,5 +1460,70 @@ onBeforeUnmount(() => {
 .side-menu-item {
   text-align: left;
   padding: 0 8px;
+}
+
+/* JSON元素列表样式 */
+.json-elements-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.elements-container {
+  padding: 12px;
+}
+
+.element-item {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--main-6);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &.active {
+    border-color: var(--main-6);
+    background: #f0f7ff;
+  }
+}
+
+.element-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.element-index {
+  font-weight: 600;
+  color: var(--main-6);
+  font-size: 12px;
+}
+
+.element-page {
+  font-size: 12px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.element-text {
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.element-box {
+  font-size: 11px;
+  color: #9ca3af;
+  font-family: monospace;
 }
 </style>

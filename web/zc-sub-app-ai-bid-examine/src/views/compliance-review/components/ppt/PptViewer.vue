@@ -43,11 +43,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, h } from 'vue'
 import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue'
-import DataSiloPpt from './ppt/DataSiloPpt.vue'
-import KnowledgeGraphPpt from './ppt/KnowledgeGraphPpt.vue'
-import FullGraphPpt from './ppt/FullGraphPpt.vue'
+import DataSiloPpt from './DataSiloPpt.vue'
+import DataFabricPpt from './DataFabricPpt.vue'
+import KnowledgeGraphFeaturePpt from './KnowledgeGraphFeaturePpt.vue'
+import KnowledgeGraphStepPpt from './KnowledgeGraphStepPpt.vue'
+import SupplierAnalysisPpt from './SupplierAnalysisPpt.vue'
+import CrossProjectInsightPpt from './CrossProjectInsightPpt.vue'
 
 defineOptions({
   name: 'PptViewer'
@@ -64,10 +67,14 @@ const props = withDefaults(defineProps<Props>(), {
 
 // PPT 幻灯片列表
 const slides = [
-  DataSiloPpt,
-  KnowledgeGraphPpt,
-  FullGraphPpt
-  // 后续可以添加更多幻灯片组件
+  DataSiloPpt, // 第1页：数据孤岛问题
+  DataFabricPpt, // 第2页：三层架构的数据织网图
+  KnowledgeGraphFeaturePpt, // 第3页：知识图谱的核心能力
+  // () => h(KnowledgeGraphStepPpt, { step: 0, graphWidth: '70%', graphHeight: '420px' }),  // 第3页：信息孤岛
+  () => h(KnowledgeGraphStepPpt, { step: 1, graphWidth: '75%', graphHeight: '500px' }), // 第4页：按项目聚合
+  () => h(KnowledgeGraphStepPpt, { step: 2, graphWidth: '75%', graphHeight: '520px' }), // 第5页：按年份聚合
+  SupplierAnalysisPpt, // 第6页：供应商履约分析
+  CrossProjectInsightPpt // 第7页：跨项目数据洞察
 ]
 
 // 当前幻灯片索引
@@ -78,7 +85,11 @@ const showLeftNav = ref(false)
 const showRightNav = ref(false)
 
 // 当前幻灯片组件
-const currentSlideComponent = computed(() => slides[currentSlide.value])
+const currentSlideComponent = computed(() => {
+  const slide = slides[currentSlide.value]
+  // 如果是函数，执行它以获取组件
+  return typeof slide === 'function' ? slide() : slide
+})
 
 // 上一页
 const prevSlide = () => {

@@ -24,6 +24,10 @@
 
       <!-- 节点标签 -->
       <span class="node-label">
+        <!-- 类型标签 -->
+        <span v-if="node.type === 'label'" class="type-badge type-label">业务本体</span>
+        <span v-else-if="node.type === 'aggregate'" class="type-badge type-aggregate">业务实体</span>
+
         <!-- 标签节点显示标签名称，不显示前缀 -->
         <span v-if="node.text || node.title" class="node-text">{{ truncateText(node.text || node.title) }}</span>
         <span v-else class="node-id">#{{ node.line_id || node.pid }}</span>
@@ -309,6 +313,31 @@ const truncateText = (text: string, maxLength = 60) => {
 .node-header.class-sec2 .node-class { color: #2e7d32; font-weight: 600; font-size: 12px; }
 .node-header.class-sec3 .node-class { color: #00695c; font-weight: 500; font-size: 12px; }
 .node-header.class-paragraph .node-class { color: #616161; font-weight: 500; font-size: 12px; }
+
+/* 类型标签样式 */
+.type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-right: 6px;
+  border: 1px solid;
+}
+
+/* 业务本体 - 蓝色 */
+.type-badge.type-label {
+  background: #e6f7ff;
+  color: #1890ff;
+  border-color: #91d5ff;
+}
+
+/* 业务实体 - 绿色 */
+.type-badge.type-aggregate {
+  background: #f6ffed;
+  color: #52c41a;
+  border-color: #b7eb8f;
+}
 
 /* 标签前缀样式 - Tag标签风格 */
 .label-prefix {
