@@ -1,0 +1,569 @@
+{
+  "nodes": [
+    {
+      "id": "招标文件",
+      "label": "招标文件",
+      "type": "normal",
+      "level": 1,
+      "parent_id": null,
+      "edge_type": null,
+      "path": "/招标文件",
+      "depth": 0,
+      "is_leaf": false,
+      "children_count": 1
+    },
+    {
+      "id": "采购项目",
+      "label": "采购项目",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "招标文件",
+      "edge_type": "attachedTo",
+      "path": "/招标文件/采购项目",
+      "depth": 1,
+      "is_leaf": false,
+      "children_count": 4
+    },
+    {
+      "id": "投标人须知",
+      "label": "投标人须知",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购项目",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/投标人须知",
+      "depth": 2,
+      "is_leaf": false,
+      "children_count": 2
+    },
+    {
+      "id": "其他关键信息",
+      "label": "其他关键信息",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购项目",
+      "edge_type": "sameAs",
+      "path": "/招标文件/采购项目/其他关键信息",
+      "depth": 2,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "对通用条款的补充内容",
+      "label": "对通用条款的补充内容",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购项目",
+      "edge_type": "sameAs",
+      "path": "/招标文件/采购项目/对通用条款的补充内容",
+      "depth": 2,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "采购包",
+      "label": "采购包",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购项目",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包",
+      "depth": 2,
+      "is_leaf": false,
+      "children_count": 6
+    },
+    {
+      "id": "商务要求",
+      "label": "商务要求",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购包",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/商务要求",
+      "depth": 3,
+      "is_leaf": false,
+      "children_count": 2
+    },
+    {
+      "id": "商务要求表",
+      "label": "商务要求表",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "商务要求",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/商务要求/商务要求表",
+      "depth": 4,
+      "is_leaf": false,
+      "children_count": 2
+    },
+    {
+      "id": "商务要求偏离表",
+      "label": "商务要求偏离表",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "商务要求",
+      "edge_type": "sameAs",
+      "path": "/招标文件/采购项目/采购包/商务要求/商务要求偏离表",
+      "depth": 4,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "商务要求项",
+      "label": "商务要求项",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "商务要求表",
+      "edge_type": "hasMember",
+      "path": "/招标文件/采购项目/采购包/商务要求/商务要求表/商务要求项",
+      "depth": 5,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "商务要求说明",
+      "label": "商务要求说明",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "商务要求",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/商务要求/商务要求说明",
+      "depth": 4,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "技术要求",
+      "label": "技术要求",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购包",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/技术要求",
+      "depth": 3,
+      "is_leaf": false,
+      "children_count": 2
+    },
+    {
+      "id": "技术要求表",
+      "label": "技术要求表",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "技术要求",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/技术要求/技术要求表",
+      "depth": 4,
+      "is_leaf": false,
+      "children_count": 2
+    },
+    {
+      "id": "技术要求偏离表",
+      "label": "技术要求偏离表",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "技术要求",
+      "edge_type": "sameAs",
+      "path": "/招标文件/采购项目/采购包/技术要求/技术要求偏离表",
+      "depth": 4,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "技术要求项",
+      "label": "技术要求项",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "技术要求表",
+      "edge_type": "hasMember",
+      "path": "/招标文件/采购项目/采购包/技术要求/技术要求表/技术要求项",
+      "depth": 5,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "技术要求说明",
+      "label": "技术要求说明",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "技术要求",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/技术要求/技术要求说明",
+      "depth": 4,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "符合性要求",
+      "label": "符合性要求",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购包",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/符合性要求",
+      "depth": 3,
+      "is_leaf": false,
+      "children_count": 1
+    },
+    {
+      "id": "符合性审查表",
+      "label": "符合性审查表",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "符合性要求",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/符合性要求/符合性审查表",
+      "depth": 4,
+      "is_leaf": false,
+      "children_count": 1
+    },
+    {
+      "id": "符合性审查项",
+      "label": "符合性审查项",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "符合性审查表",
+      "edge_type": "hasMember",
+      "path": "/招标文件/采购项目/采购包/符合性要求/符合性审查表/符合性审查项",
+      "depth": 5,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "评标信息",
+      "label": "评标信息",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购包",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/评标信息",
+      "depth": 3,
+      "is_leaf": false,
+      "children_count": 2
+    },
+    {
+      "id": "评标信息表",
+      "label": "评标信息表",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "评标信息",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/评标信息/评标信息表",
+      "depth": 4,
+      "is_leaf": false,
+      "children_count": 1
+    },
+    {
+      "id": "评标信息项",
+      "label": "评标信息项",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "评标信息表",
+      "edge_type": "hasMember",
+      "path": "/招标文件/采购项目/采购包/评标信息/评标信息表/评标信息项",
+      "depth": 5,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "评标方法",
+      "label": "评标方法",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "评标信息",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/评标信息/评标方法",
+      "depth": 4,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "资格要求",
+      "label": "资格要求",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购包",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/资格要求",
+      "depth": 3,
+      "is_leaf": false,
+      "children_count": 1
+    },
+    {
+      "id": "资格性审查表",
+      "label": "资格性审查表",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "资格要求",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/资格要求/资格性审查表",
+      "depth": 4,
+      "is_leaf": false,
+      "children_count": 1
+    },
+    {
+      "id": "资格性审查项",
+      "label": "资格性审查项",
+      "type": "normal",
+      "level": 2,
+      "parent_id": "资格性审查表",
+      "edge_type": "hasMember",
+      "path": "/招标文件/采购项目/采购包/资格要求/资格性审查表/资格性审查项",
+      "depth": 5,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "采购标的",
+      "label": "采购标的",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购包",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/采购包/采购标的",
+      "depth": 3,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "项目基本信息",
+      "label": "项目基本信息",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购项目",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/项目基本信息",
+      "depth": 2,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "补充说明",
+      "label": "补充说明(概念)",
+      "type": "normal",
+      "level": 2,
+      "parent_id": null,
+      "edge_type": null,
+      "path": "/补充说明",
+      "depth": 0,
+      "is_leaf": true,
+      "children_count": 0
+    },
+    {
+      "id": "投标文件组成要求及格式",
+      "label": "投标文件组成要求及格式",
+      "type": "normal",
+      "level": 1,
+      "parent_id": "采购项目",
+      "edge_type": "hasPart",
+      "path": "/招标文件/采购项目/投标文件组成要求及格式",
+      "depth": 2,
+      "is_leaf": true,
+      "children_count": 0
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from_node": "招标文件",
+      "to_node": "采购项目",
+      "edge_type": "attachedTo",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e3",
+      "from_node": "采购项目",
+      "to_node": "项目基本信息",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e4",
+      "from_node": "采购项目",
+      "to_node": "投标人须知",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e5",
+      "from_node": "采购项目",
+      "to_node": "采购包",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e6",
+      "from_node": "采购包",
+      "to_node": "商务要求",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e7",
+      "from_node": "采购包",
+      "to_node": "技术要求",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e8",
+      "from_node": "采购包",
+      "to_node": "资格要求",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e9",
+      "from_node": "采购包",
+      "to_node": "符合性要求",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e10",
+      "from_node": "采购包",
+      "to_node": "评标信息",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e11",
+      "from_node": "采购包",
+      "to_node": "采购标的",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e12",
+      "from_node": "评标信息",
+      "to_node": "评标信息表",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e13",
+      "from_node": "评标信息",
+      "to_node": "评标方法",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e14",
+      "from_node": "商务要求",
+      "to_node": "商务要求表",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e14b",
+      "from_node": "商务要求",
+      "to_node": "商务要求说明",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e15",
+      "from_node": "技术要求",
+      "to_node": "技术要求表",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e15b",
+      "from_node": "技术要求",
+      "to_node": "技术要求说明",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e16",
+      "from_node": "资格要求",
+      "to_node": "资格性审查表",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e17",
+      "from_node": "符合性要求",
+      "to_node": "符合性审查表",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e18",
+      "from_node": "商务要求表",
+      "to_node": "商务要求项",
+      "edge_type": "hasMember",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e19",
+      "from_node": "技术要求表",
+      "to_node": "技术要求项",
+      "edge_type": "hasMember",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e20",
+      "from_node": "资格性审查表",
+      "to_node": "资格性审查项",
+      "edge_type": "hasMember",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e21",
+      "from_node": "符合性审查表",
+      "to_node": "符合性审查项",
+      "edge_type": "hasMember",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e22",
+      "from_node": "评标信息表",
+      "to_node": "评标信息项",
+      "edge_type": "hasMember",
+      "is_hierarchical": true
+    },
+    {
+      "id": "e23",
+      "from_node": "投标人须知",
+      "to_node": "对通用条款的补充内容",
+      "edge_type": "sameAs",
+      "is_hierarchical": false
+    },
+    {
+      "id": "e24",
+      "from_node": "投标人须知",
+      "to_node": "其他关键信息",
+      "edge_type": "sameAs",
+      "is_hierarchical": false
+    },
+    {
+      "id": "e25",
+      "from_node": "商务要求表",
+      "to_node": "商务要求偏离表",
+      "edge_type": "sameAs",
+      "is_hierarchical": false
+    },
+    {
+      "id": "e26",
+      "from_node": "技术要求表",
+      "to_node": "技术要求偏离表",
+      "edge_type": "sameAs",
+      "is_hierarchical": false
+    },
+    {
+      "id": "e_bidding_doc_format",
+      "from_node": "采购项目",
+      "to_node": "投标文件组成要求及格式",
+      "edge_type": "hasPart",
+      "is_hierarchical": true
+    }
+  ],
+  "metadata": {
+    "total_nodes": 29,
+    "total_edges": 27,
+    "max_depth": 5,
+    "leaf_nodes": 15,
+    "description": "招标文件知识图谱本体层 - 扁平化+路径方案"
+  }
+}

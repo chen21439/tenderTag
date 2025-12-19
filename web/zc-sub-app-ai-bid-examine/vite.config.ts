@@ -95,6 +95,7 @@ export default defineConfig(env => {
         // 本地Python后端代理（开发环境）
         '/python': {
           target: 'http://localhost:8000',
+                  // target: 'http://175.42.62.118:9103/',
           changeOrigin: true,
           rewrite: pathStr => pathStr.replace(/^\/python/, '')
         }

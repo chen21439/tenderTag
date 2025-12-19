@@ -1,0 +1,416 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "description": "招标文件知识图谱本体 - 解耦版本",
+    "created_at": "2025-11-19",
+    "total_nodes": 29,
+    "total_edges": 27
+  },
+  "edge_types": [
+    {
+      "type": "hasPart",
+      "label": "包含",
+      "description": "A包含B，B是A的组成部分",
+      "color": "#4A90E2",
+      "style": "solid",
+      "width": 2,
+      "is_hierarchical": true,
+      "arrow": "triangle"
+    },
+    {
+      "type": "sameAs",
+      "label": "同义",
+      "description": "A和B是同义概念，平级关系",
+      "color": "#FF9500",
+      "style": "solid",
+      "width": 2,
+      "is_hierarchical": false,
+      "arrow": "none"
+    },
+    {
+      "type": "hasMember",
+      "label": "成员",
+      "description": "A有成员B，B属于集合A",
+      "color": "#50C878",
+      "style": "solid",
+      "width": 2,
+      "is_hierarchical": true,
+      "arrow": "triangle"
+    },
+    {
+      "type": "attachedTo",
+      "label": "附属于",
+      "description": "A附属于B",
+      "color": "#9B9B9B",
+      "style": "dashed",
+      "width": 1.5,
+      "is_hierarchical": true,
+      "arrow": "triangle"
+    },
+    {
+      "type": "relatedTo",
+      "label": "关联",
+      "description": "A和B有关联，但不是层级关系",
+      "color": "#B0B0B0",
+      "style": "dotted",
+      "width": 1,
+      "is_hierarchical": false,
+      "arrow": "none"
+    },
+    {
+      "type": "derivedFrom",
+      "label": "派生自",
+      "description": "A派生自B",
+      "color": "#8E44AD",
+      "style": "dashed",
+      "width": 1.5,
+      "is_hierarchical": false,
+      "arrow": "triangle"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "招标文件",
+      "label": "招标文件",
+      "type": "concept",
+      "level": 1,
+      "description": "招标文件根节点"
+    },
+    {
+      "id": "采购项目",
+      "label": "采购项目",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "投标人须知",
+      "label": "投标人须知",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "其他关键信息",
+      "label": "其他关键信息",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "对通用条款的补充内容",
+      "label": "对通用条款的补充内容",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "采购包",
+      "label": "采购包",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "商务要求",
+      "label": "商务要求",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "商务要求表",
+      "label": "商务要求表",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "商务要求偏离表",
+      "label": "商务要求偏离表",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "商务要求项",
+      "label": "商务要求项",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "商务要求说明",
+      "label": "商务要求说明",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "技术要求",
+      "label": "技术要求",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "技术要求表",
+      "label": "技术要求表",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "技术要求偏离表",
+      "label": "技术要求偏离表",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "技术要求项",
+      "label": "技术要求项",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "技术要求说明",
+      "label": "技术要求说明",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "符合性要求",
+      "label": "符合性要求",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "符合性审查表",
+      "label": "符合性审查表",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "符合性审查项",
+      "label": "符合性审查项",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "评标信息",
+      "label": "评标信息",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "评标信息表",
+      "label": "评标信息表",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "评标信息项",
+      "label": "评标信息项",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "评标方法",
+      "label": "评标方法",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "资格要求",
+      "label": "资格要求",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "资格性审查表",
+      "label": "资格性审查表",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "资格性审查项",
+      "label": "资格性审查项",
+      "type": "concept",
+      "level": 2
+    },
+    {
+      "id": "采购标的",
+      "label": "采购标的",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "项目基本信息",
+      "label": "项目基本信息",
+      "type": "concept",
+      "level": 1
+    },
+    {
+      "id": "补充说明",
+      "label": "补充说明(概念)",
+      "type": "concept",
+      "level": 2
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "招标文件",
+      "to": "采购项目",
+      "type": "attachedTo"
+    },
+    {
+      "id": "e2",
+      "from": "采购项目",
+      "to": "项目基本信息",
+      "type": "hasPart"
+    },
+    {
+      "id": "e3",
+      "from": "采购项目",
+      "to": "投标人须知",
+      "type": "hasPart"
+    },
+    {
+      "id": "e4",
+      "from": "投标人须知",
+      "to": "对通用条款的补充内容",
+      "type": "sameAs",
+      "comment": "同级关系，不是父子"
+    },
+    {
+      "id": "e5",
+      "from": "投标人须知",
+      "to": "其他关键信息",
+      "type": "sameAs",
+      "comment": "同级关系，不是父子"
+    },
+    {
+      "id": "e6",
+      "from": "采购项目",
+      "to": "采购包",
+      "type": "hasPart"
+    },
+    {
+      "id": "e7",
+      "from": "采购包",
+      "to": "商务要求",
+      "type": "hasPart"
+    },
+    {
+      "id": "e8",
+      "from": "商务要求",
+      "to": "商务要求表",
+      "type": "hasPart"
+    },
+    {
+      "id": "e9",
+      "from": "商务要求",
+      "to": "商务要求偏离表",
+      "type": "sameAs",
+      "comment": "商务要求偏离表和商务要求表是同级"
+    },
+    {
+      "id": "e10",
+      "from": "商务要求表",
+      "to": "商务要求项",
+      "type": "hasMember"
+    },
+    {
+      "id": "e11",
+      "from": "商务要求",
+      "to": "商务要求说明",
+      "type": "hasPart"
+    },
+    {
+      "id": "e12",
+      "from": "采购包",
+      "to": "技术要求",
+      "type": "hasPart"
+    },
+    {
+      "id": "e13",
+      "from": "技术要求",
+      "to": "技术要求表",
+      "type": "hasPart"
+    },
+    {
+      "id": "e14",
+      "from": "技术要求",
+      "to": "技术要求偏离表",
+      "type": "sameAs",
+      "comment": "技术要求偏离表和技术要求表是同级"
+    },
+    {
+      "id": "e15",
+      "from": "技术要求表",
+      "to": "技术要求项",
+      "type": "hasMember"
+    },
+    {
+      "id": "e16",
+      "from": "技术要求",
+      "to": "技术要求说明",
+      "type": "hasPart"
+    },
+    {
+      "id": "e17",
+      "from": "采购包",
+      "to": "资格要求",
+      "type": "hasPart"
+    },
+    {
+      "id": "e18",
+      "from": "资格要求",
+      "to": "资格性审查表",
+      "type": "hasPart"
+    },
+    {
+      "id": "e19",
+      "from": "资格性审查表",
+      "to": "资格性审查项",
+      "type": "hasMember"
+    },
+    {
+      "id": "e20",
+      "from": "采购包",
+      "to": "符合性要求",
+      "type": "hasPart"
+    },
+    {
+      "id": "e21",
+      "from": "符合性要求",
+      "to": "符合性审查表",
+      "type": "hasPart"
+    },
+    {
+      "id": "e22",
+      "from": "符合性审查表",
+      "to": "符合性审查项",
+      "type": "hasMember"
+    },
+    {
+      "id": "e23",
+      "from": "采购包",
+      "to": "评标信息",
+      "type": "hasPart"
+    },
+    {
+      "id": "e24",
+      "from": "评标信息",
+      "to": "评标信息表",
+      "type": "hasPart"
+    },
+    {
+      "id": "e25",
+      "from": "评标信息表",
+      "to": "评标信息项",
+      "type": "hasMember"
+    },
+    {
+      "id": "e26",
+      "from": "评标信息",
+      "to": "评标方法",
+      "type": "hasPart"
+    },
+    {
+      "id": "e27",
+      "from": "采购包",
+      "to": "采购标的",
+      "type": "hasPart"
+    }
+  ]
+}

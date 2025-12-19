@@ -1,0 +1,304 @@
+{
+  "description": "CN bidding / contract analyzer for tender documents",
+  "baseAnalyzerId": "prebuilt-document",
+  "models": {
+    "completion": "gpt-4.1",
+    "embedding": "text-embedding-ada-002"
+  },
+  "config": {
+    "returnDetails": true,
+    "enableFormula": false,
+    "disableContentFiltering": false,
+    "estimateFieldSourceAndConfidence": true,
+    "tableFormat": "html"
+  },
+  "fieldSchema": {
+    "fields": {
+      "ProjectInfo": {
+        "type": "object",
+        "method": "extract",
+        "description": "项目基础信息：名称、编号、采购方式、预算等。",
+        "properties": {
+          "ProjectName": {
+            "type": "string",
+            "method": "extract",
+            "description": "项目名称，通常出现在招标公告或招标文件封面、第一章标题。"
+          },
+          "ProjectCode": {
+            "type": "string",
+            "method": "extract",
+            "description": "项目编号/采购项目编号。"
+          },
+          "Purchaser": {
+            "type": "string",
+            "method": "extract",
+            "description": "采购人/招标人全称。"
+          },
+          "ProcurementMethod": {
+            "type": "string",
+            "method": "classify",
+            "enum": [
+              "公开招标",
+              "邀请招标",
+              "竞争性磋商",
+              "竞争性谈判",
+              "询价",
+              "单一来源",
+              "其他"
+            ],
+            "description": "采购方式，如公开招标、竞争性磋商等。"
+          },
+          "ProcurementType": {
+            "type": "string",
+            "method": "classify",
+            "enum": ["货物", "服务", "工程", "其他"],
+            "description": "采购类型，如货物/服务/工程。"
+          },
+          "BudgetAmount": {
+            "type": "number",
+            "method": "extract",
+            "description": "项目预算金额（数值，人民币，若有多个包则取当前包预算）。"
+          },
+          "PackageCount": {
+            "type": "number",
+            "method": "extract",
+            "description": "采购包数量或标段数量。"
+          },
+          "PackageName": {
+            "type": "string",
+            "method": "extract",
+            "description": "当前标段/包名称（如有）。"
+          },
+          "DeliveryLocation": {
+            "type": "string",
+            "method": "extract",
+            "description": "交付地点/服务地点描述。"
+          },
+          "DeliveryTime": {
+            "type": "string",
+            "method": "extract",
+            "description": "项目工期或交付时间的完整描述。"
+          }
+        }
+      },
+
+      "BidInstruction": {
+        "type": "object",
+        "method": "extract",
+        "description": "投标人须知章节关键信息汇总。",
+        "properties": {
+          "BidBondRequirement": {
+            "type": "string",
+            "method": "extract",
+            "description": "投标保证金要求，包括金额、缴纳方式、到账时间等。若在表格中，请合并成一段文字描述。"
+          },
+          "BidValidity": {
+            "type": "string",
+            "method": "extract",
+            "description": "投标有效期要求。"
+          },
+          "CopyRequirement": {
+            "type": "string",
+            "method": "extract",
+            "description": "投标文件份数要求（正本、副本数量等）。"
+          },
+          "SubmissionDeadline": {
+            "type": "string",
+            "method": "extract",
+            "description": "投标文件提交截止时间（日期+具体时间）。"
+          },
+          "BidOpeningTimePlace": {
+            "type": "string",
+            "method": "extract",
+            "description": "开标时间和地点。"
+          },
+          "SiteVisitRequirement": {
+            "type": "string",
+            "method": "extract",
+            "description": "踏勘现场要求，如是否需要踏勘、时间、集合地点等。"
+          },
+          "QARequirement": {
+            "type": "string",
+            "method": "extract",
+            "description": "答疑/澄清方式与时间，例如提问渠道、截止时间、答疑发布时间等。"
+          },
+          "PricingRequirement": {
+            "type": "string",
+            "method": "extract",
+            "description": "报价方式与报价要求，如是否含税、是否总价/分项报价、是否允许折扣等。"
+          }
+        }
+      },
+
+      "QualificationRequirements": {
+        "type": "array",
+        "method": "extract",
+        "description": "资格性要求列表，每条对应一类资格条件。",
+        "items": {
+          "type": "object",
+          "properties": {
+            "Name": {
+              "type": "string",
+              "method": "extract",
+              "description": "资格要求名称/小标题，如“基本资格条件”“财务状况要求”等（可为空）。"
+            },
+            "Description": {
+              "type": "string",
+              "method": "extract",
+              "description": "资格要求的完整描述。"
+            },
+            "Evidence": {
+              "type": "string",
+              "method": "extract",
+              "description": "需提交的证明材料，如“提供近三年审计报告”等（可为空）。"
+            }
+          }
+        }
+      },
+
+      "ComplianceRequirements": {
+        "type": "array",
+        "method": "extract",
+        "description": "符合性要求列表（对技术、服务等是否满足的合规要求）。",
+        "items": {
+          "type": "object",
+          "properties": {
+            "Name": {
+              "type": "string",
+              "method": "extract",
+              "description": "符合性要求名称/小标题（可为空）。"
+            },
+            "Description": {
+              "type": "string",
+              "method": "extract",
+              "description": "符合性要求的具体描述。"
+            },
+            "Evidence": {
+              "type": "string",
+              "method": "extract",
+              "description": "需提交的证明材料或证明方式（可为空）。"
+            }
+          }
+        }
+      },
+
+      "TechnicalRequirements": {
+        "type": "object",
+        "method": "extract",
+        "description": "技术要求和偏离表相关说明。",
+        "properties": {
+          "Description": {
+            "type": "string",
+            "method": "extract",
+            "description": "主要技术要求的文字描述，可为多个条款拼接。"
+          },
+          "DeviationInstruction": {
+            "type": "string",
+            "method": "extract",
+            "description": "技术偏离表/商务偏离表的填写说明及要求。"
+          }
+        }
+      },
+
+      "Evaluation": {
+        "type": "object",
+        "method": "extract",
+        "description": "评标办法与评分细则。",
+        "properties": {
+          "MethodName": {
+            "type": "string",
+            "method": "extract",
+            "description": "评标方法名称，如综合评分法、最低评标价法等。"
+          },
+          "Description": {
+            "type": "string",
+            "method": "extract",
+            "description": "评标方法整体描述，包括是否有中小企业、节能产品等加分或优惠规定。"
+          },
+          "ScoringItems": {
+            "type": "array",
+            "method": "extract",
+            "description": "评分项列表，如果评分细则以表格形式出现，请按表格行抽取。",
+            "items": {
+              "type": "object",
+              "properties": {
+                "Name": {
+                  "type": "string",
+                  "method": "extract",
+                  "description": "评分项名称，如“价格分”“业绩分”“技术方案”。"
+                },
+                "Type": {
+                  "type": "string",
+                  "method": "classify",
+                  "enum": ["价格", "技术", "商务", "其他"],
+                  "description": "评分项类型：价格/技术/商务/其他。"
+                },
+                "Score": {
+                  "type": "number",
+                  "method": "extract",
+                  "description": "该评分项或子项的分值上限。"
+                },
+                "RuleDescription": {
+                  "type": "string",
+                  "method": "extract",
+                  "description": "评分规则描述，包含打分区间、对应分值等。"
+                },
+                "SubItems": {
+                  "type": "array",
+                  "method": "extract",
+                  "description": "子评分项（如有分档次、子维度）。",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Name": {
+                        "type": "string",
+                        "method": "extract",
+                        "description": "子评分项名称。"
+                      },
+                      "Score": {
+                        "type": "number",
+                        "method": "extract",
+                        "description": "子评分项分值上限。"
+                      },
+                      "RuleDescription": {
+                        "type": "string",
+                        "method": "extract",
+                        "description": "子评分项评分规则描述。"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "ResponseLetters": {
+        "type": "array",
+        "method": "extract",
+        "description": "响应函 / 函证类文件要求列表。",
+        "items": {
+          "type": "object",
+          "properties": {
+            "Name": {
+              "type": "string",
+              "method": "extract",
+              "description": "响应函或函证名称，如《投标函》《法定代表人身份证明》《授权委托书》等。"
+            },
+            "Template": {
+              "type": "string",
+              "method": "extract",
+              "description": "函证模板的主要内容或引用位置说明（例如“见附件××模板”）。"
+            },
+            "Guidance": {
+              "type": "string",
+              "method": "extract",
+              "description": "函证/响应函的编制指引和填写要求。"
+            }
+          }
+        }
+      }
+    }
+  }
+}

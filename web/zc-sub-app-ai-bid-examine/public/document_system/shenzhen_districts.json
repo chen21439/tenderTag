@@ -1,0 +1,156 @@
+[
+  {
+    "line_id": 1,
+    "pid": "root",
+    "label": "深圳市交易集团",
+    "content": "深圳市交易集团总部",
+    "page": 0,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 0,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 2,
+    "pid": "district_futian",
+    "label": "深圳市交易集团/福田区",
+    "content": "",
+    "page": 1,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 1,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 3,
+    "pid": "district_luohu",
+    "label": "深圳市交易集团/罗湖区",
+    "content": "",
+    "page": 2,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 2,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 4,
+    "pid": "district_nanshan",
+    "label": "深圳市交易集团/南山区",
+    "content": "",
+    "page": 3,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 3,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 5,
+    "pid": "district_yantian",
+    "label": "深圳市交易集团/盐田区",
+    "content": "",
+    "page": 4,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 4,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 6,
+    "pid": "district_baoan",
+    "label": "深圳市交易集团/宝安区",
+    "content": "",
+    "page": 5,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 5,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 7,
+    "pid": "district_longgang",
+    "label": "深圳市交易集团/龙岗区",
+    "content": "",
+    "page": 6,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 6,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 8,
+    "pid": "district_longhua",
+    "label": "深圳市交易集团/龙华区",
+    "content": "",
+    "page": 7,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 7,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 9,
+    "pid": "district_pingshan",
+    "label": "深圳市交易集团/坪山区",
+    "content": "",
+    "page": 8,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 8,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 10,
+    "pid": "district_guangming",
+    "label": "深圳市交易集团/光明区",
+    "content": "",
+    "page": 9,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 9,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  },
+  {
+    "line_id": 11,
+    "pid": "district_dapeng",
+    "label": "深圳市交易集团/大鹏新区",
+    "content": "",
+    "page": 10,
+    "box": [100, 100, 500, 150],
+    "location": [
+      {
+        "page_index": 10,
+        "bbox": [100, 100, 500, 150]
+      }
+    ]
+  }
+]

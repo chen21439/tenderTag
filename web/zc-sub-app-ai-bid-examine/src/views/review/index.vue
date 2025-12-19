@@ -85,7 +85,9 @@
           ref="pdfReaderRef"
           :url="pdfData.pdfUrl"
           :page="pdfData.currentPage"
+          :highlight-rects="pdfData.highlightRects"
           @annotationsLoaded="handleAnnotationsLoaded"
+          @pageChange="handlePdfPageChange"
         />
         <BaseEmpty v-else description="暂无文档" />
       </div>
@@ -95,33 +97,126 @@
         <div class="panel-header">
           <span class="shrink-0 mr-[4px]">文档元素</span>
           <div class="statistics">
-            共 <span class="num">{{ jsonElements.length }}</span> 个元素
+            <span style="color: #6b7280; margin-right: 8px;">第 {{ pdfData.currentPage }} 页</span>
+            当前页 <span class="num">{{ currentPageElements.length }}</span> 个元素 /
+            总共 <span class="num">{{ jsonElements.length }}</span> 个元素
+          </div>
+        </div>
+
+        <!-- 操作工具栏 -->
+        <div class="toolbar-section">
+          <!-- 按类型高亮 -->
+          <div class="toolbar-item">
+            <span class="toolbar-label">按类型高亮：</span>
+            <a-checkbox-group v-model:value="selectedHighlightTypes" @change="handleHighlightTypeChange">
+              <a-checkbox value="title">
+                <span class="type-badge type-title">Title</span>
+              </a-checkbox>
+              <a-checkbox value="fstline">
+                <span class="type-badge type-fstline">Fstline</span>
+              </a-checkbox>
+              <a-checkbox value="para">
+                <span class="type-badge type-para">Para</span>
+              </a-checkbox>
+              <a-checkbox value="table">
+                <span class="type-badge type-table">Table</span>
+              </a-checkbox>
+            </a-checkbox-group>
+            <a-button size="small" @click="clearHighlight" style="margin-left: 8px">清除高亮</a-button>
+          </div>
+
+          <a-divider style="margin: 8px 0" />
+
+          <!-- 批量编辑 -->
+          <div class="toolbar-item">
+            <span class="toolbar-label">批量修改类型：</span>
+            <a-select
+              v-model:value="batchEditType"
+              size="small"
+              style="width: 120px; margin-right: 8px"
+              placeholder="选择类型"
+            >
+              <a-select-option value="title">Title</a-select-option>
+              <a-select-option value="fstline">Fstline</a-select-option>
+              <a-select-option value="para">Para</a-select-option>
+              <a-select-option value="table">Table</a-select-option>
+            </a-select>
+            <a-button
+              size="small"
+              type="primary"
+              :disabled="!batchEditType"
+              @click="applyBatchEdit"
+            >
+              应用到当前页 (Page {{ pdfData.currentPage }})
+            </a-button>
+            <span style="margin-left: 8px; color: #6b7280; font-size: 12px">
+              当前页共 {{ currentPageElementsCount }} 个元素
+            </span>
           </div>
         </div>
 
         <!-- 元素列表 -->
         <div class="review-items json-elements-list">
-          <div v-if="jsonElements.length === 0" style="padding: 20px; text-align: center; color: #999">
-            暂无数据
+          <div v-if="currentPageElements.length === 0" style="padding: 20px; text-align: center; color: #999">
+            当前页暂无元素
           </div>
-          <div v-else class="elements-container">
-            <div
-              v-for="(element, index) in jsonElements"
-              :key="index"
-              :class="['element-item', { active: selectedElement === element }]"
-              @click="handleElementClick(element)"
-            >
+          <!-- 虚拟滚动列表 -->
+          <a-list
+            v-else
+            :data-source="currentPageElements"
+            :virtual="true"
+            :height="800"
+            class="elements-container"
+          >
+            <template #renderItem="{ item: element, index }">
+              <div
+                :class="['element-item', { active: selectedElement === element, editing: editingElement === element }]"
+                @click="handleElementClick(element)"
+              >
               <div class="element-header">
                 <span class="element-index">#{{ index + 1 }}</span>
                 <span class="element-page">Page {{ element.page + 1 }}</span>
+
+                <!-- class标签（可快速编辑） -->
+                <a-select
+                  v-model:value="element.class"
+                  size="small"
+                  style="width: 90px"
+                  @click.stop
+                  @change="handleSingleElementClassChange(element)"
+                >
+                  <a-select-option value="title">
+                    <span class="type-badge type-title">Title</span>
+                  </a-select-option>
+                  <a-select-option value="fstline">
+                    <span class="type-badge type-fstline">Fstline</span>
+                  </a-select-option>
+                  <a-select-option value="para">
+                    <span class="type-badge type-para">Para</span>
+                  </a-select-option>
+                  <a-select-option value="table">
+                    <span class="type-badge type-table">Table</span>
+                  </a-select-option>
+                </a-select>
+
+                <!-- TODO 按钮 -->
+                <a-button
+                  size="small"
+                  :type="element.todo ? 'primary' : 'default'"
+                  @click.stop="handleToggleTodo(element)"
+                  style="margin-left: 8px"
+                >
+                  {{ element.todo ? '✓ TODO' : 'TODO' }}
+                </a-button>
               </div>
               <div class="element-text">{{ element.text }}</div>
               <div class="element-box">
                 {{ Math.round(element.box[0]) }}, {{ Math.round(element.box[1]) }} -
                 {{ Math.round(element.box[2]) }}, {{ Math.round(element.box[3]) }}
               </div>
-            </div>
-          </div>
+              </div>
+            </template>
+          </a-list>
         </div>
       </div>
     </div>
@@ -211,6 +306,15 @@ const getMarkList = async () => {
 }
 const statsData = ref<Record<string, any>>({})
 
+// 当前文件来源信息
+const currentFileSource = ref<{
+  isFromRuns: boolean
+  runName?: string
+  fileName?: string
+}>({
+  isFromRuns: false
+})
+
 const pdfData = reactive({
   pdfUrl: '',
   currentPage: 1,
@@ -220,6 +324,45 @@ const pdfData = reactive({
 // JSON数据存储
 const jsonElements = ref<any[]>([])
 const selectedElement = ref<any>(null)
+
+// 当前页的元素（筛选后）
+const currentPageElements = computed(() => {
+  if (!pdfData.currentPage || jsonElements.value.length === 0) return []
+  // pdfData.currentPage 是 1-based，jsonElements 中的 page 是 0-based
+  return jsonElements.value.filter(el => el.page === pdfData.currentPage - 1)
+})
+
+// 监听 PDF 翻页，右侧列表滚动到顶部，并应用类型高亮
+watch(() => pdfData.currentPage, (newPage, oldPage) => {
+  if (newPage !== oldPage) {
+    console.log(`📄 PDF 翻页: ${oldPage} → ${newPage}，右侧列表重置到顶部`)
+
+    // 等待 DOM 更新后
+    nextTick(() => {
+      // 将右侧列表滚动到顶部
+      const panelElement = document.querySelector('.json-elements-list')
+      if (panelElement) {
+        panelElement.scrollTop = 0
+      }
+
+      // 如果有选中的类型，自动应用高亮到新页面
+      if (selectedHighlightTypes.value.length > 0) {
+        handleHighlightTypeChange()
+      }
+    })
+  }
+})
+
+// 编辑状态
+const editingElement = ref<any>(null)
+const originalClass = ref<string>('')
+const batchEditType = ref<string>('')
+
+// 类型筛选（改为数组）
+const selectedHighlightTypes = ref<string[]>([])
+
+// 当前页元素数量（使用 currentPageElements computed）
+const currentPageElementsCount = computed(() => currentPageElements.value.length)
 
 const resultData = reactive<Record<string, any>>({ ...DEFAULT_REVIEW_RESULT })
 const activeItem = ref<Record<string, any>>({})
@@ -589,6 +732,9 @@ const toggleDevMode = () => {
 
 // 处理元素点击事件
 const handleElementClick = async (element: any) => {
+  console.time('⏱️ handleElementClick 总耗时')
+
+  console.time('1️⃣ 数据准备')
   selectedElement.value = element
 
   // 构造高亮数据
@@ -611,11 +757,10 @@ const handleElementClick = async (element: any) => {
     jump: true,
     needsConversion: true  // 需要坐标转换 (屏幕坐标 → PDF坐标)
   }
+  console.timeEnd('1️⃣ 数据准备')
 
-  // 更新高亮区域
-  pdfData.highlightRects = [highlightRect]
-
-  // 跳转到对应页面并高亮
+  // 跳转到对应页面并高亮（直接调用，不触发 watch）
+  console.time('2️⃣ scrollToAnnotation 调用')
   if (pdfReaderRef.value?.scrollToAnnotation) {
     await pdfReaderRef.value.scrollToAnnotation(highlightRect)
   } else {
@@ -624,6 +769,12 @@ const handleElementClick = async (element: any) => {
     await nextTick()
     pdfData.currentPage = targetPage
   }
+  console.timeEnd('2️⃣ scrollToAnnotation 调用')
+
+  // 更新高亮区域（在动画完成后更新，避免 watch 并发竞争）
+  console.time('3️⃣ 更新 highlightRects (延迟更新)')
+  pdfData.highlightRects = [highlightRect]
+  console.timeEnd('3️⃣ 更新 highlightRects (延迟更新)')
 
   console.log('选中元素:', {
     text: element.text,
@@ -631,6 +782,224 @@ const handleElementClick = async (element: any) => {
     box: box,
     quadPoints: quadPoints
   })
+
+  console.timeEnd('⏱️ handleElementClick 总耗时')
+}
+
+// 处理高亮类型变化
+const handleHighlightTypeChange = () => {
+  if (selectedHighlightTypes.value.length === 0) {
+    // 没有选中任何类型，清除高亮
+    pdfData.highlightRects = []
+    return
+  }
+
+  // 只筛选当前页符合选中类型的元素（性能优化）
+  const filteredElements = currentPageElements.value.filter(element =>
+    selectedHighlightTypes.value.includes(element.class)
+  )
+
+  // 生成高亮区域
+  const highlightRects = filteredElements.map(element => {
+    const box = element.box
+    const quadPoints = [
+      box[0], box[1],  // 左上
+      box[2], box[1],  // 右上
+      box[2], box[3],  // 右下
+      box[0], box[3]   // 左下
+    ]
+
+    return {
+      pageNum: element.page + 1,
+      rect: box,
+      quadPoints: quadPoints,
+      needsConversion: true,
+      // 根据类型设置不同颜色
+      color: element.class === 'title' ? [1, 0, 0] :
+             element.class === 'fstline' ? [0, 1, 0] :
+             element.class === 'para' ? [0, 0, 1] :
+             [1, 0.65, 0] // table 橙色
+    }
+  })
+
+  pdfData.highlightRects = highlightRects
+  console.log('按类型高亮:', {
+    selectedTypes: selectedHighlightTypes.value,
+    highlightCount: highlightRects.length
+  })
+}
+
+// 清除高亮
+const clearHighlight = () => {
+  selectedHighlightTypes.value = []
+  pdfData.highlightRects = []
+}
+
+// 单个元素快速修改class
+const handleSingleElementClassChange = async (element: any) => {
+  try {
+    let response
+
+    if (currentFileSource.value.isFromRuns) {
+      // 更新 runs 目录下的文件
+      response = await fetch('http://localhost:3000/api/runs/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          runName: currentFileSource.value.runName,
+          fileName: currentFileSource.value.fileName,
+          lineId: element.line_id,
+          updates: {
+            class: element.class
+          }
+        })
+      })
+    } else {
+      // 更新本地 JSON 目录的文件
+      const pdfFileName = statsData.value.fileName || '少年宫.pdf'
+      const jsonFileName = pdfFileName.replace(/\.pdf$/i, '.json')
+
+      response = await fetch('http://localhost:3000/api/json/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: jsonFileName,
+          lineId: element.line_id,
+          updates: {
+            class: element.class
+          }
+        })
+      })
+    }
+
+    const result = await response.json()
+
+    if (response.ok && result.success) {
+      message.success(`已修改为 ${element.class}`)
+      console.log('修改成功:', result)
+    } else {
+      message.error(result.error || '修改失败')
+    }
+  } catch (error) {
+    console.error('修改失败:', error)
+    message.error('修改失败，请重试')
+  }
+}
+
+// 切换元素的 TODO 状态
+const handleToggleTodo = async (element: any) => {
+  try {
+    const newTodoStatus = !element.todo
+    let response
+
+    if (currentFileSource.value.isFromRuns) {
+      // 更新 runs 目录下的文件
+      response = await fetch('http://localhost:3000/api/runs/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          runName: currentFileSource.value.runName,
+          fileName: currentFileSource.value.fileName,
+          lineId: element.line_id,
+          updates: {
+            todo: newTodoStatus
+          }
+        })
+      })
+    } else {
+      // 更新本地 JSON 目录的文件
+      const pdfFileName = statsData.value.fileName || '少年宫.pdf'
+      const jsonFileName = pdfFileName.replace(/\.pdf$/i, '.json')
+
+      response = await fetch('http://localhost:3000/api/json/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: jsonFileName,
+          lineId: element.line_id,
+          updates: {
+            todo: newTodoStatus
+          }
+        })
+      })
+    }
+
+    const result = await response.json()
+
+    if (response.ok && result.success) {
+      element.todo = newTodoStatus
+      message.success(newTodoStatus ? '已标记为 TODO' : '已取消 TODO')
+      console.log('TODO 状态更新成功:', result)
+    } else {
+      message.error(result.error || '操作失败')
+    }
+  } catch (error) {
+    console.error('TODO 操作失败:', error)
+    message.error('操作失败，请重试')
+  }
+}
+
+// 批量编辑当前页所有元素
+const applyBatchEdit = async () => {
+  if (!batchEditType.value) {
+    message.warning('请先选择要修改的类型')
+    return
+  }
+
+  // 使用 computed 的 currentPageElements
+  if (currentPageElements.value.length === 0) {
+    message.warning('当前页没有元素')
+    return
+  }
+
+  try {
+    const pdfFileName = statsData.value.fileName || '少年宫.pdf'
+    const jsonFileName = pdfFileName.replace(/\.pdf$/i, '.json')
+
+    // 批量更新
+    const updatePromises = currentPageElements.value.map(element => {
+      // 更新内存中的数据
+      element.class = batchEditType.value
+
+      // 调用 API 更新
+      return fetch('http://localhost:3000/api/json/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: jsonFileName,
+          lineId: element.line_id,
+          updates: {
+            class: batchEditType.value
+          }
+        })
+      })
+    })
+
+    await Promise.all(updatePromises)
+
+    message.success(`已将当前页 ${currentPageElements.value.length} 个元素修改为 ${batchEditType.value}`)
+    console.log('批量修改成功:', {
+      page: pdfData.currentPage,
+      count: currentPageElements.value.length,
+      type: batchEditType.value
+    })
+
+    // 清空选择
+    batchEditType.value = ''
+  } catch (error) {
+    console.error('批量修改失败:', error)
+    message.error('批量修改失败，请重试')
+  }
 }
 
 const pdfAnnotationsData = ref<any>(null)
@@ -879,6 +1248,12 @@ const handleAnnotationsLoaded = (annotations: any[]) => {
   }
 }
 
+// 处理 PDF 页码变化（从 PdfViewer 组件触发）
+const handlePdfPageChange = (newPage: number) => {
+  console.log('📄 PDF 翻页事件触发:', newPage)
+  pdfData.currentPage = newPage
+}
+
 const loadJsonFiles = async (taskId: string) => {
   try {
     const baseUrl = isDev
@@ -938,7 +1313,24 @@ const getFile = async () => {
     const jsonResp = await fetch(`http://localhost:3000/api/json/${encodeURIComponent(pdfFileName)}`)
     if (jsonResp.ok) {
       const jsonData = await jsonResp.json()
-      jsonElements.value = jsonData.data || []
+      // 转换数据格式：将 bbox 字符串转为 box 数组，page 字符串转为数字
+      const elements = (jsonData.data || []).map((item: any) => {
+        const bboxStr = item.bbox || item.box
+        let box = []
+        if (typeof bboxStr === 'string') {
+          // bbox 格式: "x1,y1,x2,y2"
+          box = bboxStr.split(',').map(Number)
+        } else if (Array.isArray(bboxStr)) {
+          box = bboxStr
+        }
+
+        return {
+          ...item,
+          box: box,
+          page: typeof item.page === 'string' ? parseInt(item.page) - 1 : item.page  // 转为数字，并转为0索引
+        }
+      })
+      jsonElements.value = elements
       console.log('加载JSON数据成功:', jsonData.total, '个元素')
     } else {
       console.error('JSON数据加载失败:', jsonResp.status)
@@ -998,11 +1390,84 @@ const showHistoryFiles = () => {
   state.historyFilesVisible = true
 }
 
-const handleFilePreview = (file: any) => {
-  console.log('📂 切换任务:', file.fileName, file.taskId)
-  taskId.value = file.taskId
-  refreshData()
-  state.historyFilesVisible = false
+const handleFilePreview = async (file: any, autoLoad = false) => {
+  console.log('📂 切换文件:', file, '自动加载:', autoLoad)
+
+  // 判断是本地任务还是 runs 文件
+  if (file._isFromRuns) {
+    // 从 runs 目录加载
+    console.log('📁 加载 Runs 文件:', file._runName, file.name)
+
+    try {
+      // 读取 JSON 文件（使用查询参数）
+      const response = await fetch(
+        `http://localhost:3000/api/runs/${file._runName}/json?file=enriched/${file.name}`
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '加载失败')
+      }
+
+      console.log('✅ Runs 文件加载成功:', data)
+
+      // 更新 jsonElements（假设返回的数据格式是数组）
+      if (Array.isArray(data.data)) {
+        jsonElements.value = data.data.map((item: any) => {
+          const bboxStr = item.bbox || item.box
+          let box = []
+          if (typeof bboxStr === 'string') {
+            box = bboxStr.split(',').map(Number)
+          } else if (Array.isArray(bboxStr)) {
+            box = bboxStr
+          }
+
+          return {
+            ...item,
+            box: box,
+            // 数据源已经是 0-based，直接使用
+            page: typeof item.page === 'string' ? parseInt(item.page) : item.page
+          }
+        })
+        console.log(`📊 加载了 ${jsonElements.value.length} 个元素`)
+
+        // 更新文件名显示
+        statsData.value.fileName = file.fileName
+
+        // 保存文件来源信息
+        currentFileSource.value = {
+          isFromRuns: true,
+          runName: file._runName,
+          fileName: file.name
+        }
+
+        // 根据文件名加载对应的 PDF（从之前的 PDF 目录）
+        const pdfFileName = file.fileName + '.pdf'
+        pdfData.pdfUrl = `http://localhost:3000/pdf/${encodeURIComponent(pdfFileName)}`
+        pdfData.currentPage = 1
+        pdfData.highlightRects = []
+
+        console.log(`📄 切换 PDF: ${pdfFileName}`)
+      }
+
+    } catch (error) {
+      console.error('❌ Runs 文件加载失败:', error)
+      message.error('文件加载失败')
+    }
+
+  } else {
+    // 本地任务
+    currentFileSource.value = {
+      isFromRuns: false
+    }
+    taskId.value = file.taskId
+    refreshData()
+  }
+
+  // 只有在非自动加载时才关闭抽屉
+  if (!autoLoad) {
+    state.historyFilesVisible = false
+  }
 }
 
 const toggleItemExpand = (reviewItemCode: string) => {
@@ -1494,9 +1959,10 @@ onBeforeUnmount(() => {
 
 .element-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .element-index {
@@ -1513,6 +1979,33 @@ onBeforeUnmount(() => {
   border-radius: 4px;
 }
 
+.element-class {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+
+  &.class-title {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  &.class-fstline {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  &.class-para {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  &.class-table {
+    background: #fef3c7;
+    color: #d97706;
+  }
+}
+
 .element-text {
   color: #111827;
   font-size: 14px;
@@ -1525,5 +2018,54 @@ onBeforeUnmount(() => {
   font-size: 11px;
   color: #9ca3af;
   font-family: monospace;
+}
+
+/* 工具栏样式 */
+.toolbar-section {
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+
+  .toolbar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    .toolbar-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      white-space: nowrap;
+    }
+  }
+
+  .type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+
+    &.type-title {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    &.type-fstline {
+      background: #d1fae5;
+      color: #059669;
+    }
+
+    &.type-para {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+
+    &.type-table {
+      background: #fef3c7;
+      color: #d97706;
+    }
+  }
 }
 </style>

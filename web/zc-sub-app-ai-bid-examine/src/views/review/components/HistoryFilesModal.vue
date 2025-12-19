@@ -1,7 +1,7 @@
 <template>
   <BaseDrawer
     v-model="visible"
-    :width="320"
+    :width="400"
     :loading="loading"
     title="历史文件"
     getContainer=".compliance-review-container"
@@ -10,12 +10,29 @@
   >
 
     <div class="history-files-content">
+      <!-- Run 选择器 -->
+      <div class="run-selector">
+        <a-select
+          v-model:value="selectedRun"
+          placeholder="选择运行批次"
+          style="width: 100%; margin-bottom: 16px;"
+          @change="handleRunChange"
+        >
+          <a-select-option value="local">
+            本地任务列表
+          </a-select-option>
+          <a-select-option v-for="run in runsList" :key="run.name" :value="run.name">
+            {{ run.date || run.name }}
+          </a-select-option>
+        </a-select>
+      </div>
+
       <div class="files-list">
         <div
           v-for="file in files"
-          :key="file.taskId"
+          :key="file.taskId || file.name"
           class="file-item"
-          :class="{'active': file.taskId === selectedFile.taskId}"
+          :class="{'active': file.taskId === selectedFile.taskId || file.name === selectedFile.name}"
           @click="handlePreview(file)"
         >
           <div class="file-header">
@@ -54,24 +71,48 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  preview: [file: any] 
+  preview: [file: any, autoLoad?: boolean]
 }>()
 
 
 const visible = ref(false)
 const loading = ref(false)
+const selectedRun = ref('local')
 
 const files = ref<any[]>([])
 const selectedFile = ref<any>({})
+const runsList = ref<any[]>([])
 const handlePreview = (file: any) => {
-  if(file.taskId === selectedFile.value.taskId) return
+  const isSame = selectedRun.value === 'local'
+    ? file.taskId === selectedFile.value.taskId
+    : file.name === selectedFile.value.name
+  if(isSame) return
   selectedFile.value = file
   emit('preview', file)
+}
+
+// 加载 runs 列表
+const loadRunsList = async () => {
+  try {
+    const response = await fetch('http://localhost:3000/api/runs/list')
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || '加载 runs 列表失败')
+    }
+
+    runsList.value = data.folders || []
+    console.log('📂 加载了 runs 列表:', runsList.value)
+  } catch (error) {
+    console.error('Failed to load runs list:', error)
+    runsList.value = []
+  }
 }
 
 watch(() => props.modelValue, (newVal) => {
   visible.value = newVal
   if (newVal) {
+    loadRunsList()
     loadanys()
   }
 })
@@ -86,7 +127,8 @@ const getExamineResult: any = (item: any) => {
   } : getRiskStyle(item.reviewResult) 
 }
 
-const loadanys = async () => {
+// 加载本地任务列表
+const loadLocalTasks = async () => {
     loading.value = true
     try {
       const data = await getLocalTaskList()
@@ -100,6 +142,69 @@ const loadanys = async () => {
     }
 }
 
+// 加载 runs 目录的文件列表
+const loadRunsFiles = async (runName: string) => {
+    loading.value = true
+    try {
+      // 读取 enriched 子目录下的文件
+      const response = await fetch(`http://localhost:3000/api/runs/${runName}/files?subPath=enriched`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '加载失败')
+      }
+
+      console.log('📁 Enriched 目录文件列表:', data)
+
+      // 转换为统一格式
+      files.value = data.files
+        .filter((file: any) => file.ext === '.json')
+        .map((file: any) => ({
+          name: file.name,
+          fileName: file.name.replace('.json', ''),
+          createTime: new Date(file.modified).toLocaleString('zh-CN'),
+          size: file.size,
+          taskId: null,
+          reviewResult: null,
+          _runName: runName,
+          _isFromRuns: true
+        }))
+        // 按修改时间降序排序（最新的在前）
+        .sort((a: any, b: any) => {
+          return new Date(b.createTime).getTime() - new Date(a.createTime).getTime()
+        })
+
+      // 默认选中第一个（最新的）
+      if (files.value.length > 0) {
+        selectedFile.value = files.value[0]
+        // 自动触发预览，传递 autoLoad=true 表示自动加载
+        emit('preview', files.value[0], true)
+      } else {
+        selectedFile.value = {}
+      }
+
+      console.log(`✅ 加载了 ${files.value.length} 个 JSON 文件，默认选中: ${selectedFile.value.fileName}`)
+    } catch (error) {
+      console.error('Failed to load runs files:', error)
+      files.value = []
+    } finally {
+      loading.value = false
+    }
+}
+
+const loadanys = async () => {
+    if (selectedRun.value === 'local') {
+      await loadLocalTasks()
+    } else {
+      await loadRunsFiles(selectedRun.value)
+    }
+}
+
+// 处理 run 切换
+const handleRunChange = async () => {
+  await loadanys()
+}
+
 const handleCancel = () => {
   visible.value = false
 }
@@ -107,10 +212,21 @@ const handleCancel = () => {
 
 <style lang="scss" scoped>
 .history-files-content {
-  padding: 24px;
-  .files-list { 
+  padding: 16px 16px 16px 60px; /* 左侧增加内边距，避免被 AI 图标遮挡 */
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+
+  .run-selector {
+    flex-shrink: 0;
+    margin-bottom: 16px;
+  }
+
+  .files-list {
+    flex: 1;
     overflow-y: auto;
-    
+    min-height: 0;
+
     .file-item {
       cursor: pointer;
       padding: 16px;

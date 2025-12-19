@@ -12,7 +12,7 @@
             v-model:value="pageNum"
             :min="1"
             :max="numPages"
-            @change="renderPage"
+            @change="handlePageChange"
             style="width: 80px"
           />
           / {{ numPages }}
@@ -107,11 +107,15 @@ const props = defineProps({
   page: {
     type: Number,
     default: 1
+  },
+  highlightRects: {
+    type: Array,
+    default: () => []
   }
 })
 
 // 组件 Emits
-const emit = defineEmits(['annotationsLoaded'])
+const emit = defineEmits(['annotationsLoaded', 'pageChange'])
 
 // 存储当前高亮的批注位置
 const highlightAnnotations = ref<any[]>([])
@@ -335,6 +339,9 @@ const renderPage = async () => {
     // 渲染完成后清空引用
     currentRenderTask = null
 
+    // 渲染持久化高亮
+    await renderPersistentHighlights()
+
     // 读取批注信息（用于调试）
     if (showAnnotationsInPdf.value) {
       await logAnnotations(page)
@@ -375,11 +382,20 @@ const logAnnotations = async (page) => {
   }
 }
 
+// 处理页码变化（输入框手动输入）
+const handlePageChange = () => {
+  renderPage()
+  // 触发页码变化事件
+  emit('pageChange', pageNum.value)
+}
+
 // 页面导航
 const previousPage = () => {
   if (pageNum.value > 1) {
     pageNum.value--
     renderPage()
+    // 触发页码变化事件
+    emit('pageChange', pageNum.value)
   }
 }
 
@@ -387,6 +403,8 @@ const nextPage = () => {
   if (pageNum.value < numPages.value) {
     pageNum.value++
     renderPage()
+    // 触发页码变化事件
+    emit('pageChange', pageNum.value)
   }
 }
 
@@ -508,6 +526,8 @@ const handleAnnotationsToggle = () => {
 
 // 跳转到指定的批注位置（暴露给父组件）
 const scrollToAnnotation = async (annotationData: any) => {
+  console.time('🎯 scrollToAnnotation 总耗时')
+
   if (!annotationData || !pdfDoc.value) return
 
   let { pageNum: targetPageNum, rect, quadPoints, needsConversion } = annotationData
@@ -528,7 +548,11 @@ const scrollToAnnotation = async (annotationData: any) => {
   // 如果标记了需要坐标转换（屏幕坐标 → PDF坐标）
   if (needsConversion && rect && rect.length === 4) {
     try {
+      console.time('  ⏱️ getPage (第1次)')
       const page = await pdfDoc.value.getPage(targetPageNum)
+      console.timeEnd('  ⏱️ getPage (第1次)')
+
+      console.time('  ⏱️ 坐标转换计算')
       const viewport = page.getViewport({ scale: 1.0 })
       const pageHeight = viewport.height
 
@@ -579,6 +603,7 @@ const scrollToAnnotation = async (annotationData: any) => {
         annotationData.quadPoints = convertedQuadPoints
         console.log('🔄 转换了', quadPoints.length / 8, '个矩形的坐标')
       }
+      console.timeEnd('  ⏱️ 坐标转换计算')
     } catch (error) {
       console.error('❌ 坐标转换失败:', error)
     }
@@ -625,15 +650,20 @@ const scrollToAnnotation = async (annotationData: any) => {
 
   // 分页模式：切换到目标页面
   if (targetPageNum !== pageNum.value) {
+    console.time('  ⏱️ 切换页面 + renderPage')
     pageNum.value = targetPageNum
     await nextTick()
     await renderPage()
+    console.timeEnd('  ⏱️ 切换页面 + renderPage')
   }
 
   // 滚动到批注位置（分页模式）
   if (rect && rect.length === 4) {
+    console.time('  ⏱️ 滚动定位')
     await nextTick()
+    console.time('    ⏱️ getPage (第2次)')
     const page = await pdfDoc.value.getPage(targetPageNum)
+    console.timeEnd('    ⏱️ getPage (第2次)')
     const viewport = page.getViewport({ scale: scale.value })
 
     // 将 PDF 坐标转换为 Canvas 坐标
@@ -648,10 +678,15 @@ const scrollToAnnotation = async (annotationData: any) => {
     }
 
     console.log('分页模式：滚动到批注位置:', { targetPageNum, rect, canvasX, canvasY })
+    console.timeEnd('  ⏱️ 滚动定位')
   }
 
   // 绘制淡入淡出高亮效果
+  console.time('  ⏱️ drawHighlightAnimation')
   await drawHighlightAnimation(targetPageNum, annotationData)
+  console.timeEnd('  ⏱️ drawHighlightAnimation')
+
+  console.timeEnd('🎯 scrollToAnnotation 总耗时')
 }
 
 /**
@@ -662,6 +697,8 @@ const scrollToAnnotation = async (annotationData: any) => {
  * @param annotationData - 批注数据，包含 rect 和 quadPoints
  */
 const drawHighlightAnimation = async (pageNum: number, annotationData: any) => {
+  console.time('    🎨 drawHighlightAnimation 内部')
+
   // 优先使用 quadPoints（精确坐标），没有则使用 rect
   const quadPoints = annotationData?.quadPoints || annotationData
   const rect = annotationData?.rect || annotationData
@@ -694,7 +731,9 @@ const drawHighlightAnimation = async (pageNum: number, annotationData: any) => {
   if (!ctx) return
 
   // 获取页面viewport计算坐标
+  console.time('      ⏱️ getPage (第3次)')
   const page = await pdfDoc.value.getPage(pageNum)
+  console.timeEnd('      ⏱️ getPage (第3次)')
   const viewport = page.getViewport({ scale: scale.value })
 
   // 同步canvas尺寸（与PDF canvas一致）
@@ -855,6 +894,7 @@ const drawHighlightAnimation = async (pageNum: number, annotationData: any) => {
 
   // 启动动画
   currentAnimationId = requestAnimationFrame(animate)
+  console.timeEnd('    🎨 drawHighlightAnimation 内部')
 }
 
 // 暴露方法给父组件
@@ -883,6 +923,181 @@ watch(() => props.page, (newPage) => {
     renderPage()
   }
 })
+
+// 监听 highlightRects 变化，重新渲染高亮
+watch(() => props.highlightRects, () => {
+  console.time('⚠️ watch highlightRects 触发 → renderPersistentHighlights')
+  renderPersistentHighlights()
+  console.timeEnd('⚠️ watch highlightRects 触发 → renderPersistentHighlights')
+}, { deep: true })
+
+// 渲染持久化高亮（常驻模式）
+const renderPersistentHighlights = async () => {
+  console.time('  🎨 renderPersistentHighlights 内部')
+
+  if (!pdfDoc.value || !props.highlightRects || props.highlightRects.length === 0) {
+    // 清除所有高亮
+    clearAllHighlights()
+    console.timeEnd('  🎨 renderPersistentHighlights 内部')
+    return
+  }
+
+  console.log('🎨 渲染持久化高亮:', props.highlightRects.length, '个区域')
+
+  // 按页码分组
+  const highlightsByPage = new Map<number, any[]>()
+  props.highlightRects.forEach((rect: any) => {
+    const pageNum = rect.pageNum
+    if (!highlightsByPage.has(pageNum)) {
+      highlightsByPage.set(pageNum, [])
+    }
+    highlightsByPage.get(pageNum)!.push(rect)
+  })
+
+  // 在当前页面渲染高亮
+  const currentPageHighlights = highlightsByPage.get(pageNum.value) || []
+  if (currentPageHighlights.length === 0) {
+    clearCurrentPageHighlight()
+    console.timeEnd('  🎨 renderPersistentHighlights 内部')
+    return
+  }
+
+  await drawPersistentHighlights(pageNum.value, currentPageHighlights)
+  console.timeEnd('  🎨 renderPersistentHighlights 内部')
+}
+
+// 绘制持久化高亮
+const drawPersistentHighlights = async (pageNum: number, highlights: any[]) => {
+  if (!pdfDoc.value) return
+
+  // 获取目标canvas（高亮层）
+  let canvas: HTMLCanvasElement | null = null
+
+  if (isAllPagesMode.value) {
+    canvas = allPagesHighlightRefs.value[pageNum - 1]
+  } else {
+    canvas = highlightCanvas.value
+  }
+
+  if (!canvas) {
+    console.warn('未找到高亮层canvas')
+    return
+  }
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  // 获取页面viewport
+  const page = await pdfDoc.value.getPage(pageNum)
+  const viewport = page.getViewport({ scale: scale.value })
+
+  // 同步canvas尺寸
+  canvas.width = viewport.width
+  canvas.height = viewport.height
+
+  // 清除之前的内容
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  // 绘制所有高亮
+  highlights.forEach((highlight: any) => {
+    let quadPoints = highlight.quadPoints
+    const color = highlight.color || [1, 1, 0] // 默认黄色
+    const needsConversion = highlight.needsConversion || false
+
+    // 如果需要坐标转换（屏幕坐标 → PDF坐标）
+    if (needsConversion && quadPoints && quadPoints.length >= 8) {
+      const pageHeight = viewport.height / scale.value // 获取原始页面高度（scale=1.0）
+      const convertedQuadPoints: number[] = []
+
+      for (let i = 0; i < quadPoints.length; i += 8) {
+        const boxQuadPoints = quadPoints.slice(i, i + 8)
+        // 屏幕坐标
+        const screenX1 = boxQuadPoints[0]
+        const screenY1 = boxQuadPoints[1]
+        const screenX2 = boxQuadPoints[4]
+        const screenY2 = boxQuadPoints[5]
+
+        // 转换为 PDF 坐标（Y轴翻转）
+        const pdfY1 = pageHeight - screenY2
+        const pdfY2 = pageHeight - screenY1
+
+        // 添加转换后的 quadPoints (PDF坐标系：原点在左下)
+        convertedQuadPoints.push(
+          screenX1, pdfY2,  // 左上
+          screenX2, pdfY2,  // 右上
+          screenX2, pdfY1,  // 右下
+          screenX1, pdfY1   // 左下
+        )
+      }
+
+      quadPoints = convertedQuadPoints
+    }
+
+    if (quadPoints && Array.isArray(quadPoints) && quadPoints.length >= 8) {
+      for (let i = 0; i < quadPoints.length; i += 8) {
+        const [x1, y1, x2, y2, x3, y3, x4, y4] = quadPoints.slice(i, i + 8)
+
+        // 转换为Canvas坐标（使用 viewport.convertToViewportPoint）
+        const [cx1, cy1] = viewport.convertToViewportPoint(x1, y1)
+        const [cx2, cy2] = viewport.convertToViewportPoint(x2, y2)
+        const [cx3, cy3] = viewport.convertToViewportPoint(x3, y3)
+        const [cx4, cy4] = viewport.convertToViewportPoint(x4, y4)
+
+        // 计算矩形边界
+        const minX = Math.min(cx1, cx2, cx3, cx4)
+        const maxX = Math.max(cx1, cx2, cx3, cx4)
+        const minY = Math.min(cy1, cy2, cy3, cy4)
+        const maxY = Math.max(cy1, cy2, cy3, cy4)
+
+        const width = maxX - minX
+        const height = maxY - minY
+
+        // 绘制半透明矩形
+        ctx.fillStyle = `rgba(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255}, 0.3)`
+        ctx.fillRect(minX, minY, width, height)
+
+        // 绘制边框
+        ctx.strokeStyle = `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`
+        ctx.lineWidth = 2
+        ctx.strokeRect(minX, minY, width, height)
+      }
+    }
+  })
+}
+
+// 清除当前页面高亮
+const clearCurrentPageHighlight = () => {
+  let canvas: HTMLCanvasElement | null = null
+
+  if (isAllPagesMode.value) {
+    canvas = allPagesHighlightRefs.value[pageNum.value - 1]
+  } else {
+    canvas = highlightCanvas.value
+  }
+
+  if (canvas) {
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
+  }
+}
+
+// 清除所有高亮
+const clearAllHighlights = () => {
+  if (isAllPagesMode.value) {
+    allPagesHighlightRefs.value.forEach((canvas: HTMLCanvasElement) => {
+      if (canvas) {
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+        }
+      }
+    })
+  } else {
+    clearCurrentPageHighlight()
+  }
+}
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)

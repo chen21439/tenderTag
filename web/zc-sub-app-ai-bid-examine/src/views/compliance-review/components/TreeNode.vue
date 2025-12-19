@@ -1,14 +1,25 @@
 <template>
-  <div class="tree-node">
+  <div
+    class="tree-node"
+    @dragover.prevent="handleDragOver"
+    @dragleave="handleDragLeave"
+  >
     <div
       class="node-header"
       :class="{
         'selected': selectedId === node.line_id,
         [`depth-${Math.min(depth, 6)}`]: true,
         [`class-${node.class}`]: true,
-        'is-meta': node.is_meta
+        'is-meta': node.is_meta,
+        'edit-mode': editMode,
+        'drag-over': isDragOver
       }"
-      @click="handleSelect"
+      :draggable="editMode"
+      @click="handleHeaderClick"
+      @mousedown="handleMouseDown"
+      @mouseup="handleMouseUp"
+      @dragstart="handleDragStart"
+      @dragend="handleDragEnd"
     >
       <!-- 展开/折叠图标 -->
       <span
@@ -87,9 +98,14 @@
           :selected-id="selectedId"
           :node-map="nodeMap"
           :debug-mode="debugMode"
+          :edit-mode="editMode"
           @toggle="$emit('toggle', $event)"
           @select="$emit('select', $event)"
           @paragraphClick="$emit('paragraphClick', $event)"
+          @node-drop="$emit('node-drop', $event)"
+          @drag-over-node="$emit('drag-over-node', $event)"
+          @drag-end="$emit('drag-end', $event)"
+          @drag-start-node="$emit('drag-start-node', $event)"
         />
       </div>
     </div>
@@ -97,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   node: {
@@ -123,10 +139,19 @@ const props = defineProps({
   debugMode: {
     type: Boolean,
     default: false
+  },
+  editMode: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['toggle', 'select', 'paragraphClick'])
+const emit = defineEmits(['toggle', 'select', 'paragraphClick', 'node-drop', 'drag-over-node', 'drag-end', 'drag-start-node'])
+
+// 拖拽状态
+const isDragOver = ref(false)
+let isDraggingNow = false
+let mouseDownTime = Date.now() // 初始化为当前时间，避免计算错误
 
 // 是否有子节点
 const hasChildren = computed(() => {
@@ -143,15 +168,139 @@ const handleToggle = () => {
   emit('toggle', props.node.line_id)
 }
 
-// 处理选择
-const handleSelect = () => {
-  emit('select', props.node.line_id)
+// Header点击事件
+const handleHeaderClick = (event: MouseEvent) => {
+  console.log('🎯 header点击:', props.node.line_id, 'editMode:', props.editMode, 'type:', props.node.type)
+
+  // 在非编辑模式下，直接触发选择
+  if (!props.editMode) {
+    console.log('✅ 非编辑模式，触发选择')
+    emit('select', props.node.line_id)
+
+    // 如果是业务本体节点（type === 'label'），同时触发展开/折叠
+    if (props.node.type === 'label' && hasChildren.value) {
+      console.log('🔄 业务本体节点，触发展开/折叠')
+      emit('toggle', props.node.line_id)
+    }
+  }
+  // 编辑模式下，由mouseUp处理
+}
+
+// 鼠标按下
+const handleMouseDown = (event: MouseEvent) => {
+  console.log('🖱️ mouseDown:', props.node.line_id, 'editMode:', props.editMode)
+  mouseDownTime = Date.now()
+  isDraggingNow = false
+}
+
+// 鼠标抬起
+const handleMouseUp = (event: MouseEvent) => {
+  const clickDuration = Date.now() - mouseDownTime
+  console.log('🖱️ mouseUp:', {
+    nodeId: props.node.line_id,
+    editMode: props.editMode,
+    isDraggingNow,
+    clickDuration
+  })
+
+  // 编辑模式下才处理
+  if (props.editMode) {
+    // 如果是快速点击（不是拖拽），触发选择
+    if (!isDraggingNow && clickDuration < 200) {
+      console.log('✅ 编辑模式-快速点击，触发选择事件')
+      emit('select', props.node.line_id)
+    } else {
+      console.log('⚠️ 编辑模式-跳过选择事件', { isDraggingNow, clickDuration })
+    }
+  }
+
+  isDraggingNow = false
 }
 
 // 处理段落点击
 const handleParagraphClick = (paragraphIds: number[]) => {
   emit('paragraphClick', paragraphIds)
 }
+
+// 拖拽开始
+const handleDragStart = (event: DragEvent) => {
+  console.log('🎯 dragStart事件触发:', {
+    nodeId: props.node.line_id,
+    editMode: props.editMode,
+    draggable: event.target?.getAttribute?.('draggable')
+  })
+
+  if (!props.editMode) {
+    console.log('⚠️ 非编辑模式，阻止拖拽')
+    event.preventDefault()
+    return
+  }
+
+  isDraggingNow = true
+
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(props.node.line_id))
+  }
+
+  // 通知父组件拖拽开始，记录被拖拽的节点ID
+  emit('drag-start-node', props.node.line_id)
+
+  console.log('✅ 开始拖拽节点:', props.node.line_id)
+}
+
+// 拖拽结束
+const handleDragEnd = (event: DragEvent) => {
+  console.log('🎯 dragEnd事件触发:', {
+    nodeId: props.node.line_id,
+    editMode: props.editMode
+  })
+
+  if (!props.editMode) {
+    console.log('⚠️ 非编辑模式，跳过dragEnd处理')
+    return
+  }
+
+  // dragEnd 只在被拖拽的节点上触发
+  // 通知父组件拖拽结束，父组件会检查 lastDragOverNodeId 来决定是否发送API请求
+  console.log('✅ 拖拽结束，通知父组件')
+  emit('drag-end', props.node.line_id)
+
+  // 清理状态
+  isDragOver.value = false
+  isDraggingNow = false
+}
+
+const handleDragOver = (event: DragEvent) => {
+  if (!props.editMode) return
+
+  event.preventDefault()
+  // 阻止事件冒泡，避免父节点也被高亮
+  event.stopPropagation()
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  if (!isDragOver.value) {
+    console.log('🎯 dragOver进入节点:', props.node.line_id, props.node.text || props.node.title)
+  }
+  isDragOver.value = true
+
+  // 通知父组件记录这个节点
+  emit('drag-over-node', props.node.line_id)
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  if (!props.editMode) return
+
+  // 阻止事件冒泡，避免影响父节点
+  event.stopPropagation()
+  console.log('🎯 dragLeave离开节点:', props.node.line_id)
+  isDragOver.value = false
+}
+
+// handleDrop 已删除，现在由父组件的全局 drop 处理
 
 // 获取段落文本缩略
 const getParagraphText = (paragraphIds: number[]): string => {
@@ -276,6 +425,16 @@ const truncateText = (text: string, maxLength = 60) => {
   gap: 8px;
   border-left: 3px solid transparent;
 
+  // 编辑模式下，让文本内容不干扰拖拽事件（但保留toggle-icon的交互）
+  &.edit-mode {
+    .node-label,
+    .relation-badge,
+    .level-badge,
+    .page-badge {
+      pointer-events: none;
+    }
+  }
+
   &:hover {
     background: #f5f5f5;
   }
@@ -292,6 +451,24 @@ const truncateText = (text: string, maxLength = 60) => {
   &.is-meta.selected {
     background: #f3e5f5;
     border-left-color: #7b1fa2;
+  }
+
+  // 编辑模式样式
+  &.edit-mode {
+    cursor: move;
+
+    &:hover {
+      background: #e8f5e9;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  // 拖拽悬停样式
+  &.drag-over {
+    background: #c8e6c9;
+    outline: 2px dashed #4caf50; // 使用 outline 代替 border，不会改变元素尺寸
+    outline-offset: -2px;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
   }
 }
 
@@ -323,6 +500,8 @@ const truncateText = (text: string, maxLength = 60) => {
   font-weight: 500;
   margin-right: 6px;
   border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* 业务本体 - 蓝色 */

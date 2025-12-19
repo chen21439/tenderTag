@@ -1,0 +1,864 @@
+{
+  "metadata": {
+    "description": "招标文件要素节点定义 - 平铺结构",
+    "version": "1.0",
+    "created_at": "2025-01-19",
+    "total_elements": 52
+  },
+  "elements": [
+    {
+      "id": "E001",
+      "name": "项目名称",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "text",
+      "required": true,
+      "description": "招标项目的名称",
+      "extraction_source": "标题或正文",
+      "example": "深圳市大数据服务中心物业管理服务项目"
+    },
+    {
+      "id": "E002",
+      "name": "项目编号",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "text",
+      "required": true,
+      "description": "招标项目的唯一编号",
+      "extraction_source": "招标公告",
+      "example": "SZGXCG-2024-0001"
+    },
+    {
+      "id": "E003",
+      "name": "采购人",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "text",
+      "required": true,
+      "description": "采购单位名称",
+      "extraction_source": "招标公告",
+      "example": "深圳市大数据服务中心"
+    },
+    {
+      "id": "E004",
+      "name": "采购方式",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "enum",
+      "enum_values": ["公开招标", "竞争性磋商", "竞争性谈判", "单一来源", "询价"],
+      "required": true,
+      "description": "采购的方式类型",
+      "extraction_source": "招标公告"
+    },
+    {
+      "id": "E005",
+      "name": "采购类型",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "enum",
+      "enum_values": ["货物", "服务", "工程"],
+      "required": true,
+      "description": "采购的类型",
+      "extraction_source": "招标公告"
+    },
+    {
+      "id": "E006",
+      "name": "预算金额",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "number",
+      "unit": "元",
+      "required": false,
+      "description": "项目预算金额",
+      "extraction_source": "招标公告或采购包信息"
+    },
+    {
+      "id": "E007",
+      "name": "采购包数量",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "number",
+      "required": true,
+      "description": "项目包含的采购包数量",
+      "extraction_source": "招标公告"
+    },
+    {
+      "id": "E008",
+      "name": "标段/包名称",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "text",
+      "required": false,
+      "description": "标段或采购包的名称",
+      "extraction_source": "招标公告"
+    },
+    {
+      "id": "E009",
+      "name": "交付地点",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "text",
+      "required": false,
+      "description": "货物交付或服务提供的地点",
+      "extraction_source": "技术要求或商务要求"
+    },
+    {
+      "id": "E010",
+      "name": "项目工期或交付时间",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "项目基本信息",
+      "data_type": "text",
+      "required": false,
+      "description": "项目的工期或交付时间要求",
+      "extraction_source": "商务要求或技术要求"
+    },
+    {
+      "id": "E011",
+      "name": "投标保证金要求",
+      "level1_label": "投标人须知",
+      "level2_label": null,
+      "parent_concept": "投标人须知",
+      "data_type": "text",
+      "required": true,
+      "description": "投标保证金的金额、缴纳方式、退还规则",
+      "extraction_source": "投标人须知章节"
+    },
+    {
+      "id": "E012",
+      "name": "投标有效期",
+      "level1_label": "投标人须知",
+      "level2_label": null,
+      "parent_concept": "投标人须知",
+      "data_type": "text",
+      "required": true,
+      "description": "投标文件的有效期",
+      "extraction_source": "投标人须知章节",
+      "example": "自开标之日起90天"
+    },
+    {
+      "id": "E013",
+      "name": "文件份数要求",
+      "level1_label": "投标人须知",
+      "level2_label": null,
+      "parent_concept": "投标人须知",
+      "data_type": "text",
+      "required": true,
+      "description": "投标文件需要提交的份数",
+      "extraction_source": "投标人须知章节",
+      "example": "正本1份,副本5份"
+    },
+    {
+      "id": "E014",
+      "name": "提交截止时间",
+      "level1_label": "投标人须知",
+      "level2_label": null,
+      "parent_concept": "投标人须知",
+      "data_type": "datetime",
+      "required": true,
+      "description": "投标文件提交的截止时间",
+      "extraction_source": "投标人须知章节"
+    },
+    {
+      "id": "E015",
+      "name": "开标时间",
+      "level1_label": "投标人须知",
+      "level2_label": null,
+      "parent_concept": "投标人须知",
+      "data_type": "datetime",
+      "required": true,
+      "description": "开标的时间",
+      "extraction_source": "投标人须知章节"
+    },
+    {
+      "id": "E016",
+      "name": "开标地点",
+      "level1_label": "投标人须知",
+      "level2_label": null,
+      "parent_concept": "投标人须知",
+      "data_type": "text",
+      "required": true,
+      "description": "开标的地点",
+      "extraction_source": "投标人须知章节"
+    },
+    {
+      "id": "E017",
+      "name": "踏勘要求",
+      "level1_label": "投标人须知",
+      "level2_label": null,
+      "parent_concept": "投标人须知",
+      "data_type": "text",
+      "required": false,
+      "description": "现场踏勘的要求和安排",
+      "extraction_source": "投标人须知章节"
+    },
+    {
+      "id": "E018",
+      "name": "答疑方式与时间",
+      "level1_label": "投标人须知",
+      "level2_label": null,
+      "parent_concept": "投标人须知",
+      "data_type": "text",
+      "required": false,
+      "description": "质疑和答疑的方式及时间安排",
+      "extraction_source": "投标人须知章节"
+    },
+    {
+      "id": "E019",
+      "name": "报价要求",
+      "level1_label": "投标人须知",
+      "level2_label": null,
+      "parent_concept": "投标人须知",
+      "data_type": "text",
+      "required": true,
+      "description": "投标报价的格式和要求",
+      "extraction_source": "投标人须知章节"
+    },
+    {
+      "id": "E020",
+      "name": "资格要求名称",
+      "level1_label": "资格要求",
+      "level2_label": "资格性审查表",
+      "parent_concept": "资格性审查项",
+      "data_type": "text",
+      "required": false,
+      "description": "资格审查项的名称",
+      "extraction_source": "资格性审查表"
+    },
+    {
+      "id": "E021",
+      "name": "资格要求描述",
+      "level1_label": "资格要求",
+      "level2_label": "资格性审查表",
+      "parent_concept": "资格性审查项",
+      "data_type": "text",
+      "required": true,
+      "description": "资格审查项的具体描述",
+      "extraction_source": "资格性审查表"
+    },
+    {
+      "id": "E022",
+      "name": "资格要求证明材料",
+      "level1_label": "资格要求",
+      "level2_label": "资格性审查表",
+      "parent_concept": "资格性审查项",
+      "data_type": "text",
+      "required": false,
+      "description": "需要提交的证明材料清单",
+      "extraction_source": "资格性审查表"
+    },
+    {
+      "id": "E023",
+      "name": "符合性要求名称",
+      "level1_label": "符合性要求",
+      "level2_label": "符合性审查表",
+      "parent_concept": "符合性审查项",
+      "data_type": "text",
+      "required": false,
+      "description": "符合性审查项的名称",
+      "extraction_source": "符合性审查表"
+    },
+    {
+      "id": "E024",
+      "name": "符合性要求描述",
+      "level1_label": "符合性要求",
+      "level2_label": "符合性审查表",
+      "parent_concept": "符合性审查项",
+      "data_type": "text",
+      "required": true,
+      "description": "符合性审查项的具体描述",
+      "extraction_source": "符合性审查表"
+    },
+    {
+      "id": "E025",
+      "name": "符合性要求证明材料",
+      "level1_label": "符合性要求",
+      "level2_label": "符合性审查表",
+      "parent_concept": "符合性审查项",
+      "data_type": "text",
+      "required": false,
+      "description": "需要提交的证明材料清单",
+      "extraction_source": "符合性审查表"
+    },
+    {
+      "id": "E026",
+      "name": "商务要求说明",
+      "level1_label": "商务要求",
+      "level2_label": "商务要求说明",
+      "parent_concept": "商务要求说明",
+      "data_type": "text",
+      "required": false,
+      "description": "商务要求的总体说明,直接返回文本",
+      "extraction_source": "商务要求说明章节",
+      "note": "不用抽,直接返回文本"
+    },
+    {
+      "id": "E027",
+      "name": "商务要求表项",
+      "level1_label": "商务要求",
+      "level2_label": "商务要求表",
+      "parent_concept": "商务要求项",
+      "data_type": "table",
+      "required": false,
+      "description": "商务要求表中的各项要求,没有固定要素,按照表格解析去抽取",
+      "extraction_source": "商务要求表",
+      "note": "按照表格解析器处理,段落也可能是商务要求说明或在表格中"
+    },
+    {
+      "id": "E028",
+      "name": "技术要求说明",
+      "level1_label": "技术要求",
+      "level2_label": "技术要求说明",
+      "parent_concept": "技术要求说明",
+      "data_type": "text",
+      "required": false,
+      "description": "技术要求的段落说明",
+      "extraction_source": "技术要求说明章节",
+      "note": "不用抽,直接返回文本"
+    },
+    {
+      "id": "E029",
+      "name": "偏离表填写说明",
+      "level1_label": "技术要求",
+      "level2_label": "技术要求说明",
+      "parent_concept": "技术要求说明",
+      "data_type": "text",
+      "required": false,
+      "description": "偏离表的填写说明",
+      "extraction_source": "技术要求说明章节"
+    },
+    {
+      "id": "E030",
+      "name": "技术要求表项",
+      "level1_label": "技术要求",
+      "level2_label": "技术要求表",
+      "parent_concept": "技术要求项",
+      "data_type": "table",
+      "required": false,
+      "description": "技术要求表中的各项要求,没有固定要素,按照表格解析去抽取",
+      "extraction_source": "技术要求表",
+      "note": "按照表格解析器处理,段落也可能是技术要求说明或在表格中"
+    },
+    {
+      "id": "E031",
+      "name": "评标方法",
+      "level1_label": "评标信息",
+      "level2_label": "评标方法",
+      "parent_concept": "评标方法",
+      "data_type": "text",
+      "required": true,
+      "description": "评标方法的名称和描述",
+      "extraction_source": "评标方法章节",
+      "example": "综合评分法"
+    },
+    {
+      "id": "E032",
+      "name": "评标方法描述",
+      "level1_label": "评标信息",
+      "level2_label": "评标方法",
+      "parent_concept": "评标方法",
+      "data_type": "text",
+      "required": true,
+      "description": "评标方法的详细描述,包括中小企业规定",
+      "extraction_source": "评标方法章节",
+      "note": "强烈建议LM不要自动优化方式,只需要分办法公式"
+    },
+    {
+      "id": "E033",
+      "name": "评分项名称",
+      "level1_label": "评标信息",
+      "level2_label": "评标信息表",
+      "parent_concept": "评标信息项",
+      "data_type": "text",
+      "required": true,
+      "description": "评分项的名称",
+      "extraction_source": "评标信息表"
+    },
+    {
+      "id": "E034",
+      "name": "评分项类型",
+      "level1_label": "评标信息",
+      "level2_label": "评标信息表",
+      "parent_concept": "评标信息项",
+      "data_type": "enum",
+      "enum_values": ["价格", "技术", "商务", "其他"],
+      "required": true,
+      "description": "评分项的类型",
+      "extraction_source": "评标信息表"
+    },
+    {
+      "id": "E035",
+      "name": "分值",
+      "level1_label": "评标信息",
+      "level2_label": "评标信息表",
+      "parent_concept": "评标信息项",
+      "data_type": "number",
+      "unit": "分",
+      "required": true,
+      "description": "该评分项的分值",
+      "extraction_source": "评标信息表"
+    },
+    {
+      "id": "E036",
+      "name": "评分规则描述",
+      "level1_label": "评标信息",
+      "level2_label": "评标信息表",
+      "parent_concept": "评标信息项",
+      "data_type": "text",
+      "required": true,
+      "description": "评分项的详细规则描述",
+      "extraction_source": "评标信息表",
+      "note": "解析也是一个json"
+    },
+    {
+      "id": "E037",
+      "name": "子评分项",
+      "level1_label": "评标信息",
+      "level2_label": "评标信息表",
+      "parent_concept": "评标信息项",
+      "data_type": "array",
+      "required": false,
+      "description": "评分项下的子评分项列表",
+      "extraction_source": "评标信息表",
+      "note": "解析出也是一个json"
+    },
+    {
+      "id": "E038",
+      "name": "响应函证名称",
+      "level1_label": "投标文件组成要求及格式",
+      "level2_label": null,
+      "parent_concept": "投标文件组成要求及格式",
+      "data_type": "text",
+      "required": true,
+      "description": "响应函证的名称",
+      "extraction_source": "投标文件组成要求章节"
+    },
+    {
+      "id": "E039",
+      "name": "函证模板",
+      "level1_label": "投标文件组成要求及格式",
+      "level2_label": null,
+      "parent_concept": "投标文件组成要求及格式",
+      "data_type": "text",
+      "required": false,
+      "description": "函证的模板内容",
+      "extraction_source": "投标文件组成要求章节"
+    },
+    {
+      "id": "E040",
+      "name": "函证编制指引",
+      "level1_label": "投标文件组成要求及格式",
+      "level2_label": null,
+      "parent_concept": "投标文件组成要求及格式",
+      "data_type": "text",
+      "required": false,
+      "description": "函证的编制指引和说明",
+      "extraction_source": "投标文件组成要求章节"
+    },
+    {
+      "id": "E041",
+      "name": "中小企业规定",
+      "level1_label": "评标信息",
+      "level2_label": "评标方法",
+      "parent_concept": "评标方法",
+      "data_type": "text",
+      "required": false,
+      "description": "评标方法中关于中小企业的特殊规定",
+      "extraction_source": "评标方法章节",
+      "note": "如有中小企业的规定也要解析"
+    },
+    {
+      "id": "E042",
+      "name": "采购包预算金额",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "采购包",
+      "data_type": "number",
+      "unit": "元",
+      "required": false,
+      "description": "单个采购包的预算金额",
+      "extraction_source": "招标公告或采购包信息"
+    },
+    {
+      "id": "E043",
+      "name": "采购包服务期",
+      "level1_label": "项目基本信息",
+      "level2_label": null,
+      "parent_concept": "采购包",
+      "data_type": "text",
+      "required": false,
+      "description": "采购包的服务期限",
+      "extraction_source": "商务要求"
+    },
+    {
+      "id": "E044",
+      "name": "质保期",
+      "level1_label": "商务要求",
+      "level2_label": "商务要求表",
+      "parent_concept": "商务要求项",
+      "data_type": "text",
+      "required": false,
+      "description": "质量保证期要求",
+      "extraction_source": "商务要求表"
+    },
+    {
+      "id": "E045",
+      "name": "付款方式",
+      "level1_label": "商务要求",
+      "level2_label": "商务要求表",
+      "parent_concept": "商务要求项",
+      "data_type": "text",
+      "required": false,
+      "description": "合同款项的付款方式和时间节点",
+      "extraction_source": "商务要求表"
+    },
+    {
+      "id": "E046",
+      "name": "履约保证金",
+      "level1_label": "商务要求",
+      "level2_label": "商务要求表",
+      "parent_concept": "商务要求项",
+      "data_type": "text",
+      "required": false,
+      "description": "履约保证金的金额和缴纳要求",
+      "extraction_source": "商务要求表"
+    },
+    {
+      "id": "E047",
+      "name": "验收标准",
+      "level1_label": "技术要求",
+      "level2_label": "技术要求表",
+      "parent_concept": "技术要求项",
+      "data_type": "text",
+      "required": false,
+      "description": "项目验收的标准和方式",
+      "extraction_source": "技术要求表"
+    },
+    {
+      "id": "E048",
+      "name": "技术参数要求",
+      "level1_label": "技术要求",
+      "level2_label": "技术要求表",
+      "parent_concept": "技术要求项",
+      "data_type": "table",
+      "required": false,
+      "description": "货物或服务的技术参数要求",
+      "extraction_source": "技术要求表"
+    },
+    {
+      "id": "E049",
+      "name": "人员配备要求",
+      "level1_label": "技术要求",
+      "level2_label": "技术要求表",
+      "parent_concept": "技术要求项",
+      "data_type": "text",
+      "required": false,
+      "description": "服务项目的人员配备要求",
+      "extraction_source": "技术要求表"
+    },
+    {
+      "id": "E050",
+      "name": "资质要求",
+      "level1_label": "资格要求",
+      "level2_label": "资格性审查表",
+      "parent_concept": "资格性审查项",
+      "data_type": "text",
+      "required": true,
+      "description": "投标人需要具备的资质要求",
+      "extraction_source": "资格性审查表"
+    },
+    {
+      "id": "E051",
+      "name": "业绩要求",
+      "level1_label": "资格要求",
+      "level2_label": "资格性审查表",
+      "parent_concept": "资格性审查项",
+      "data_type": "text",
+      "required": false,
+      "description": "投标人需要具备的业绩要求",
+      "extraction_source": "资格性审查表"
+    },
+    {
+      "id": "E052",
+      "name": "财务要求",
+      "level1_label": "资格要求",
+      "level2_label": "资格性审查表",
+      "parent_concept": "资格性审查项",
+      "data_type": "text",
+      "required": false,
+      "description": "投标人的财务状况要求",
+      "extraction_source": "资格性审查表"
+    }
+  ],
+  "relationships": [
+    {
+      "element_id": "E001",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E002",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E003",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E004",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E005",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E006",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E007",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E008",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E009",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E010",
+      "parent_concept_id": "项目基本信息",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E011",
+      "parent_concept_id": "投标人须知",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E012",
+      "parent_concept_id": "投标人须知",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E013",
+      "parent_concept_id": "投标人须知",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E014",
+      "parent_concept_id": "投标人须知",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E015",
+      "parent_concept_id": "投标人须知",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E016",
+      "parent_concept_id": "投标人须知",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E017",
+      "parent_concept_id": "投标人须知",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E018",
+      "parent_concept_id": "投标人须知",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E019",
+      "parent_concept_id": "投标人须知",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E020",
+      "parent_concept_id": "资格性审查项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E021",
+      "parent_concept_id": "资格性审查项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E022",
+      "parent_concept_id": "资格性审查项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E023",
+      "parent_concept_id": "符合性审查项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E024",
+      "parent_concept_id": "符合性审查项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E025",
+      "parent_concept_id": "符合性审查项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E026",
+      "parent_concept_id": "商务要求说明",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E027",
+      "parent_concept_id": "商务要求项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E028",
+      "parent_concept_id": "技术要求说明",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E029",
+      "parent_concept_id": "技术要求说明",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E030",
+      "parent_concept_id": "技术要求项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E031",
+      "parent_concept_id": "评标方法",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E032",
+      "parent_concept_id": "评标方法",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E033",
+      "parent_concept_id": "评标信息项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E034",
+      "parent_concept_id": "评标信息项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E035",
+      "parent_concept_id": "评标信息项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E036",
+      "parent_concept_id": "评标信息项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E037",
+      "parent_concept_id": "评标信息项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E038",
+      "parent_concept_id": "投标文件组成要求及格式",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E039",
+      "parent_concept_id": "投标文件组成要求及格式",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E040",
+      "parent_concept_id": "投标文件组成要求及格式",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E041",
+      "parent_concept_id": "评标方法",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E042",
+      "parent_concept_id": "采购包",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E043",
+      "parent_concept_id": "采购包",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E044",
+      "parent_concept_id": "商务要求项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E045",
+      "parent_concept_id": "商务要求项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E046",
+      "parent_concept_id": "商务要求项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E047",
+      "parent_concept_id": "技术要求项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E048",
+      "parent_concept_id": "技术要求项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E049",
+      "parent_concept_id": "技术要求项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E050",
+      "parent_concept_id": "资格性审查项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E051",
+      "parent_concept_id": "资格性审查项",
+      "relation_type": "belongs_to"
+    },
+    {
+      "element_id": "E052",
+      "parent_concept_id": "资格性审查项",
+      "relation_type": "belongs_to"
+    }
+  ]
+}

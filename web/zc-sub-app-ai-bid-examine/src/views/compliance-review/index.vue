@@ -48,9 +48,34 @@
       <div v-if="viewMode === 'result'" class="review-panel" ref="review-panel">
         <div class="panel-header">
           <span class="shrink-0 mr-[4px]">文档结构</span>
+          <a-checkbox :checked="treeEditMode" @change="handleEditModeChange" style="margin-left: 12px">
+            编辑模式
+          </a-checkbox>
+          <!-- 上传和下载按钮 -->
+          <div style="margin-left: 12px; display: flex; gap: 4px; align-items: center">
+            <Download
+              :size="18"
+              :stroke-width="2"
+              style="cursor: pointer; color: #666; transition: color 0.2s;"
+              @click="handleDownloadOntology"
+              @mouseenter="(e) => e.target.style.color = '#1890ff'"
+              @mouseleave="(e) => e.target.style.color = '#666'"
+              title="下载"
+            />
+            <Upload
+              :size="18"
+              :stroke-width="2"
+              style="cursor: pointer; color: #666; transition: color 0.2s;"
+              @click="handleUploadOntology"
+              @mouseenter="(e) => e.target.style.color = '#1890ff'"
+              @mouseleave="(e) => e.target.style.color = '#666'"
+              title="上传"
+            />
+          </div>
           <div style="margin-left: auto; display: flex; gap: 12px; align-items: center">
             <a-radio-group v-model:value="treeGroupMode" size="middle" button-style="solid">
               <a-radio-button value="label">业务语义结构树</a-radio-button>
+              <a-radio-button value="ontology">业务本体树</a-radio-button>
               <a-radio-button value="original">采购标签图谱</a-radio-button>
               <a-radio-button v-if="!hideDemoFeatures" value="folder">文件夹</a-radio-button>
             </a-radio-group>
@@ -122,8 +147,13 @@
             />
           </div>
 
-          <!-- 正常模式：显示标签树或原始树 -->
-          <div v-show="treeGroupMode === 'label' && builtTreeData.length > 0" class="tree-list">
+          <!-- 业务语义结构树模式 -->
+          <div
+            v-show="treeGroupMode === 'label' && builtTreeData.length > 0"
+            class="tree-list"
+            @dragover.prevent="handleTreeDragOver"
+            @drop.prevent="handleTreeDrop"
+          >
             <TreeNode
               v-for="node in builtTreeData"
               :key="node.line_id"
@@ -133,13 +163,45 @@
               :selected-id="selectedNodeId"
               :node-map="nodeMap"
               :debug-mode="false"
+              :edit-mode="treeEditMode"
               @toggle="toggleTreeNode"
               @select="selectTreeNode"
               @paragraphClick="handleParagraphClick"
+              @node-drop="handleNodeDrop"
+              @drag-start-node="handleDragStartNode"
+              @drag-over-node="handleDragOverNode"
+              @drag-end="handleDragEndOnNode"
             />
           </div>
 
-          <div v-show="treeGroupMode !== 'original' && builtTreeData.length === 0" style="padding: 20px; text-align: center; color: #999">暂无数据</div>
+          <!-- 业务本体树模式 -->
+          <div
+            v-show="treeGroupMode === 'ontology' && ontologyTreeData.length > 0"
+            class="tree-list"
+            @dragover.prevent="handleTreeDragOver"
+            @drop.prevent="handleTreeDrop"
+          >
+            <TreeNode
+              v-for="node in ontologyTreeData"
+              :key="node.line_id"
+              :node="node"
+              :depth="0"
+              :expanded-nodes="treeExpandedNodes"
+              :selected-id="selectedNodeId"
+              :node-map="nodeMap"
+              :debug-mode="false"
+              :edit-mode="treeEditMode"
+              @toggle="toggleTreeNode"
+              @select="selectTreeNode"
+              @paragraphClick="handleParagraphClick"
+              @node-drop="handleNodeDrop"
+              @drag-start-node="handleDragStartNode"
+              @drag-over-node="handleDragOverNode"
+              @drag-end="handleDragEndOnNode"
+            />
+          </div>
+
+          <div v-show="treeGroupMode !== 'original' && treeGroupMode !== 'folder' && builtTreeData.length === 0 && ontologyTreeData.length === 0" style="padding: 20px; text-align: center; color: #999">暂无数据</div>
         </div>
       </div>
     </div>
@@ -166,9 +228,9 @@
 import { ref, computed, reactive, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { ApartmentOutlined } from '@ant-design/icons-vue'
+import { ApartmentOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import { Empty } from 'ant-design-vue'
-import { CornerUpLeft, Clock8, Calendar1, Download, ClockFading } from 'lucide-vue-next'
+import { CornerUpLeft, Clock8, Calendar1, Download, ClockFading, Upload } from 'lucide-vue-next'
 import { SKELETON_CONFIG, createFilterTabs, DEFAULT_REVIEW_RESULT, exportOptionsList } from '@/views/hooks/examine'
 import { useExport } from '@/views/hooks/use-export'
 import { getTaskReview, reviewTipList } from '@/api/examine'
@@ -205,15 +267,200 @@ const isDev = import.meta.env.DEV === true || import.meta.env.MODE === 'dev'
 // 隐藏演示功能（文件夹和演示模式按钮）- 所有环境都隐藏
 const hideDemoFeatures = true
 
+// 是否启用PDF高亮功能
+const enablePdfHighlight = ref(true)
+
 //是否存在风险
 const existRisk = ref(true)
 // 获取任务ID（初始为空，在 onMounted 中从 taskList.json 加载第一个）
 const taskId = ref((route.query.taskId as string) || '')
 // 视图模式切换：result | search
 const viewMode = ref<'result' | 'search'>('result')
-// 树形结构分组模式：original（采购标签图谱）| label（业务语义结构树）| entity（业务实体图谱）| folder（文件夹）
+// 树形结构分组模式：original（采购标签图谱）| label（业务语义结构树）| ontology（业务本体树）| entity（业务实体图谱）| folder（文件夹）
 // 默认显示业务语义结构树
-const treeGroupMode = ref<'original' | 'label' | 'entity' | 'folder'>('label')
+const treeGroupMode = ref<'original' | 'label' | 'ontology' | 'entity' | 'folder'>('label')
+
+// 树编辑模式：允许拖拽节点改变父节点
+const treeEditMode = ref(false)
+
+// 拖拽状态：记录被拖拽的节点和最后一个dragOver的目标节点
+let draggedNodeId: number | null = null
+let lastDragOverNodeId: number | null = null
+
+// 处理编辑模式切换
+const handleEditModeChange = (e: any) => {
+  const checked = e.target?.checked ?? e
+  console.log('📝 编辑模式change事件:', checked, 'event:', e)
+  treeEditMode.value = checked
+}
+
+// 处理下载本体数据
+const handleDownloadOntology = async () => {
+  try {
+    if (!taskId.value) {
+      message.error('无效的任务ID')
+      return
+    }
+
+    const apiUrl = `/python/api/pdf/task/${taskId.value}/result?type=ontology.json`
+    console.log('📥 下载 ontology.json:', apiUrl)
+
+    // 直接触发下载
+    const link = document.createElement('a')
+    link.href = apiUrl
+    link.download = `ontology_${taskId.value}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    message.success('开始下载')
+  } catch (error) {
+    console.error('下载失败:', error)
+    message.error('下载失败')
+  }
+}
+
+// 处理上传本体数据
+const handleUploadOntology = () => {
+  // 创建隐藏的文件选择器
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = async (e: any) => {
+    const file = e.target?.files?.[0]
+    if (!file) return
+
+    try {
+      if (!taskId.value) {
+        message.error('无效的任务ID')
+        return
+      }
+
+      console.log('📤 开始上传 ontology 文件:', file.name)
+      const loadingMsg = message.loading('上传中...', 0)
+
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const apiUrl = `/python/api/pdf/task/${taskId.value}/ontology`
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        body: formData
+      })
+
+      const result = await response.json()
+      loadingMsg()
+
+      if (result.success) {
+        message.success('上传成功')
+        console.log('✅ 上传成功:', result.data)
+        // TODO: 可能需要刷新页面数据
+      } else {
+        message.error(result.errMsg || '上传失败')
+        console.error('❌ 上传失败:', result)
+      }
+    } catch (error) {
+      console.error('上传出错:', error)
+      message.error('上传失败')
+    }
+  }
+  input.click()
+}
+
+// 处理拖拽开始
+const handleDragStartNode = (nodeId: number) => {
+  console.log('🎯 记录被拖拽节点:', nodeId)
+  draggedNodeId = nodeId
+}
+
+// 处理拖拽经过节点
+const handleDragOverNode = (nodeId: number) => {
+  lastDragOverNodeId = nodeId
+}
+
+// 处理树的全局 dragOver（记录目标节点）
+const handleTreeDragOver = (event: DragEvent) => {
+  // 这个函数什么都不做，只是为了 prevent default
+}
+
+// 处理树的全局 drop
+const handleTreeDrop = (event: DragEvent) => {
+  console.log('🎯 tree-list全局drop触发')
+
+  if (!treeEditMode.value) return
+  if (!lastDragOverNodeId) {
+    console.log('⚠️ 没有记录到目标节点')
+    return
+  }
+
+  // 获取拖拽的节点ID
+  const draggedNodeId = Number(event.dataTransfer?.getData('text/plain'))
+
+  console.log('📦 全局Drop:', {
+    draggedNodeId,
+    lastDragOverNodeId
+  })
+
+  if (draggedNodeId && lastDragOverNodeId && draggedNodeId !== lastDragOverNodeId) {
+    handleNodeDrop(draggedNodeId, lastDragOverNodeId)
+  }
+
+  // 重置
+  lastDragOverNodeId = null
+}
+
+// 处理 dragEnd（拖拽结束）
+// dragEndNodeId 是被拖拽的节点ID（应该与 draggedNodeId 相同）
+const handleDragEndOnNode = (dragEndNodeId: number) => {
+  console.log('🎯 dragEnd事件触发:', {
+    dragEndNodeId,
+    draggedNodeId,
+    lastDragOverNodeId
+  })
+
+  if (!treeEditMode.value) {
+    console.log('⚠️ 非编辑模式，跳过处理')
+    draggedNodeId = null
+    lastDragOverNodeId = null
+    return
+  }
+
+  if (!draggedNodeId) {
+    console.log('⚠️ 没有记录到被拖拽的节点')
+    return
+  }
+
+  if (lastDragOverNodeId === null || lastDragOverNodeId === undefined) {
+    console.log('⚠️ 没有记录到目标节点（用户可能拖到空白处）')
+    draggedNodeId = null
+    lastDragOverNodeId = null
+    return
+  }
+
+  // 验证：dragEndNodeId 应该与 draggedNodeId 相同
+  if (dragEndNodeId !== draggedNodeId) {
+    console.error('❌ dragEnd节点ID与dragStart节点ID不一致:', { dragEndNodeId, draggedNodeId })
+    draggedNodeId = null
+    lastDragOverNodeId = null
+    return
+  }
+
+  console.log('✅ 拖拽完成，调用移动节点API:', {
+    from: draggedNodeId,
+    to: lastDragOverNodeId
+  })
+
+  handleNodeDrop(draggedNodeId, lastDragOverNodeId)
+
+  // 清理拖拽状态
+  draggedNodeId = null
+  lastDragOverNodeId = null
+}
+
+// 监控编辑模式变化
+watch(treeEditMode, (newVal) => {
+  console.log('📝 树编辑模式watch触发:', newVal)
+})
 
 // 初始化本体树构建逻辑
 const { buildOntologyTree, expandMoreNode } = useOntologyTree()
@@ -468,8 +715,9 @@ const handleReviewItemClick = async (item: any) => {
     const firstHighlight = highlightRects[0]
 
     // 方法1: 使用 PdfViewer 的 scrollToAnnotation 方法（推荐）
-    if (pdfReaderRef.value?.scrollToAnnotation) {
-      await pdfReaderRef.value.scrollToAnnotation(firstHighlight)
+    const pdfViewer = contentViewerRef.value?.pdfViewerRef
+    if (pdfViewer?.scrollToAnnotation) {
+      await pdfViewer.scrollToAnnotation(firstHighlight)
     } else {
       // 方法2: 回退到简单的页面跳转
       pdfData.currentPage = -1
@@ -527,8 +775,9 @@ const handleShowOriginalSpan = async (item: any) => {
   pdfData.highlightRects = highlightRects
 
   // 跳转到对应位置
-  if (pdfReaderRef.value?.scrollToAnnotation) {
-    await pdfReaderRef.value.scrollToAnnotation(highlightRects[0])
+  const pdfViewer = contentViewerRef.value?.pdfViewerRef
+  if (pdfViewer?.scrollToAnnotation) {
+    await pdfViewer.scrollToAnnotation(highlightRects[0])
   } else {
     pdfData.currentPage = -1
     await nextTick()
@@ -1260,9 +1509,12 @@ const handleSwitchMode = (mode: 'pdf' | 'qa' | 'ppt') => {
 
 // 树形结构的原始数据
 const rawTreeData = ref<any[]>([])
-const agentTreeData = ref<any[]>([])  // 业务语义结构树专用数据源（agent API）
+// agentTreeData 已移除，直接使用 rawTreeData (ontology)
 const allTreeNodes = ref<any[]>([])
 const builtTreeData = ref<any[]>([])
+// 业务本体树数据（独立数据源，按 directory_path 分组）
+const ontologyTreeData = ref<any[]>([])
+const ontologyRawData = ref<any[]>([])  // 业务本体树的原始数据（独立加载）
 // 预构建的树数据（从 _labeled_tree.json 加载的）
 const prebuiltTreeData = ref<any[]>([])
 // 是否使用了预构建的树
@@ -1509,29 +1761,22 @@ const buildTree = async () => {
 
 // 构建按标签分组的树形结构
 const buildTreeByLabel = async () => {
-  // 业务语义结构树优先使用 agentTreeData（已包含 children 的树形结构）
-  const useAgentData = agentTreeData.value.length > 0
-  const dataSource = useAgentData ? agentTreeData.value : rawTreeData.value
+  // 直接使用 rawTreeData（ontology 数据）
+  const dataSource = rawTreeData.value
 
   if (!dataSource.length) {
     console.log('⚠️ 原始数据为空，无法构建树')
     return
   }
 
-  console.log('🏗️ 业务语义结构树数据源:', useAgentData ? 'agentTreeData' : 'rawTreeData')
+  console.log('🏗️ 业务语义结构树数据源: rawTreeData (ontology)')
   console.log('   - 数据节点数:', dataSource.length)
 
   let labelRoots
 
-  if (useAgentData) {
-    // agent 数据已经是完整的树形结构，直接使用
-    console.log('📦 agent 数据已包含 children 结构，直接使用')
-    labelRoots = dataSource
-  } else {
-    // ontology 数据需要通过 buildOntologyTree 构建
-    console.log('🔨 使用 buildOntologyTree 构建树形结构')
-    labelRoots = buildOntologyTree(dataSource)
-  }
+  // ontology 数据已经是完整的树形结构，直接使用
+  console.log('📦 数据已包含 children 结构，直接使用')
+  labelRoots = dataSource
 
   // 如果没有标签，回退到原始结构
   if (!labelRoots || labelRoots.length === 0) {
@@ -1550,34 +1795,196 @@ const buildTreeByLabel = async () => {
   // 生成知识图谱数据
   await buildGraphData()
 
-  // 只在子节点有标签的时候展开
-  const expandedLabels = new Set<number>()
+  // 默认全部关闭（不展开任何节点）
+  treeExpandedNodes.value = new Set<number>()
+  console.log('🌲 默认展开节点: 0 (全部关闭)')
+}
 
-  const shouldExpand = (node: any): boolean => {
-    if (!node.children || node.children.length === 0) return false
-    // 检查子节点是否有标签（label字段存在且包含"/"路径分隔符）
-    return node.children.some((child: any) => {
-      const labelValue = child.label || child.class
-      return labelValue && typeof labelValue === 'string' && labelValue.includes('/')
-    })
+// 加载业务本体树数据（独立数据源）
+const loadOntologyTreeData = async (taskId: string) => {
+  try {
+    const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology&t=${Date.now()}`
+    console.log(`🔄 加载业务本体树数据:`, apiUrl)
+    const response = await fetch(apiUrl)
+    if (response.ok) {
+      const jsonData = await response.json()
+
+      // 处理 API 格式
+      let treeData
+      if (jsonData.success && jsonData.data && jsonData.data.dataList) {
+        treeData = jsonData.data.dataList
+      } else if (jsonData.tree) {
+        treeData = jsonData.tree
+      } else {
+        treeData = jsonData
+      }
+
+      const processedData = Array.isArray(treeData) ? treeData : [treeData]
+
+      // 转换格式
+      const convertedData = convertAPITreeData(processedData)
+
+      ontologyRawData.value = convertedData
+      console.log('✅ 业务本体树原始数据已保存，节点数:', ontologyRawData.value.length)
+
+      // 构建业务本体树
+      await buildTreeByDirectoryPath()
+    }
+  } catch (e) {
+    console.error('❌ 业务本体树数据加载失败:', e)
+  }
+}
+
+// 构建按 directory_path 分组的业务本体树
+const buildTreeByDirectoryPath = async () => {
+  // 使用 ontologyRawData（业务本体树独立数据源）
+  const dataSource = ontologyRawData.value
+
+  if (!dataSource.length) {
+    console.log('⚠️ 业务本体树原始数据为空，无法构建')
+    return
   }
 
-  // 递归检查所有节点，标记需要展开的节点
-  const collectExpandableNodes = (nodes: any[]) => {
-    nodes.forEach(node => {
-      if (shouldExpand(node)) {
-        expandedLabels.add(node.line_id)
-        // 递归检查子节点
+  console.log('🏗️ 构建业务本体树，数据源: ontologyRawData')
+  console.log('   - 数据节点数:', dataSource.length)
+
+  // 按路径构建树形结构
+  const buildTreeByPath = (nodes: any[]): any[] => {
+    const pathMap = new Map<string, any>() // path -> 路径节点
+    const result: any[] = []
+    let virtualNodeIdCounter = 100000
+
+    // 第一步：扁平化所有节点，保留原始父子关系
+    const flattenNodesWithParent = (nodes: any[], parent: any = null): any[] => {
+      const flat: any[] = []
+      nodes.forEach(node => {
+        const nodeWithParent = { ...node, _parent: parent }
+        flat.push(nodeWithParent)
         if (node.children && node.children.length > 0) {
-          collectExpandableNodes(node.children)
+          flat.push(...flattenNodesWithParent(node.children, nodeWithParent))
+        }
+      })
+      return flat
+    }
+
+    const allNodes = flattenNodesWithParent(nodes)
+    console.log('   - 扁平化节点总数:', allNodes.length)
+
+    // 第二步：收集所有非空 label，构建路径树骨架
+    const labelsSet = new Set<string>()
+    allNodes.forEach(node => {
+      const label = node.directory_path || node.label || ''
+      if (label && label.trim()) {
+        labelsSet.add(label)
+      }
+    })
+    console.log('   - 非空 label 数量:', labelsSet.size)
+
+    // 第三步：根据 label 构建路径树骨架
+    Array.from(labelsSet).forEach(label => {
+      const parts = label.split('/').filter(p => p.trim())
+      let currentPath = ''
+      let currentParent: any = null
+
+      parts.forEach((part) => {
+        currentPath = currentPath ? `${currentPath}/${part}` : part
+
+        if (!pathMap.has(currentPath)) {
+          const pathNode: any = {
+            line_id: virtualNodeIdCounter++,
+            text: part,
+            type: 'label',  // 标记为业务本体
+            _isPathNode: true,
+            _path: currentPath,
+            children: []
+          }
+          pathMap.set(currentPath, pathNode)
+
+          if (currentParent) {
+            currentParent.children.push(pathNode)
+          } else {
+            result.push(pathNode)
+          }
+        }
+        currentParent = pathMap.get(currentPath)
+      })
+    })
+    console.log('   - 路径树根节点数:', result.length)
+
+    // 第四步：挂载所有节点
+    // 建立原始节点到内容节点的映射
+    const nodeToContentNodeMap = new Map<any, any>()
+
+    allNodes.forEach(node => {
+      const label = node.directory_path || node.label || ''
+
+      if (label && label.trim()) {
+        // label 不为空：在路径节点下创建内容节点（显示 content）
+        const pathNode = pathMap.get(label)
+        if (pathNode) {
+          const contentNode = {
+            line_id: node.line_id || virtualNodeIdCounter++,
+            text: node.content?.substring(0, 100) || node.title || '',
+            type: 'aggregate',  // 标记为业务实体
+            content: node.content,
+            title: node.title,
+            pid: node.pid,
+            location: node.location,
+            fields: node.fields,
+            boxes: node.boxes,
+            page: node.page,
+            children: [],
+            _originalNode: node
+          }
+
+          pathNode.children.push(contentNode)
+          nodeToContentNodeMap.set(node, contentNode)
         }
       }
     })
+
+    // 第五步：处理 label 为空的节点
+    allNodes.forEach(node => {
+      const label = node.directory_path || node.label || ''
+
+      if (!label || !label.trim()) {
+        // label 为空：作为父节点的内容节点的子节点
+        const parent = node._parent
+        if (parent) {
+          const parentContentNode = nodeToContentNodeMap.get(parent)
+          if (parentContentNode) {
+            const childNode = {
+              line_id: node.line_id || virtualNodeIdCounter++,
+              text: node.title || node.content?.substring(0, 50) || '',
+              type: 'aggregate',  // 标记为业务实体
+              content: node.content,
+              title: node.title,
+              pid: node.pid,
+              location: node.location,
+              fields: node.fields,
+              boxes: node.boxes,
+              page: node.page,
+              children: [],
+              _originalNode: node
+            }
+            parentContentNode.children.push(childNode)
+          }
+        }
+      }
+    })
+
+    console.log('   - 第一个根节点:', result[0]?.text, ', children:', result[0]?.children?.length)
+    return result
   }
 
-  collectExpandableNodes(labelRoots)
+  ontologyTreeData.value = buildTreeByPath(dataSource)
 
-  treeExpandedNodes.value = expandedLabels
+  console.log('✅ 业务本体树构建完成')
+  console.log('  - 根节点数量:', ontologyTreeData.value.length)
+
+  // 默认全部关闭（不展开任何节点）
+  treeExpandedNodes.value = new Set<number>()
+  console.log('🌲 默认展开节点: 0 (全部关闭)')
 }
 
 // ============ 旧代码（已废弃，仅供参考）============
@@ -1712,8 +2119,16 @@ watch(treeGroupMode, async () => {
   } else if (treeGroupMode.value === 'label') {
     // 切换到业务语义结构树
     console.log('🔄 切换到业务语义结构树...')
-    console.log('  - agentTreeData 数量:', agentTreeData.value.length)
+    console.log('  - rawTreeData 数量:', rawTreeData.value.length)
     console.log('  - builtTreeData 数量:', builtTreeData.value.length)
+  } else if (treeGroupMode.value === 'ontology') {
+    // 切换到业务本体树
+    console.log('🔄 切换到业务本体树...')
+    // 如果数据未加载，则加载数据
+    if (ontologyTreeData.value.length === 0 && taskId.value) {
+      await loadOntologyTreeData(taskId.value)
+    }
+    console.log('  - ontologyTreeData 数量:', ontologyTreeData.value.length)
   } else if (treeGroupMode.value === 'folder') {
     // 切换到文件夹视图
     console.log('📁 切换到文件夹视图...')
@@ -1726,25 +2141,14 @@ const convertAPITreeData = (nodes: any[]): any[] => {
   let nodeIdCounter = 0
 
   const convertNode = (node: any): any => {
-    // 生成 line_id（从 id 字段提取数字，如 "texts-123" -> 123）
-    let lineId = nodeIdCounter++
-    if (node.id && typeof node.id === 'string') {
-      const match = node.id.match(/\d+$/)
-      if (match) {
-        lineId = parseInt(match[0])
-      }
-    } else if (node.pid && typeof node.pid === 'string') {
-      const match = node.pid.match(/\d+$/)
-      if (match) {
-        lineId = parseInt(match[0])
-      }
-    }
+    // 简单的递增ID，不再从 pid 提取
+    const lineId = nodeIdCounter++
 
     // 保留原始节点的所有字段，然后覆盖需要转换的字段
     const converted: any = {
       ...node, // 保留所有原始字段（包括 fields, title, label 等）
       line_id: lineId,
-      text: node.text || node.title || '', // 优先使用 title
+      text: node.content || '', // 只使用 content
       class: node.label || 'text', // 保留 label 字段用于业务语义树
       page: node.page ? node.page - 1 : 0, // API 的 page 从 1 开始，组件需要从 0 开始
       _originalId: node.id || node.pid // 保存原始 ID 用于调试
@@ -1781,72 +2185,12 @@ const convertAPITreeData = (nodes: any[]): any[] => {
 }
 
 // 加载 agent 数据（业务语义结构树专用）
-const loadAgentData = async (taskId: string) => {
-  try {
-    const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=agent`
-    console.log(`🔄 加载 agent 数据:`, apiUrl)
-    const response = await fetch(apiUrl)
-    if (response.ok) {
-      const jsonData = await response.json()
-
-      // 处理 API 格式（与 ontology 相同的格式）
-      let treeData
-      if (jsonData.success && jsonData.data && jsonData.data.dataList) {
-        treeData = jsonData.data.dataList
-      } else if (jsonData.tree) {
-        treeData = jsonData.tree
-      } else {
-        treeData = jsonData
-      }
-
-      const processedData = Array.isArray(treeData) ? treeData : [treeData]
-
-      // 转换格式
-      const convertedData = convertAPITreeData(processedData)
-
-      // 为 agent 数据添加 line_id 和 text 字段（递归处理）
-      const addLineIdToNodes = (nodes: any[], startId: number = 0): number => {
-        let currentId = startId
-        nodes.forEach(node => {
-          // 如果节点已有 line_id，保留它；否则从 pid 提取或使用递增ID
-          if (!node.line_id) {
-            const pidMatch = node.pid?.match(/\d+/)
-            node.line_id = pidMatch ? parseInt(pidMatch[0]) : currentId++
-          }
-
-          // 确保有 text 字段用于显示
-          if (!node.text) {
-            if (node.title && node.title.trim()) {
-              node.text = node.title
-            } else if (node.content && node.content.trim()) {
-              node.text = node.content.substring(0, 50).trim()
-            }
-          }
-
-          if (node.children && Array.isArray(node.children) && node.children.length > 0) {
-            currentId = addLineIdToNodes(node.children, currentId)
-          }
-        })
-        return currentId
-      }
-
-      addLineIdToNodes(convertedData)
-
-      agentTreeData.value = convertedData
-      console.log('✅ agentTreeData 已保存，节点数:', agentTreeData.value.length)
-
-      // 构建业务语义结构树
-      await buildTreeByLabel()
-    }
-  } catch (e) {
-    console.error('❌ agent API 加载失败:', e)
-  }
-}
+// loadAgentData 已移除，不再使用 agent API
 
 // 加载 ontology 数据（知识图谱专用）
 const loadOntologyData = async (taskId: string) => {
   try {
-    const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology`
+    const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology&t=${Date.now()}`
     console.log(`🔄 加载 ontology 数据:`, apiUrl)
     const response = await fetch(apiUrl)
     if (response.ok) {
@@ -1867,6 +2211,16 @@ const loadOntologyData = async (taskId: string) => {
 
       // 转换格式
       prebuiltTreeData.value = convertAPITreeData(prebuiltTreeData.value)
+
+      // 调试：检查转换后的数据
+      console.log('🔍 convertAPITreeData 转换后的数据:')
+      prebuiltTreeData.value.forEach((node, idx) => {
+        console.log(`  ${idx}. content="${node.text?.substring(0, 20)}", children=${node.children?.length || 0}`)
+        if (node.text?.includes('政府采购')) {
+          console.log('    ⚠️ 政府采购节点 children:', node.children)
+        }
+      })
+
       sortTreeByHierarchy(prebuiltTreeData.value)
       rawTreeData.value = prebuiltTreeData.value
 
@@ -1897,6 +2251,9 @@ const loadOntologyData = async (taskId: string) => {
 
       // 生成知识图谱
       await buildGraphData()
+
+      // 构建业务语义结构树
+      await buildTreeByLabel()
     }
   } catch (e) {
     console.error('❌ ontology API 加载失败:', e)
@@ -1931,7 +2288,7 @@ const loadJsonFiles = async (taskId: string) => {
 
     // 2. 加载 ontology 数据（知识标签图谱专用，包含 label 和 fields）
     try {
-      const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology`
+      const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology&t=${Date.now()}`
       console.log(`🔄 从 API 加载数据 (result_type=ontology):`, apiUrl)
       const response = await fetch(apiUrl)
       if (response.ok) {
@@ -2108,50 +2465,7 @@ const loadJsonFiles = async (taskId: string) => {
       rebuildTree()
     }
 
-    // 保存 agentData 到 agentTreeData（业务语义结构树专用）
-    if (agentData) {
-      // 为 agent 数据添加 line_id 和 text 字段
-      const addLineIdToNodes = (nodes: any[], startId: number = 0): number => {
-        let currentId = startId
-        nodes.forEach(node => {
-          // 将 pid 转换为数字 line_id（提取 pid 中的数字部分）
-          const pidMatch = node.pid?.match(/\d+/)
-          node.line_id = pidMatch ? parseInt(pidMatch[0]) : currentId++
-
-          // 将 title 或 content 映射为 text（TreeNode 组件需要 text 或 title 字段）
-          // 优先使用 title，如果 title 为空则使用 content 的前 50 个字符
-          if (!node.text) {
-            if (node.title && node.title.trim()) {
-              node.text = node.title
-            } else if (node.content && node.content.trim()) {
-              // 截取 content 的前 50 个字符作为显示文本
-              node.text = node.content.substring(0, 50).trim()
-            }
-          }
-
-          // 递归处理 children
-          if (node.children && Array.isArray(node.children) && node.children.length > 0) {
-            currentId = addLineIdToNodes(node.children, currentId)
-          }
-        })
-        return currentId
-      }
-
-      const processedAgentData = Array.isArray(agentData) ? agentData : [agentData]
-      addLineIdToNodes(processedAgentData)
-
-      agentTreeData.value = processedAgentData
-      console.log('✅ agentTreeData 已保存，节点数:', agentTreeData.value.length)
-      console.log('   - 已为所有节点添加 line_id 字段')
-      console.log('   - 第一个根节点:', {
-        pid: processedAgentData[0]?.pid,
-        line_id: processedAgentData[0]?.line_id,
-        title: processedAgentData[0]?.title,
-        text: processedAgentData[0]?.text,
-        content: processedAgentData[0]?.content?.substring(0, 50),
-        children数量: processedAgentData[0]?.children?.length
-      })
-    }
+    // agentData 处理已移除，不再使用
 
     console.log('📦 JSON 文件加载完成')
   } catch (error) {
@@ -2258,6 +2572,122 @@ const toggleTreeNode = (nodeId: any) => {
 }
 
 /**
+ * 处理节点拖拽放置事件
+ * @param draggedNodeId - 被拖拽节点的ID
+ * @param targetNodeId - 目标节点的ID
+ */
+const handleNodeDrop = async (draggedNodeId: number, targetNodeId: number) => {
+  console.log('🎯 节点拖拽:', { draggedNodeId, targetNodeId })
+
+  // 查找被拖拽的节点和目标节点
+  const draggedNode = findNodeById(builtTreeData.value, draggedNodeId)
+  const targetNode = findNodeById(builtTreeData.value, targetNodeId)
+
+  if (!draggedNode || !targetNode) {
+    console.error('❌ 未找到节点')
+    return
+  }
+
+  // 防止将节点拖到自己或自己的子节点下
+  if (draggedNodeId === targetNodeId || isDescendant(targetNode, draggedNodeId)) {
+    console.warn('⚠️ 不能将节点拖到自己或自己的子节点下')
+    return
+  }
+
+  // 获取节点的 pid（支持数组和字符串）
+  const getNodePid = (node: any): string => {
+    if (Array.isArray(node.pid)) {
+      return node.pid[0] // 如果是数组，取第一个
+    }
+    return node.pid || ''
+  }
+
+  const draggedPid = getNodePid(draggedNode)
+  const targetPid = getNodePid(targetNode)
+
+  console.log('📦 准备发送API请求:', {
+    node_id: draggedPid,
+    target_parent_id: targetPid,
+    taskId: taskId.value
+  })
+
+  // 发送 API 请求
+  try {
+    const response = await fetch(`/python/ontology/task/${taskId.value}/move-node`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        node_id: draggedPid,
+        target_parent_id: targetPid
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`API请求失败: ${response.status} ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    console.log('✅ API响应:', result)
+
+    // API 成功后，重新加载最新的 ontology 数据
+    console.log('🔄 重新加载 ontology 数据...')
+
+    // 保存当前展开状态
+    const currentExpandedNodes = new Set(treeExpandedNodes.value)
+    // 确保目标节点展开
+    currentExpandedNodes.add(targetNodeId)
+
+    // 重新加载数据
+    await loadOntologyData(taskId.value)
+
+    // 恢复展开状态
+    treeExpandedNodes.value = currentExpandedNodes
+
+    console.log('✅ 节点移动成功，数据已更新')
+  } catch (error) {
+    console.error('❌ 移动节点失败:', error)
+    // 可以添加错误提示
+    alert(`移动节点失败: ${error.message}`)
+  }
+}
+
+/**
+ * 判断节点是否是另一个节点的后代
+ */
+const isDescendant = (node: any, ancestorId: number): boolean => {
+  if (!node.children) return false
+
+  for (const child of node.children) {
+    if (child.line_id === ancestorId) return true
+    if (isDescendant(child, ancestorId)) return true
+  }
+
+  return false
+}
+
+/**
+ * 从树中递归移除节点
+ */
+const removeNodeFromTree = (nodes: any[], nodeId: number): boolean => {
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].line_id === nodeId) {
+      nodes.splice(i, 1)
+      return true
+    }
+
+    if (nodes[i].children) {
+      if (removeNodeFromTree(nodes[i].children, nodeId)) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+/**
  * 智能合并 boxes：将同一栏的连续行合并成一个大矩形
  *
  * 分栏判断标准：
@@ -2279,6 +2709,9 @@ const mergeBoxesByColumn = (boxInfos: any[]): number[][] => {
     const prev = boxInfos[i - 1]
     const curr = boxInfos[i]
 
+    // 计算Y轴间隔（当前box的上边界 - 前一个box的下边界）
+    const yGap = curr.box[1] - prev.box[3]
+
     // 判断是否需要开始新区域
     const shouldStartNewRegion =
       // 1. 页码变化
@@ -2286,7 +2719,9 @@ const mergeBoxesByColumn = (boxInfos: any[]): number[][] => {
       // 2. X 坐标显著跳变（左边界相差超过 100 像素，说明换栏了）
       Math.abs(curr.box[0] - prev.box[0]) > 100 ||
       // 3. Y 坐标向上跳（y1 减小，说明不连续）
-      curr.box[1] < prev.box[1]
+      curr.box[1] < prev.box[1] ||
+      // 4. Y轴间隔过大（超过50像素，说明中间有大片空白，可能是不同段落）
+      yGap > 50
 
     if (shouldStartNewRegion) {
       // 合并当前组的所有 box
@@ -2367,7 +2802,7 @@ const handleFolderNodeSelect = async (nodeData: any) => {
 
 const selectTreeNode = async (nodeId: number) => {
   selectedNodeId.value = nodeId
-  console.log('🎯 选中节点:', nodeId)
+  console.log('🎯 选中节点 line_id:', nodeId)
 
   // 先在构建好的树中查找（用于处理虚拟节点）
   let node = findNodeById(builtTreeData.value, nodeId)
@@ -2379,9 +2814,24 @@ const selectTreeNode = async (nodeId: number) => {
   }
 
   if (!node) {
-    console.warn('❌ 未找到节点:', nodeId)
+    console.warn('❌ 未找到节点 line_id:', nodeId)
     return
   }
+
+  // 🔍 添加详细日志
+  console.log('📋 找到的节点完整信息:', {
+    line_id: node.line_id,
+    pid: node.pid,
+    title: node.title,
+    text: node.text,
+    class: node.class,
+    page: node.page,
+    has_boxes: !!node.boxes,
+    boxes_count: node.boxes?.length,
+    has_location: !!node.location,
+    location_count: node.location?.length,
+    content_preview: node.content?.substring(0, 100)
+  })
 
   // 如果点击的是"查看更多"节点，展开所有子元素
   if (node.class === 'more-indicator') {
@@ -2424,27 +2874,30 @@ const selectTreeNode = async (nodeId: number) => {
     return
   }
 
-  console.log('📄 节点详情:', node)
+  console.log('📄 节点详情:', {
+    pid: node.pid,
+    title: node.title,
+    label: node.label,
+    hasBoxes: !!node.boxes,
+    hasLocation: !!node.location,
+    boxes: node.boxes,
+    location: node.location
+  })
 
-  // 兼容 location 字段：将 location 转换为 boxes 格式
-  let boxes = node.boxes
-  if (!boxes && node.location && Array.isArray(node.location)) {
-    boxes = node.location.map((loc: any) => ({
-      page: loc.page - 1, // location 的 page 从 1 开始，需要转为 0 开始
-      box: [loc.l, loc.t, loc.r, loc.b],
-      coord_origin: loc.coord_origin || 'TOPLEFT'
-    }))
-    console.log('🔄 从 location 字段转换为 boxes:', boxes)
-  }
+  // 解包 Proxy (使用 JSON 序列化/反序列化)
+  let boxes = node.boxes ? JSON.parse(JSON.stringify(node.boxes)) : null
 
-  console.log('📦 boxes字段:', boxes)
-  console.log('📦 boxes类型:', typeof boxes, Array.isArray(boxes))
-  console.log('📦 boxes长度:', boxes?.length)
+  console.log('📦 节点boxes:', {
+    类型: typeof boxes,
+    是数组: Array.isArray(boxes),
+    长度: boxes?.length,
+    数据: boxes
+  })
 
   try {
     // 判断是否为段落节点（有 boxes 数组）
     if (boxes && boxes.length > 0) {
-      // 段落节点：高亮所有行
+      // 段落节点：跳转并高亮所有行
       console.log('📝 段落节点，包含', boxes.length, '个 box')
 
       // 跳转到第一个 box 所在的页面
@@ -2452,93 +2905,110 @@ const selectTreeNode = async (nodeId: number) => {
       const pageNum = firstBox.page + 1
       pdfData.currentPage = pageNum
 
-      // 普通节点：智能合并 boxes 并高亮
-      const mergedBoxes = mergeBoxesByColumn(boxes)
+      // 如果启用了高亮功能
+      if (enablePdfHighlight.value) {
+        // 过滤：只保留当前页的 boxes
+        const currentPageBoxes = boxes.filter(b => b.page === firstBox.page)
+        console.log('📦 boxes详情:', {
+          原始boxes数量: boxes.length,
+          当前页boxes数量: currentPageBoxes.length,
+          当前页码: firstBox.page,
+          数据: currentPageBoxes
+        })
 
-      console.log('📦 Box 合并结果:', {
-        原始box数: boxes.length,
-        合并后区域数: mergedBoxes.length,
-        合并详情: mergedBoxes
-      })
+        // 智能合并 boxes 并高亮 (mergeBoxesByColumn 期望接收 {page, box} 格式)
+        const mergedBoxes = mergeBoxesByColumn(currentPageBoxes)
 
-      // 将合并后的 boxes 转换为 quadPoints
-      const allQuadPoints: number[] = []
-      mergedBoxes.forEach((box: number[]) => {
-        // 每个 box 贡献 8 个坐标点
-        allQuadPoints.push(
-          box[0],
-          box[1], // 左上
-          box[2],
-          box[1], // 右上
-          box[2],
-          box[3], // 右下
-          box[0],
-          box[3] // 左下
-        )
-      })
+        console.log('📦 Box 合并结果:', {
+          原始box数: currentPageBoxes.length,
+          合并后区域数: mergedBoxes.length,
+          合并详情: mergedBoxes
+        })
 
-      console.log('📌 多区域高亮:', {
-        区域数量: mergedBoxes.length,
-        quadPoints长度: allQuadPoints.length,
-        页码: pageNum
-      })
+        // 将合并后的 boxes 转换为 quadPoints
+        const allQuadPoints: number[] = []
+        mergedBoxes.forEach((box: number[]) => {
+          // 每个 box 贡献 8 个坐标点
+          allQuadPoints.push(
+            box[0],
+            box[1], // 左上
+            box[2],
+            box[1], // 右上
+            box[2],
+            box[3], // 右下
+            box[0],
+            box[3] // 左下
+          )
+        })
 
-      // 创建单个高亮对象，包含所有合并后的 box 的 quadPoints
-      const highlightData = {
-        pageNum: pageNum,
-        rect: firstBox.box, // 使用第一个 box 的 rect（用于定位）
-        quadPoints: allQuadPoints, // 包含所有合并后区域的 quadPoints
-        needsConversion: true, // TOPLEFT 坐标，需要转换为 PDF 坐标
-        jump: true
-      }
+        console.log('📌 多区域高亮:', {
+          区域数量: mergedBoxes.length,
+          quadPoints长度: allQuadPoints.length,
+          页码: pageNum
+        })
 
-      // 更新 PDF 高亮区域
-      pdfData.highlightRects = [highlightData]
+        // 创建单个高亮对象，包含所有合并后的 box 的 quadPoints
+        const highlightData = {
+          pageNum: pageNum,
+          rect: mergedBoxes[0], // 使用第一个合并后的 box 的 rect（用于定位）
+          quadPoints: allQuadPoints, // 包含所有合并后区域的 quadPoints
+          needsConversion: true, // TOPLEFT 坐标，需要转换为 PDF 坐标
+          jump: true
+        }
 
-      // 跳转并高亮
-      const pdfViewer = contentViewerRef.value?.pdfViewerRef
-      if (pdfViewer?.scrollToAnnotation) {
-        await nextTick()
-        await pdfViewer.scrollToAnnotation(highlightData)
-        console.log('✅ 已跳转到段落位置并高亮所有区域')
+        // 更新 PDF 高亮区域
+        pdfData.highlightRects = [highlightData]
+
+        // 跳转并高亮
+        const pdfViewer = contentViewerRef.value?.pdfViewerRef
+        if (pdfViewer?.scrollToAnnotation) {
+          await nextTick()
+          await pdfViewer.scrollToAnnotation(highlightData)
+          console.log('✅ 已跳转到段落位置并高亮所有区域')
+        } else {
+          console.warn('❌ PDF查看器未就绪')
+        }
       } else {
-        console.warn('❌ PDF查看器未就绪')
+        // 高亮功能未启用，只跳转不高亮
+        pdfData.highlightRects = []
+        console.log('✅ 已跳转到页面', pageNum, '(高亮功能已禁用)')
       }
     } else {
-      // 尝试从 location 获取单个位置（兼容旧格式的 box）
+      // 单个节点：尝试获取位置信息
       let pageNum, box
 
       if (node.page !== undefined && node.box) {
-        // 旧格式：node.page + node.box
+        // 格式：node.page + node.box
         pageNum = node.page + 1
         box = node.box
-      } else if (node.location && node.location.length > 0) {
-        // 新格式：从 location 数组取第一个
-        const loc = node.location[0]
-        pageNum = loc.page
-        box = [loc.l, loc.t, loc.r, loc.b]
       }
 
       if (pageNum && box) {
-        // 单个节点：普通节点高亮
+        // 单个节点：跳转并可能高亮
         console.log('📍 单行节点，box:', { pageNum, box })
 
         pdfData.currentPage = pageNum
 
-        const highlightRect = {
-          pageNum: pageNum,
-          rect: box,
-          quadPoints: [box[0], box[1], box[2], box[1], box[2], box[3], box[0], box[3]],
-          jump: true,
-          needsConversion: true // TOPLEFT 坐标，需要转换为 PDF 坐标
-        }
+        if (enablePdfHighlight.value) {
+          const highlightRect = {
+            pageNum: pageNum,
+            rect: box,
+            quadPoints: [box[0], box[1], box[2], box[1], box[2], box[3], box[0], box[3]],
+            jump: true,
+            needsConversion: true // TOPLEFT 坐标，需要转换为 PDF 坐标
+          }
 
-        pdfData.highlightRects = [highlightRect]
+          pdfData.highlightRects = [highlightRect]
 
-        if (pdfReaderRef.value?.scrollToAnnotation) {
-          await nextTick()
-          await pdfReaderRef.value.scrollToAnnotation(highlightRect)
-          console.log('✅ 已跳转到 PDF 位置并高亮')
+          const pdfViewer = contentViewerRef.value?.pdfViewerRef
+          if (pdfViewer?.scrollToAnnotation) {
+            await nextTick()
+            await pdfViewer.scrollToAnnotation(highlightRect)
+            console.log('✅ 已跳转到 PDF 位置并高亮')
+          }
+        } else {
+          pdfData.highlightRects = []
+          console.log('✅ 已跳转到页面', pageNum, '(高亮功能已禁用)')
         }
       } else if (node.page !== undefined) {
         // 只有页码，没有位置信息：只跳转页面，不高亮
@@ -3119,9 +3589,10 @@ const handleParagraphClick = async (paragraphIds: number[]) => {
     pdfData.highlightRects = [highlightData]
 
     // 跳转并高亮
-    if (pdfReaderRef.value?.scrollToAnnotation) {
+    const pdfViewer = contentViewerRef.value?.pdfViewerRef
+    if (pdfViewer?.scrollToAnnotation) {
       await nextTick()
-      await pdfReaderRef.value.scrollToAnnotation(highlightData)
+      await pdfViewer.scrollToAnnotation(highlightData)
       console.log('✅ 已跳转到段落位置并高亮')
     }
   } catch (error) {
@@ -3164,14 +3635,11 @@ const refreshData = async () => {
   pdfAnnotations.value = []
   reviewListData.value = null
 
-  // 并行加载 agent 和 ontology 数据，避免重复加载
+  // 加载 ontology 数据
   if (taskId.value) {
-    console.log('📦 开始并行加载 agent 和 ontology 数据...')
-    await Promise.all([
-      loadAgentData(taskId.value),    // 业务语义结构树数据
-      loadOntologyData(taskId.value)  // 知识图谱数据
-    ])
-    console.log('✅ agent 和 ontology 数据加载完成')
+    console.log('📦 开始加载 ontology 数据...')
+    await loadOntologyData(taskId.value)
+    console.log('✅ ontology 数据加载完成')
   }
 
   await getData()
