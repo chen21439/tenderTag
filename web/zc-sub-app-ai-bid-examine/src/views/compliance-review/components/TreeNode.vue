@@ -7,7 +7,7 @@
     <div
       class="node-header"
       :class="{
-        'selected': selectedId === node.line_id,
+        'selected': selectedId === node.line_id || selectedIds.includes(node.line_id),
         [`depth-${Math.min(depth, 6)}`]: true,
         [`class-${node.class}`]: true,
         'is-meta': node.is_meta,
@@ -20,7 +20,19 @@
       @mouseup="handleMouseUp"
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
+      @contextmenu.prevent="handleContextMenu"
     >
+      <!-- 编辑模式下的多选checkbox -->
+      <input
+        v-if="editMode"
+        type="checkbox"
+        class="node-checkbox"
+        :checked="selectedIds.includes(node.line_id)"
+        @click.stop="handleCheckboxClick"
+        @mousedown.stop
+        @mouseup.stop
+      />
+
       <!-- 展开/折叠图标 -->
       <span
         v-if="hasChildren"
@@ -62,6 +74,48 @@
       <span v-if="node.page !== undefined" class="page-badge">
         P{{ node.page + 1 }}
       </span>
+
+      <!-- 标签显示 -->
+      <span v-if="node.label && node.label.trim()" class="label-tag">
+        {{ node.label }}
+      </span>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div
+      v-if="showContextMenu"
+      class="context-menu"
+      :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }"
+      @click.stop
+    >
+      <div class="context-menu-item" @click="handleEditLabel">
+        编辑标签
+      </div>
+    </div>
+
+    <!-- 标签编辑模态框 -->
+    <div v-if="showLabelModal" class="label-modal-overlay" @click.stop="closeLabelModal">
+      <div class="label-modal" @click.stop>
+        <div class="label-modal-header">
+          <span>编辑标签</span>
+          <span class="close-btn" @click="closeLabelModal">×</span>
+        </div>
+        <div class="label-modal-body">
+          <input
+            ref="labelInputRef"
+            v-model="editingLabel"
+            type="text"
+            class="label-input"
+            placeholder="请输入标签"
+            @keyup.enter="saveLabelEdit"
+            @keyup.esc="closeLabelModal"
+          />
+        </div>
+        <div class="label-modal-footer">
+          <button class="btn-cancel" @click="closeLabelModal">取消</button>
+          <button class="btn-save" @click="saveLabelEdit">保存</button>
+        </div>
+      </div>
     </div>
 
     <!-- 子节点和段落列表 -->
@@ -96,6 +150,7 @@
           :depth="depth + 1"
           :expanded-nodes="expandedNodes"
           :selected-id="selectedId"
+          :selected-ids="selectedIds"
           :node-map="nodeMap"
           :debug-mode="debugMode"
           :edit-mode="editMode"
@@ -106,6 +161,7 @@
           @drag-over-node="$emit('drag-over-node', $event)"
           @drag-end="$emit('drag-end', $event)"
           @drag-start-node="$emit('drag-start-node', $event)"
+          @update-label="$emit('update-label', $event)"
         />
       </div>
     </div>
@@ -113,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 
 const props = defineProps({
   node: {
@@ -132,6 +188,10 @@ const props = defineProps({
     type: Number,
     default: null
   },
+  selectedIds: {
+    type: Array as () => number[],
+    default: () => []
+  },
   nodeMap: {
     type: Object,
     default: () => ({})
@@ -146,10 +206,20 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['toggle', 'select', 'paragraphClick', 'node-drop', 'drag-over-node', 'drag-end', 'drag-start-node'])
+const emit = defineEmits(['toggle', 'select', 'paragraphClick', 'node-drop', 'drag-over-node', 'drag-end', 'drag-start-node', 'update-label'])
 
 // 拖拽状态
 const isDragOver = ref(false)
+
+// 右键菜单状态
+const showContextMenu = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+
+// 标签编辑状态
+const showLabelModal = ref(false)
+const editingLabel = ref('')
+const labelInputRef = ref<HTMLInputElement | null>(null)
 let isDraggingNow = false
 let mouseDownTime = Date.now() // 初始化为当前时间，避免计算错误
 
@@ -168,14 +238,24 @@ const handleToggle = () => {
   emit('toggle', props.node.line_id)
 }
 
+// 处理checkbox点击
+const handleCheckboxClick = (event: MouseEvent) => {
+  // 阻止所有事件传播
+  event.stopPropagation()
+  event.preventDefault()
+
+  // 触发选择事件，让父组件处理多选逻辑
+  emit('select', props.node.line_id, { ctrlKey: true } as MouseEvent)
+}
+
 // Header点击事件
 const handleHeaderClick = (event: MouseEvent) => {
-  console.log('🎯 header点击:', props.node.line_id, 'editMode:', props.editMode, 'type:', props.node.type)
+  console.log('🎯 header点击:', props.node.line_id, 'editMode:', props.editMode, 'type:', props.node.type, 'ctrlKey:', event.ctrlKey, 'metaKey:', event.metaKey)
 
   // 在非编辑模式下，直接触发选择
   if (!props.editMode) {
     console.log('✅ 非编辑模式，触发选择')
-    emit('select', props.node.line_id)
+    emit('select', props.node.line_id, event)
 
     // 如果是业务本体节点（type === 'label'），同时触发展开/折叠
     if (props.node.type === 'label' && hasChildren.value) {
@@ -200,7 +280,9 @@ const handleMouseUp = (event: MouseEvent) => {
     nodeId: props.node.line_id,
     editMode: props.editMode,
     isDraggingNow,
-    clickDuration
+    clickDuration,
+    ctrlKey: event.ctrlKey,
+    metaKey: event.metaKey
   })
 
   // 编辑模式下才处理
@@ -208,7 +290,7 @@ const handleMouseUp = (event: MouseEvent) => {
     // 如果是快速点击（不是拖拽），触发选择
     if (!isDraggingNow && clickDuration < 200) {
       console.log('✅ 编辑模式-快速点击，触发选择事件')
-      emit('select', props.node.line_id)
+      emit('select', props.node.line_id, event)
     } else {
       console.log('⚠️ 编辑模式-跳过选择事件', { isDraggingNow, clickDuration })
     }
@@ -407,6 +489,68 @@ const truncateText = (text: string, maxLength = 60) => {
     ? text.substring(0, maxLength) + '...'
     : text
 }
+
+// 处理右键菜单
+const handleContextMenu = (event: MouseEvent) => {
+  // 关闭其他可能打开的右键菜单
+  document.querySelectorAll('.context-menu').forEach(menu => {
+    if (menu !== event.currentTarget) {
+      (menu as HTMLElement).style.display = 'none'
+    }
+  })
+
+  showContextMenu.value = true
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+
+  // 点击其他地方关闭菜单
+  const closeMenu = () => {
+    showContextMenu.value = false
+    document.removeEventListener('click', closeMenu)
+  }
+  setTimeout(() => {
+    document.addEventListener('click', closeMenu)
+  }, 0)
+}
+
+// 处理编辑标签
+const handleEditLabel = () => {
+  showContextMenu.value = false
+  editingLabel.value = props.node.label || ''
+  showLabelModal.value = true
+
+  // 自动聚焦输入框
+  nextTick(() => {
+    labelInputRef.value?.focus()
+    labelInputRef.value?.select()
+  })
+}
+
+// 关闭标签编辑模态框
+const closeLabelModal = () => {
+  showLabelModal.value = false
+  editingLabel.value = ''
+}
+
+// 保存标签编辑
+const saveLabelEdit = () => {
+  const newLabel = editingLabel.value.trim()
+  console.log('💾 保存标签:', {
+    nodeId: props.node.line_id,
+    pid: props.node.pid,
+    oldLabel: props.node.label,
+    newLabel
+  })
+
+  // 通知父组件更新标签
+  emit('update-label', {
+    nodeId: props.node.line_id,
+    pid: props.node.pid,
+    label: newLabel
+  })
+
+  closeLabelModal()
+}
 </script>
 
 <style scoped lang="scss">
@@ -442,6 +586,7 @@ const truncateText = (text: string, maxLength = 60) => {
   &.selected {
     background: #e3f2fd;
     border-left-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
   }
 
   &.is-meta {
@@ -633,6 +778,15 @@ const truncateText = (text: string, maxLength = 60) => {
   }
 }
 
+.node-checkbox {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #1976d2;
+}
+
 .toggle-icon {
   width: 16px;
   font-size: 10px;
@@ -733,6 +887,37 @@ const truncateText = (text: string, maxLength = 60) => {
   font-weight: 500;
 }
 
+.label-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffb74d;
+  flex-shrink: 0;
+  font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi-select-badge {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  background: #1976d2;
+  color: white;
+  flex-shrink: 0;
+  font-weight: bold;
+  line-height: 1;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .paragraph-list {
   margin-left: 28px;
   margin-top: 4px;
@@ -787,5 +972,140 @@ const truncateText = (text: string, maxLength = 60) => {
   bottom: 0;
   width: 1px;
   background: #e0e0e0;
+}
+
+/* 右键菜单样式 */
+.context-menu {
+  position: fixed;
+  z-index: 9999;
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  min-width: 120px;
+  padding: 4px 0;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+}
+
+/* 标签编辑模态框样式 */
+.label-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label-modal {
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 400px;
+  max-width: 90vw;
+}
+
+.label-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.close-btn {
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #333;
+  }
+}
+
+.label-modal-body {
+  padding: 20px;
+}
+
+.label-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  }
+
+  &::placeholder {
+    color: #bfbfbf;
+  }
+}
+
+.label-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.btn-cancel,
+.btn-save {
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: white;
+  color: #333;
+  border: 1px solid #d9d9d9;
+
+  &:hover {
+    color: #1890ff;
+    border-color: #1890ff;
+  }
+}
+
+.btn-save {
+  background: #1890ff;
+  color: white;
+
+  &:hover {
+    background: #40a9ff;
+  }
+
+  &:active {
+    background: #096dd9;
+  }
 }
 </style>

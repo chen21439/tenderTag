@@ -160,7 +160,7 @@
               :node="node"
               :depth="0"
               :expanded-nodes="treeExpandedNodes"
-              :selected-id="selectedNodeId"
+              :selected-ids="selectedNodeIds"
               :node-map="nodeMap"
               :debug-mode="false"
               :edit-mode="treeEditMode"
@@ -171,6 +171,7 @@
               @drag-start-node="handleDragStartNode"
               @drag-over-node="handleDragOverNode"
               @drag-end="handleDragEndOnNode"
+              @update-label="handleUpdateLabel"
             />
           </div>
 
@@ -187,7 +188,7 @@
               :node="node"
               :depth="0"
               :expanded-nodes="treeExpandedNodes"
-              :selected-id="selectedNodeId"
+              :selected-ids="selectedNodeIds"
               :node-map="nodeMap"
               :debug-mode="false"
               :edit-mode="treeEditMode"
@@ -198,6 +199,7 @@
               @drag-start-node="handleDragStartNode"
               @drag-over-node="handleDragOverNode"
               @drag-end="handleDragEndOnNode"
+              @update-label="handleUpdateLabel"
             />
           </div>
 
@@ -285,6 +287,7 @@ const treeEditMode = ref(false)
 
 // 拖拽状态：记录被拖拽的节点和最后一个dragOver的目标节点
 let draggedNodeId: number | null = null
+let draggedNodeIds: number[] = [] // 批量拖拽的节点列表
 let lastDragOverNodeId: number | null = null
 
 // 处理编辑模式切换
@@ -302,13 +305,15 @@ const handleDownloadOntology = async () => {
       return
     }
 
-    const apiUrl = `/python/api/pdf/task/${taskId.value}/result?type=ontology.json`
-    console.log('📥 下载 ontology.json:', apiUrl)
+    // 使用正确的参数：result_type=ontology，并添加时间戳
+    const timestamp = Date.now()
+    const apiUrl = `/python/api/pdf/task/${taskId.value}/result?result_type=ontology&t=${timestamp}`
+    console.log('📥 下载 ontology 数据:', apiUrl)
 
     // 直接触发下载
     const link = document.createElement('a')
     link.href = apiUrl
-    link.download = `ontology_${taskId.value}.json`
+    link.download = `ontology_${taskId.value}_${timestamp}.json`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -369,8 +374,16 @@ const handleUploadOntology = () => {
 
 // 处理拖拽开始
 const handleDragStartNode = (nodeId: number) => {
-  console.log('🎯 记录被拖拽节点:', nodeId)
   draggedNodeId = nodeId
+
+  // 如果有多选节点，且拖拽的节点在选中列表中，则批量拖拽
+  if (selectedNodeIds.value.length > 1 && selectedNodeIds.value.includes(nodeId)) {
+    draggedNodeIds = [...selectedNodeIds.value]
+    console.log('🎯 批量拖拽节点:', draggedNodeIds)
+  } else {
+    draggedNodeIds = [nodeId]
+    console.log('🎯 单个拖拽节点:', nodeId)
+  }
 }
 
 // 处理拖拽经过节点
@@ -458,8 +471,23 @@ const handleDragEndOnNode = (dragEndNodeId: number) => {
 }
 
 // 监控编辑模式变化
-watch(treeEditMode, (newVal) => {
+watch(treeEditMode, async (newVal, oldVal) => {
   console.log('📝 树编辑模式watch触发:', newVal)
+
+  // 退出编辑模式时，重新加载数据
+  if (oldVal === true && newVal === false && taskId.value) {
+    console.log('🔄 退出编辑模式，重新加载 ontology 数据...')
+    message.info('正在刷新数据...')
+
+    try {
+      await loadOntologyData(taskId.value)
+      message.success('数据已更新')
+      console.log('✅ ontology 数据刷新完成')
+    } catch (error) {
+      console.error('❌ 刷新数据失败:', error)
+      message.error('刷新数据失败')
+    }
+  }
 })
 
 // 初始化本体树构建逻辑
@@ -472,8 +500,12 @@ const unmatchedData = ref<any[]>([])
 const expandedState = reactive<Record<string, boolean>>({})
 // 树形结构的展开状态
 const treeExpandedNodes = ref(new Set<any>())
-// 选中的节点ID
-const selectedNodeId = ref<number | null>(null)
+// 选中的节点ID（支持多选）- 使用数组以确保响应式
+const selectedNodeIds = ref<number[]>([])
+// 兼容性：保持 selectedNodeId 用于单选场景
+const selectedNodeId = computed(() => {
+  return selectedNodeIds.value.length > 0 ? selectedNodeIds.value[0] : null
+})
 // 页面状态管理
 const state = reactive({
   loading: false,
@@ -2576,23 +2608,10 @@ const toggleTreeNode = (nodeId: any) => {
  * @param draggedNodeId - 被拖拽节点的ID
  * @param targetNodeId - 目标节点的ID
  */
-const handleNodeDrop = async (draggedNodeId: number, targetNodeId: number) => {
-  console.log('🎯 节点拖拽:', { draggedNodeId, targetNodeId })
-
-  // 查找被拖拽的节点和目标节点
-  const draggedNode = findNodeById(builtTreeData.value, draggedNodeId)
-  const targetNode = findNodeById(builtTreeData.value, targetNodeId)
-
-  if (!draggedNode || !targetNode) {
-    console.error('❌ 未找到节点')
-    return
-  }
-
-  // 防止将节点拖到自己或自己的子节点下
-  if (draggedNodeId === targetNodeId || isDescendant(targetNode, draggedNodeId)) {
-    console.warn('⚠️ 不能将节点拖到自己或自己的子节点下')
-    return
-  }
+const handleNodeDrop = (draggedNodeId: number, targetNodeId: number) => {
+  // 使用批量拖拽列表
+  const nodesToMove = draggedNodeIds.length > 0 ? draggedNodeIds : [draggedNodeId]
+  console.log('🎯 节点拖拽:', { nodesToMove, targetNodeId })
 
   // 获取节点的 pid（支持数组和字符串）
   const getNodePid = (node: any): string => {
@@ -2602,25 +2621,110 @@ const handleNodeDrop = async (draggedNodeId: number, targetNodeId: number) => {
     return node.pid || ''
   }
 
-  const draggedPid = getNodePid(draggedNode)
-  const targetPid = getNodePid(targetNode)
+  // 查找目标节点
+  const targetNode = findNodeById(builtTreeData.value, targetNodeId)
+  if (!targetNode) {
+    console.error('❌ 未找到目标节点')
+    return
+  }
 
-  console.log('📦 准备发送API请求:', {
-    node_id: draggedPid,
+  const targetPid = getNodePid(targetNode)
+  const nodePids: string[] = []
+
+  // 验证所有节点
+  for (const nodeId of nodesToMove) {
+    const node = findNodeById(builtTreeData.value, nodeId)
+    if (!node) {
+      console.error('❌ 未找到节点:', nodeId)
+      return
+    }
+
+    // 防止将节点拖到自己或自己的子节点下
+    if (nodeId === targetNodeId || isDescendant(targetNode, nodeId)) {
+      console.warn('⚠️ 不能将节点拖到自己或自己的子节点下:', nodeId)
+      return
+    }
+
+    nodePids.push(getNodePid(node))
+  }
+
+  console.log('📦 准备发送批量移动API请求:', {
+    node_ids: nodePids,
     target_parent_id: targetPid,
-    taskId: taskId.value
+    taskId: taskId.value,
+    count: nodePids.length
   })
 
-  // 发送 API 请求
+  // 发送 API 请求（完全异步，不阻塞页面）
+  // 如果是单个节点，使用原API；如果是多个节点，使用批量API
+  const apiUrl = nodePids.length === 1
+    ? `/python/ontology/task/${taskId.value}/move-node`
+    : `/python/ontology/task/${taskId.value}/move-nodes`
+
+  const requestBody = nodePids.length === 1
+    ? { node_id: nodePids[0], target_parent_id: targetPid }
+    : { node_ids: nodePids, target_parent_id: targetPid }
+
+  fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`API请求失败: ${response.status} ${response.statusText}`)
+      }
+      return response.json()
+    })
+    .then((result) => {
+      console.log('✅ API响应:', result)
+      const count = nodePids.length
+      console.log(`💡 ${count}个节点移动成功，退出编辑模式后会自动刷新数据`)
+
+      // 显示成功提示
+      message.success(`成功移动 ${count} 个节点`)
+
+      // 不立即重新加载数据，避免阻塞
+      // 当用户退出编辑模式时会自动刷新
+    })
+    .catch((error) => {
+      console.error('❌ 移动节点失败:', error)
+      message.error(`移动节点失败: ${error.message}`)
+    })
+    .finally(() => {
+      // 清空批量拖拽列表
+      draggedNodeIds = []
+    })
+
+  // 立即清空选中状态
+  selectedNodeIds.value = []
+  console.log(`🚀 ${nodePids.length}个节点移动请求已发送，已清空选中状态`)
+}
+
+/**
+ * 处理更新节点标签
+ */
+const handleUpdateLabel = async (data: { nodeId: number; pid: string; label: string }) => {
+  console.log('🏷️ 更新节点标签:', data)
+
+  if (!taskId.value) {
+    message.error('无效的任务ID')
+    return
+  }
+
   try {
-    const response = await fetch(`/python/ontology/task/${taskId.value}/move-node`, {
+    // 发送API请求更新标签
+    const apiUrl = `/python/ontology/task/${taskId.value}/update-label`
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        node_id: draggedPid,
-        target_parent_id: targetPid
+        node_id: data.pid,
+        label: data.label
       })
     })
 
@@ -2629,27 +2733,33 @@ const handleNodeDrop = async (draggedNodeId: number, targetNodeId: number) => {
     }
 
     const result = await response.json()
-    console.log('✅ API响应:', result)
+    console.log('✅ 标签更新成功:', result)
+    message.success('标签已更新')
 
-    // API 成功后，重新加载最新的 ontology 数据
-    console.log('🔄 重新加载 ontology 数据...')
+    // 在本地数据中更新标签（立即反映）
+    const updateNodeLabel = (nodes: any[]): boolean => {
+      for (const node of nodes) {
+        if (node.line_id === data.nodeId || node.pid === data.pid) {
+          node.label = data.label
+          return true
+        }
+        if (node.children && updateNodeLabel(node.children)) {
+          return true
+        }
+      }
+      return false
+    }
 
-    // 保存当前展开状态
-    const currentExpandedNodes = new Set(treeExpandedNodes.value)
-    // 确保目标节点展开
-    currentExpandedNodes.add(targetNodeId)
+    // 更新所有树结构中的节点标签
+    updateNodeLabel(builtTreeData.value)
+    updateNodeLabel(ontologyTreeData.value)
+    updateNodeLabel(allTreeNodes.value)
 
-    // 重新加载数据
-    await loadOntologyData(taskId.value)
-
-    // 恢复展开状态
-    treeExpandedNodes.value = currentExpandedNodes
-
-    console.log('✅ 节点移动成功，数据已更新')
+    // 触发响应式更新
+    builtTreeData.value = [...builtTreeData.value]
   } catch (error) {
-    console.error('❌ 移动节点失败:', error)
-    // 可以添加错误提示
-    alert(`移动节点失败: ${error.message}`)
+    console.error('❌ 更新标签失败:', error)
+    message.error(`更新标签失败: ${error.message}`)
   }
 }
 
@@ -2800,8 +2910,31 @@ const handleFolderNodeSelect = async (nodeData: any) => {
   }
 }
 
-const selectTreeNode = async (nodeId: number) => {
-  selectedNodeId.value = nodeId
+const selectTreeNode = async (nodeId: number, event?: MouseEvent) => {
+  // 支持 Ctrl/Cmd 多选
+  const isMultiSelect = event && (event.ctrlKey || event.metaKey)
+
+  // 编辑模式下：只更新选中状态，不跳转
+  if (treeEditMode.value) {
+    const index = selectedNodeIds.value.indexOf(nodeId)
+
+    // 切换选中状态（点击已选中的节点会取消选中）
+    if (index > -1) {
+      // 取消选中
+      selectedNodeIds.value.splice(index, 1)
+      console.log('❌ 取消选中节点:', nodeId, '当前选中:', selectedNodeIds.value)
+    } else {
+      // 添加选中
+      selectedNodeIds.value.push(nodeId)
+      console.log('✅ 添加选中节点:', nodeId, '当前选中:', selectedNodeIds.value)
+    }
+
+    // 编辑模式下不执行后续的页面跳转逻辑
+    return
+  }
+
+  // 非编辑模式：单选并跳转
+  selectedNodeIds.value = [nodeId]
   console.log('🎯 选中节点 line_id:', nodeId)
 
   // 先在构建好的树中查找（用于处理虚拟节点）

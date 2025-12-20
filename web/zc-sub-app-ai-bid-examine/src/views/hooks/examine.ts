@@ -55,7 +55,7 @@ export const getStatusStyle = (status: number) => {
     },
     '-1': { // 审查失败
       color: '#EF4444',
-      text: '审查失败',             
+      text: '审查失败',
       icon: CircleX
     }
   }
@@ -180,7 +180,7 @@ export const DEFAULT_REVIEW_RESULT = {
 }
 /**
  * 导出选项配置
- */ 
+ */
 export const exportOptionsList = [
   { key: 'original', label: '采购文件(原始)', fileType: 'procurement_original' },
   { key: 'annotated', label: '采购文件(批注版)', fileType: 'procurement_revised' },
@@ -247,7 +247,7 @@ export const DEFAULT_FORM_DATA = {
 /**
  * 规则状态选项
  */
-export const RULE_STATUS_OPTIONS = [ 
+export const RULE_STATUS_OPTIONS = [
   { label: '已启用', value: 1 },
   { label: '已禁用', value: 0},
   // { label: '草稿', value: 2}
@@ -297,18 +297,18 @@ export const thresholdMarks = {
   0: '0%',
   60: {
     style: {
-      color: 'var(--error-6)' 
+      color: 'var(--error-6)'
     } ,
     label: '60%'
   },
   75: {
     style: {
-      color: 'var(--main-6)' 
+      color: 'var(--main-6)'
     },
     label: '75%(推荐)'
   },
   100: '100%'
-} 
+}
 
 export const getLevel = (status: string) => {
   const statusConfig = {

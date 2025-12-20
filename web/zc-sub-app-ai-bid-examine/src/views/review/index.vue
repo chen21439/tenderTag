@@ -121,6 +121,12 @@
               <a-checkbox value="table">
                 <span class="type-badge type-table">Table</span>
               </a-checkbox>
+              <a-checkbox value="section">
+                <span class="type-badge type-section">Section</span>
+              </a-checkbox>
+              <a-checkbox value="caption">
+                <span class="type-badge type-caption">Caption</span>
+              </a-checkbox>
             </a-checkbox-group>
             <a-button size="small" @click="clearHighlight" style="margin-left: 8px">清除高亮</a-button>
           </div>
@@ -140,6 +146,8 @@
               <a-select-option value="fstline">Fstline</a-select-option>
               <a-select-option value="para">Para</a-select-option>
               <a-select-option value="table">Table</a-select-option>
+              <a-select-option value="section">Section</a-select-option>
+              <a-select-option value="caption">Caption</a-select-option>
             </a-select>
             <a-button
               size="small"
@@ -196,6 +204,12 @@
                   </a-select-option>
                   <a-select-option value="table">
                     <span class="type-badge type-table">Table</span>
+                  </a-select-option>
+                  <a-select-option value="section">
+                    <span class="type-badge type-section">Section</span>
+                  </a-select-option>
+                  <a-select-option value="caption">
+                    <span class="type-badge type-caption">Caption</span>
                   </a-select-option>
                 </a-select>
 
@@ -818,7 +832,9 @@ const handleHighlightTypeChange = () => {
       color: element.class === 'title' ? [1, 0, 0] :
              element.class === 'fstline' ? [0, 1, 0] :
              element.class === 'para' ? [0, 0, 1] :
-             [1, 0.65, 0] // table 橙色
+             element.class === 'table' ? [1, 0.65, 0] :
+             element.class === 'section' ? [0.58, 0.2, 0.92] :
+             [0.93, 0.28, 0.6] // caption 粉色 (#ec4899)
     }
   })
 
@@ -2065,6 +2081,16 @@ onBeforeUnmount(() => {
     &.type-table {
       background: #fef3c7;
       color: #d97706;
+    }
+
+    &.type-section {
+      background: #e9d5ff;
+      color: #9333ea;
+    }
+
+    &.type-caption {
+      background: #fce7f3;
+      color: #ec4899;
     }
   }
 }
