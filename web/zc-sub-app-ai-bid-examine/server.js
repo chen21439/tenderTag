@@ -370,16 +370,105 @@ app.post('/api/json/update', express.json(), (req, res) => {
 
 // 修改 runs 目录下的 JSON 文件中的元素
 app.post('/api/runs/update', express.json(), (req, res) => {
-  const { runName, fileName, lineId, updates } = req.body
+  const { runName, fileName, id, updates } = req.body
 
-  if (!runName || !fileName || !lineId || !updates) {
+  console.log('📝 [Runs] 收到更新请求:', { runName, fileName, id, updates })
+
+  if (!runName || !fileName || (id === undefined && id !== 0) || !updates) {
+    console.error('❌ [Runs] 缺少必要参数:', { runName, fileName, id, updates })
     return res.status(400).json({
       success: false,
-      error: '缺少必要参数：runName, fileName, lineId, updates'
+      error: '缺少必要参数：runName, fileName, id, updates'
     })
   }
 
   const jsonPath = path.join(RUNS_DIR, runName, 'enriched', fileName)
+
+  console.log('📂 [Runs] 读取文件:', jsonPath)
+
+  // 读取文件
+  fs.readFile(jsonPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('❌ [Runs] 文件读取失败:', err.message)
+      return res.status(404).json({
+        success: false,
+        error: `文件未找到: ${jsonPath}`
+      })
+    }
+
+    try {
+      const jsonData = JSON.parse(data)
+
+      // 查找并更新对应的元素（使用 id 字段）
+      let found = false
+      for (let i = 0; i < jsonData.length; i++) {
+        if (jsonData[i].id === id) {
+          // 更新字段
+          Object.assign(jsonData[i], updates)
+          found = true
+          console.log(`✅ [Runs] 更新元素 id=${id}:`, updates)
+          break
+        }
+      }
+
+      if (!found) {
+        console.error(`❌ [Runs] 未找到 id=${id} 的元素`)
+        return res.status(404).json({
+          success: false,
+          error: `未找到 id=${id} 的元素`
+        })
+      }
+
+      // 写回文件
+      fs.writeFile(jsonPath, JSON.stringify(jsonData, null, 2), 'utf8', (err) => {
+        if (err) {
+          console.error('❌ [Runs] 文件写入失败:', err.message)
+          return res.status(500).json({
+            success: false,
+            error: '写入文件失败'
+          })
+        }
+
+        console.log('✅ [Runs] 文件更新成功:', jsonPath)
+        res.json({
+          success: true,
+          message: '更新成功',
+          runName,
+          fileName,
+          id,
+          updates
+        })
+      })
+    } catch (parseErr) {
+      console.error('❌ [Runs] JSON解析失败:', parseErr.message)
+      res.status(500).json({
+        success: false,
+        error: 'JSON解析失败'
+      })
+    }
+  })
+})
+
+// 移动节点（更新 parent_id）
+app.post('/api/runs/:timestamp/move-node', express.json(), (req, res) => {
+  const timestamp = req.params.timestamp
+  const { fileName, id, newParentId } = req.body
+
+  if (!fileName || (id === undefined && id !== 0)) {
+    return res.status(400).json({
+      success: false,
+      error: '缺少必要参数：fileName, id'
+    })
+  }
+
+  const jsonPath = path.join(RUNS_DIR, timestamp, 'enriched', fileName)
+
+  console.log(`🔄 移动节点请求:`, {
+    timestamp,
+    fileName,
+    id,
+    newParentId: newParentId || 'null (根节点)'
+  })
 
   // 读取文件
   fs.readFile(jsonPath, 'utf8', (err, data) => {
@@ -393,14 +482,14 @@ app.post('/api/runs/update', express.json(), (req, res) => {
     try {
       const jsonData = JSON.parse(data)
 
-      // 查找并更新对应的元素
+      // 查找并更新对应的元素（使用 id 字段）
       let found = false
       for (let i = 0; i < jsonData.length; i++) {
-        if (jsonData[i].line_id === lineId) {
-          // 更新字段
-          Object.assign(jsonData[i], updates)
+        if (jsonData[i].id === id) {
+          // 更新 parent_id
+          jsonData[i].parent_id = newParentId === null ? null : newParentId
           found = true
-          console.log(`✅ [Runs] 更新元素 ${lineId}:`, updates)
+          console.log(`✅ 更新节点 id=${id} 的 parent_id: ${newParentId || 'null'}`)
           break
         }
       }
@@ -408,7 +497,7 @@ app.post('/api/runs/update', express.json(), (req, res) => {
       if (!found) {
         return res.status(404).json({
           success: false,
-          error: `未找到 line_id=${lineId} 的元素`
+          error: `未找到 id=${id} 的元素`
         })
       }
 
@@ -423,17 +512,98 @@ app.post('/api/runs/update', express.json(), (req, res) => {
 
         res.json({
           success: true,
-          message: '更新成功',
-          runName,
+          message: '节点移动成功',
+          timestamp,
           fileName,
-          lineId,
-          updates
+          id,
+          newParentId
         })
       })
     } catch (parseErr) {
       res.status(500).json({
         success: false,
-        error: 'JSON解析失败'
+        error: 'JSON解析失败',
+        details: parseErr.message
+      })
+    }
+  })
+})
+
+// 批量移动节点
+app.post('/api/runs/:timestamp/move-nodes', express.json(), (req, res) => {
+  const timestamp = req.params.timestamp
+  const { fileName, lineIds, newParentId } = req.body
+
+  if (!fileName || !lineIds || !Array.isArray(lineIds) || lineIds.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: '缺少必要参数：fileName, lineIds (数组)'
+    })
+  }
+
+  const jsonPath = path.join(RUNS_DIR, timestamp, 'enriched', fileName)
+
+  console.log(`🔄 批量移动节点请求:`, {
+    timestamp,
+    fileName,
+    lineIds,
+    count: lineIds.length,
+    newParentId: newParentId || 'null (根节点)'
+  })
+
+  // 读取文件
+  fs.readFile(jsonPath, 'utf8', (err, data) => {
+    if (err) {
+      return res.status(404).json({
+        success: false,
+        error: `文件未找到: ${jsonPath}`
+      })
+    }
+
+    try {
+      const jsonData = JSON.parse(data)
+      let updatedCount = 0
+
+      // 查找并更新所有匹配的元素
+      for (let i = 0; i < jsonData.length; i++) {
+        if (lineIds.includes(jsonData[i].line_id)) {
+          jsonData[i].parent_id = newParentId === null ? null : newParentId
+          updatedCount++
+          console.log(`✅ 更新节点 ${jsonData[i].line_id} 的 parent_id: ${newParentId || 'null'}`)
+        }
+      }
+
+      if (updatedCount === 0) {
+        return res.status(404).json({
+          success: false,
+          error: `未找到任何匹配的节点`
+        })
+      }
+
+      // 写回文件
+      fs.writeFile(jsonPath, JSON.stringify(jsonData, null, 2), 'utf8', (err) => {
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            error: '写入文件失败'
+          })
+        }
+
+        res.json({
+          success: true,
+          message: `成功移动 ${updatedCount} 个节点`,
+          timestamp,
+          fileName,
+          updatedCount,
+          totalRequested: lineIds.length,
+          newParentId
+        })
+      })
+    } catch (parseErr) {
+      res.status(500).json({
+        success: false,
+        error: 'JSON解析失败',
+        details: parseErr.message
       })
     }
   })

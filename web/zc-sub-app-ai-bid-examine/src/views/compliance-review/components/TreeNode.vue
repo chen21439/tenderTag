@@ -3,6 +3,7 @@
     class="tree-node"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
+    @drop="handleDrop"
   >
     <div
       class="node-header"
@@ -20,6 +21,8 @@
       @mouseup="handleMouseUp"
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
+      @dragover.prevent="handleDragOver"
+      @drop="handleDrop"
       @contextmenu.prevent="handleContextMenu"
     >
       <!-- 编辑模式下的多选checkbox -->
@@ -35,7 +38,7 @@
 
       <!-- 展开/折叠图标 -->
       <span
-        v-if="hasChildren"
+        v-if="hasAnyRelations"
         class="toggle-icon"
         @click.stop="handleToggle"
       >
@@ -75,6 +78,11 @@
         P{{ node.page + 1 }}
       </span>
 
+      <!-- Class 类型标记 -->
+      <span v-if="node.class" class="class-badge" :class="`class-${node.class.toLowerCase()}`">
+        {{ node.class }}
+      </span>
+
       <!-- 标签显示 -->
       <span v-if="node.label && node.label.trim()" class="label-tag">
         {{ node.label }}
@@ -88,32 +96,33 @@
       :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }"
       @click.stop
     >
-      <div class="context-menu-item" @click="handleEditLabel">
-        编辑标签
+      <div class="context-menu-item" @click="handleEditRelation">
+        编辑关系
       </div>
     </div>
 
-    <!-- 标签编辑模态框 -->
-    <div v-if="showLabelModal" class="label-modal-overlay" @click.stop="closeLabelModal">
+    <!-- Relation 编辑模态框 -->
+    <div v-if="showRelationModal" class="label-modal-overlay" @click.stop="closeRelationModal">
       <div class="label-modal" @click.stop>
         <div class="label-modal-header">
-          <span>编辑标签</span>
-          <span class="close-btn" @click="closeLabelModal">×</span>
+          <span>编辑节点关系</span>
+          <span class="close-btn" @click="closeRelationModal">×</span>
         </div>
         <div class="label-modal-body">
-          <input
-            ref="labelInputRef"
-            v-model="editingLabel"
-            type="text"
-            class="label-input"
-            placeholder="请输入标签"
-            @keyup.enter="saveLabelEdit"
-            @keyup.esc="closeLabelModal"
-          />
+          <select
+            ref="relationSelectRef"
+            v-model="editingRelation"
+            class="relation-select"
+          >
+            <option value="">无关系</option>
+            <option value="connect">connect</option>
+            <option value="equality">equality</option>
+            <option value="contain">contain</option>
+          </select>
         </div>
         <div class="label-modal-footer">
-          <button class="btn-cancel" @click="closeLabelModal">取消</button>
-          <button class="btn-save" @click="saveLabelEdit">保存</button>
+          <button class="btn-cancel" @click="closeRelationModal">取消</button>
+          <button class="btn-save" @click="saveRelationEdit">保存</button>
         </div>
       </div>
     </div>
@@ -141,7 +150,7 @@
         </div>
       </div>
 
-      <!-- 子节点 -->
+      <!-- 子节点 (contain 关系) -->
       <div v-if="hasChildren" class="children">
         <TreeNode
           v-for="child in node.children"
@@ -162,6 +171,59 @@
           @drag-end="$emit('drag-end', $event)"
           @drag-start-node="$emit('drag-start-node', $event)"
           @update-label="$emit('update-label', $event)"
+          @update-relation="$emit('update-relation', $event)"
+        />
+      </div>
+
+      <!-- 平级节点 (equality 关系) -->
+      <div v-if="hasSiblings" class="siblings">
+        <div class="relation-group-label">⚖️ 平级关系</div>
+        <TreeNode
+          v-for="sibling in node.siblings"
+          :key="sibling.line_id"
+          :node="sibling"
+          :depth="depth + 1"
+          :expanded-nodes="expandedNodes"
+          :selected-id="selectedId"
+          :selected-ids="selectedIds"
+          :node-map="nodeMap"
+          :debug-mode="debugMode"
+          :edit-mode="editMode"
+          @toggle="$emit('toggle', $event)"
+          @select="$emit('select', $event)"
+          @paragraphClick="$emit('paragraphClick', $event)"
+          @node-drop="$emit('node-drop', $event)"
+          @drag-over-node="$emit('drag-over-node', $event)"
+          @drag-end="$emit('drag-end', $event)"
+          @drag-start-node="$emit('drag-start-node', $event)"
+          @update-label="$emit('update-label', $event)"
+          @update-relation="$emit('update-relation', $event)"
+        />
+      </div>
+
+      <!-- 连接节点 (connect 关系) -->
+      <div v-if="hasConnectedNodes" class="connected-nodes">
+        <div class="relation-group-label">🔗 连接关系</div>
+        <TreeNode
+          v-for="connectedNode in node.connectedNodes"
+          :key="connectedNode.line_id"
+          :node="connectedNode"
+          :depth="depth + 1"
+          :expanded-nodes="expandedNodes"
+          :selected-id="selectedId"
+          :selected-ids="selectedIds"
+          :node-map="nodeMap"
+          :debug-mode="debugMode"
+          :edit-mode="editMode"
+          @toggle="$emit('toggle', $event)"
+          @select="$emit('select', $event)"
+          @paragraphClick="$emit('paragraphClick', $event)"
+          @node-drop="$emit('node-drop', $event)"
+          @drag-over-node="$emit('drag-over-node', $event)"
+          @drag-end="$emit('drag-end', $event)"
+          @drag-start-node="$emit('drag-start-node', $event)"
+          @update-label="$emit('update-label', $event)"
+          @update-relation="$emit('update-relation', $event)"
         />
       </div>
     </div>
@@ -206,7 +268,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['toggle', 'select', 'paragraphClick', 'node-drop', 'drag-over-node', 'drag-end', 'drag-start-node', 'update-label'])
+const emit = defineEmits(['toggle', 'select', 'paragraphClick', 'node-drop', 'drag-over-node', 'drag-end', 'drag-start-node', 'update-label', 'update-relation'])
 
 // 拖拽状态
 const isDragOver = ref(false)
@@ -216,16 +278,31 @@ const showContextMenu = ref(false)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 
-// 标签编辑状态
-const showLabelModal = ref(false)
-const editingLabel = ref('')
-const labelInputRef = ref<HTMLInputElement | null>(null)
+// Relation 编辑状态
+const showRelationModal = ref(false)
+const editingRelation = ref('')
+const relationSelectRef = ref<HTMLSelectElement | null>(null)
 let isDraggingNow = false
 let mouseDownTime = Date.now() // 初始化为当前时间，避免计算错误
 
 // 是否有子节点
 const hasChildren = computed(() => {
   return props.node.children && props.node.children.length > 0
+})
+
+// 是否有平级节点 (equality)
+const hasSiblings = computed(() => {
+  return props.node.siblings && props.node.siblings.length > 0
+})
+
+// 是否有连接节点 (connect)
+const hasConnectedNodes = computed(() => {
+  return props.node.connectedNodes && props.node.connectedNodes.length > 0
+})
+
+// 是否有任意关系节点（用于显示展开/折叠图标）
+const hasAnyRelations = computed(() => {
+  return hasChildren.value || hasSiblings.value || hasConnectedNodes.value
 })
 
 // 是否展开
@@ -307,7 +384,7 @@ const handleParagraphClick = (paragraphIds: number[]) => {
 // 拖拽开始
 const handleDragStart = (event: DragEvent) => {
   console.log('🎯 dragStart事件触发:', {
-    nodeId: props.node.line_id,
+    nodeId: props.node.id,
     editMode: props.editMode,
     draggable: event.target?.getAttribute?.('draggable')
   })
@@ -322,19 +399,19 @@ const handleDragStart = (event: DragEvent) => {
 
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', String(props.node.line_id))
+    event.dataTransfer.setData('text/plain', String(props.node.id))
   }
 
-  // 通知父组件拖拽开始，记录被拖拽的节点ID
-  emit('drag-start-node', props.node.line_id)
+  // 通知父组件拖拽开始，传递节点 ID
+  emit('drag-start-node', props.node.id)
 
-  console.log('✅ 开始拖拽节点:', props.node.line_id)
+  console.log('✅ 开始拖拽节点:', props.node.id)
 }
 
 // 拖拽结束
 const handleDragEnd = (event: DragEvent) => {
   console.log('🎯 dragEnd事件触发:', {
-    nodeId: props.node.line_id,
+    nodeId: props.node.id,
     editMode: props.editMode
   })
 
@@ -346,7 +423,7 @@ const handleDragEnd = (event: DragEvent) => {
   // dragEnd 只在被拖拽的节点上触发
   // 通知父组件拖拽结束，父组件会检查 lastDragOverNodeId 来决定是否发送API请求
   console.log('✅ 拖拽结束，通知父组件')
-  emit('drag-end', props.node.line_id)
+  emit('drag-end', props.node.id)
 
   // 清理状态
   isDragOver.value = false
@@ -357,7 +434,7 @@ const handleDragOver = (event: DragEvent) => {
   if (!props.editMode) return
 
   event.preventDefault()
-  // 阻止事件冒泡，避免父节点也被高亮
+  // 先通知父组件，然后阻止冒泡，防止祖父节点也收到事件
   event.stopPropagation()
 
   if (event.dataTransfer) {
@@ -365,24 +442,62 @@ const handleDragOver = (event: DragEvent) => {
   }
 
   if (!isDragOver.value) {
-    console.log('🎯 dragOver进入节点:', props.node.line_id, props.node.text || props.node.title)
+    console.log('🎯 dragOver进入节点:', props.node.id, props.node.text || props.node.title)
   }
   isDragOver.value = true
 
   // 通知父组件记录这个节点
-  emit('drag-over-node', props.node.line_id)
+  emit('drag-over-node', props.node.id)
 }
 
 const handleDragLeave = (event: DragEvent) => {
   if (!props.editMode) return
 
-  // 阻止事件冒泡，避免影响父节点
+  // 阻止冒泡，防止父节点也触发 dragLeave
   event.stopPropagation()
-  console.log('🎯 dragLeave离开节点:', props.node.line_id)
+  console.log('🎯 dragLeave离开节点:', props.node.id)
   isDragOver.value = false
 }
 
-// handleDrop 已删除，现在由父组件的全局 drop 处理
+const handleDrop = (event: DragEvent) => {
+  console.log('🔥🔥🔥 DROP事件触发!!! 🔥🔥🔥', {
+    editMode: props.editMode,
+    nodeId: props.node.id,
+    target: event.target,
+    currentTarget: event.currentTarget
+  })
+
+  if (!props.editMode) {
+    console.log('⚠️ 非编辑模式，忽略drop')
+    return
+  }
+
+  event.preventDefault()
+  event.stopPropagation()
+
+  isDragOver.value = false
+
+  const draggedNodeId = event.dataTransfer?.getData('text/plain')
+  const targetNodeId = props.node.id
+
+  console.log('📦 drop数据:', {
+    draggedNodeId,
+    targetNodeId,
+    targetNode: props.node.text || props.node.title,
+    dataTransfer: event.dataTransfer
+  })
+
+  if (draggedNodeId && String(draggedNodeId) !== String(targetNodeId)) {
+    console.log('✅ 发送node-drop事件到父组件')
+    // 通知父组件处理节点移动
+    emit('node-drop', {
+      draggedNodeId,
+      targetNodeId
+    })
+  } else {
+    console.log('⚠️ 无效的拖拽:', { draggedNodeId, targetNodeId, same: draggedNodeId === targetNodeId })
+  }
+}
 
 // 获取段落文本缩略
 const getParagraphText = (paragraphIds: number[]): string => {
@@ -513,43 +628,40 @@ const handleContextMenu = (event: MouseEvent) => {
   }, 0)
 }
 
-// 处理编辑标签
-const handleEditLabel = () => {
+// 处理编辑关系
+const handleEditRelation = () => {
   showContextMenu.value = false
-  editingLabel.value = props.node.label || ''
-  showLabelModal.value = true
+  editingRelation.value = props.node.relation || ''
+  showRelationModal.value = true
 
-  // 自动聚焦输入框
+  // 自动聚焦选择框
   nextTick(() => {
-    labelInputRef.value?.focus()
-    labelInputRef.value?.select()
+    relationSelectRef.value?.focus()
   })
 }
 
-// 关闭标签编辑模态框
-const closeLabelModal = () => {
-  showLabelModal.value = false
-  editingLabel.value = ''
+// 关闭关系编辑模态框
+const closeRelationModal = () => {
+  showRelationModal.value = false
+  editingRelation.value = ''
 }
 
-// 保存标签编辑
-const saveLabelEdit = () => {
-  const newLabel = editingLabel.value.trim()
-  console.log('💾 保存标签:', {
-    nodeId: props.node.line_id,
-    pid: props.node.pid,
-    oldLabel: props.node.label,
-    newLabel
+// 保存关系编辑
+const saveRelationEdit = () => {
+  const newRelation = editingRelation.value.trim()
+  console.log('💾 保存关系:', {
+    nodeId: props.node.id,
+    oldRelation: props.node.relation,
+    newRelation
   })
 
-  // 通知父组件更新标签
-  emit('update-label', {
-    nodeId: props.node.line_id,
-    pid: props.node.pid,
-    label: newLabel
+  // 通知父组件更新关系
+  emit('update-relation', {
+    nodeId: props.node.id,
+    relation: newRelation
   })
 
-  closeLabelModal()
+  closeRelationModal()
 }
 </script>
 
@@ -574,7 +686,8 @@ const saveLabelEdit = () => {
     .node-label,
     .relation-badge,
     .level-badge,
-    .page-badge {
+    .page-badge,
+    .class-badge {
       pointer-events: none;
     }
   }
@@ -887,6 +1000,45 @@ const saveLabelEdit = () => {
   font-weight: 500;
 }
 
+.class-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  font-weight: 500;
+  text-transform: capitalize;
+
+  &.class-title {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  &.class-fstline {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  &.class-para {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  &.class-table {
+    background: #fed7aa;
+    color: #d97706;
+  }
+
+  &.class-section {
+    background: #e9d5ff;
+    color: #9333ea;
+  }
+
+  &.class-caption {
+    background: #fce7f3;
+    color: #ec4899;
+  }
+}
+
 .label-tag {
   font-size: 11px;
   padding: 2px 8px;
@@ -974,6 +1126,32 @@ const saveLabelEdit = () => {
   background: #e0e0e0;
 }
 
+// 平级节点样式 (equality)
+.siblings {
+  position: relative;
+  margin-top: 8px;
+  padding-left: 12px;
+  border-left: 2px dashed #fbbf24; // 黄色虚线边框
+}
+
+// 连接节点样式 (connect)
+.connected-nodes {
+  position: relative;
+  margin-top: 8px;
+  padding-left: 12px;
+  border-left: 2px dashed #3b82f6; // 蓝色虚线边框
+}
+
+// 关系组标签
+.relation-group-label {
+  font-size: 11px;
+  color: #666;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 /* 右键菜单样式 */
 .context-menu {
   position: fixed;
@@ -1047,7 +1225,8 @@ const saveLabelEdit = () => {
   padding: 20px;
 }
 
-.label-input {
+.label-input,
+.relation-select {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #d9d9d9;

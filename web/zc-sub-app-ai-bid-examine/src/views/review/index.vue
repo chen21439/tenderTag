@@ -97,14 +97,18 @@
         <div class="panel-header">
           <span class="shrink-0 mr-[4px]">文档元素</span>
           <div class="statistics">
+            <a-radio-group v-model:value="viewMode" size="small" button-style="solid" style="margin-right: 12px;">
+              <a-radio-button value="list">列表视图</a-radio-button>
+              <a-radio-button value="tree">树形视图</a-radio-button>
+            </a-radio-group>
             <span style="color: #6b7280; margin-right: 8px;">第 {{ pdfData.currentPage }} 页</span>
             当前页 <span class="num">{{ currentPageElements.length }}</span> 个元素 /
             总共 <span class="num">{{ jsonElements.length }}</span> 个元素
           </div>
         </div>
 
-        <!-- 操作工具栏 -->
-        <div class="toolbar-section">
+        <!-- 操作工具栏（仅列表视图显示） -->
+        <div v-show="viewMode === 'list'" class="toolbar-section">
           <!-- 按类型高亮 -->
           <div class="toolbar-item">
             <span class="toolbar-label">按类型高亮：</span>
@@ -163,8 +167,8 @@
           </div>
         </div>
 
-        <!-- 元素列表 -->
-        <div class="review-items json-elements-list">
+        <!-- 列表视图 -->
+        <div v-show="viewMode === 'list'" class="review-items json-elements-list">
           <div v-if="currentPageElements.length === 0" style="padding: 20px; text-align: center; color: #999">
             当前页暂无元素
           </div>
@@ -179,7 +183,7 @@
             <template #renderItem="{ item: element, index }">
               <div
                 :class="['element-item', { active: selectedElement === element, editing: editingElement === element }]"
-                @click="handleElementClick(element)"
+                @click.stop="handleElementClick(element)"
               >
               <div class="element-header">
                 <span class="element-index">#{{ index + 1 }}</span>
@@ -232,6 +236,27 @@
             </template>
           </a-list>
         </div>
+
+        <!-- 树形视图 -->
+        <div v-show="viewMode === 'tree'" class="review-items tree-view-container">
+          <EditableTree
+            v-if="filteredTreeElements.length > 0"
+            :raw-data="filteredTreeElements"
+            build-strategy="parentId"
+            :build-options="{ idField: 'line_id', parentIdField: 'parent_id' }"
+            :editable="true"
+            :show-toolbar="true"
+            :loading="treeLoading"
+            @node-move="handleNodeMove"
+            @label-update="handleLabelUpdate"
+            @relation-update="handleRelationUpdate"
+            @node-select="handleTreeNodeSelect"
+            @paragraph-click="handleParagraphClick"
+          />
+          <div v-else style="padding: 20px; text-align: center; color: #999">
+            暂无 Section 或 Title 数据
+          </div>
+        </div>
       </div>
     </div>
 
@@ -269,6 +294,7 @@ import LeftSideActions from '@/components/LeftSideActions/index.vue'
 import CheckListModal from './components/CheckListModal.vue'
 import HistoryFilesModal from './components/HistoryFilesModal.vue'
 import ReviewItem from './components/ReviewItem.vue'
+import { EditableTree } from '@/components/tree'
 import config from '../../config'
 
 defineOptions({
@@ -338,6 +364,18 @@ const pdfData = reactive({
 // JSON数据存储
 const jsonElements = ref<any[]>([])
 const selectedElement = ref<any>(null)
+
+// 视图模式：list | tree
+const viewMode = ref<'list' | 'tree'>('list')
+const treeLoading = ref(false)
+
+// 过滤后的树形数据（只包含 section 和 title）
+const filteredTreeElements = computed(() => {
+  return jsonElements.value.filter(el => {
+    const classType = el.class?.toLowerCase()
+    return classType === 'section' || classType === 'title'
+  })
+})
 
 // 当前页的元素（筛选后）
 const currentPageElements = computed(() => {
@@ -1270,6 +1308,143 @@ const handlePdfPageChange = (newPage: number) => {
   pdfData.currentPage = newPage
 }
 
+// ==================== 树形视图事件处理 ====================
+
+// 处理节点移动（拖拽改变父节点）
+const handleNodeMove = async ({ nodeId, newParentId }: { nodeId: string, newParentId: string | null }) => {
+  console.log('🔄 节点移动:', { nodeId, newParentId })
+
+  // 检查是否从 runs 目录加载
+  if (!currentFileSource.value.isFromRuns) {
+    message.warning('只支持从 runs 目录加载的文件')
+    return
+  }
+
+  const runName = currentFileSource.value.runName
+  const fileName = currentFileSource.value.fileName
+
+  if (!runName || !fileName) {
+    console.error('❌ 缺少 runName 或 fileName')
+    message.error('文件信息不完整')
+    return
+  }
+
+  try {
+    // 调用后端 API 更新 parent_id
+    const response = await fetch(`http://localhost:3000/api/runs/${runName}/move-node`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName,
+        id: nodeId,
+        newParentId
+      })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'API请求失败')
+    }
+
+    console.log('✅ 节点移动成功:', result)
+
+    // 更新本地数据
+    const node = jsonElements.value.find((el: any) => el.id === nodeId)
+    if (node) {
+      node.parent_id = newParentId
+    }
+
+    message.success('节点移动成功')
+  } catch (error) {
+    console.error('❌ 节点移动失败:', error)
+    message.error(`节点移动失败: ${error.message}`)
+  }
+}
+
+// 处理标签更新
+const handleLabelUpdate = async ({ nodeId, newLabel }: { nodeId: string, newLabel: string }) => {
+  console.log('✏️ 更新标签:', { nodeId, newLabel })
+
+  try {
+    // TODO: 调用后端API更新标签
+    const node = jsonElements.value.find((el: any) => el.id === nodeId)
+    if (node) {
+      node.label = newLabel
+      message.success('标签更新成功')
+    }
+  } catch (error) {
+    console.error('❌ 标签更新失败:', error)
+    message.error('标签更新失败')
+  }
+}
+
+// 处理关系更新
+const handleRelationUpdate = async ({ nodeId, relation }: { nodeId: string, relation: string }) => {
+  console.log('🔗 更新关系:', { nodeId, relation })
+
+  // 检查是否从 runs 目录加载
+  if (!currentFileSource.value.isFromRuns) {
+    message.warning('只支持从 runs 目录加载的文件')
+    return
+  }
+
+  const runName = currentFileSource.value.runName
+  const fileName = currentFileSource.value.fileName
+
+  if (!runName || !fileName) {
+    console.error('❌ 缺少 runName 或 fileName')
+    message.error('文件信息不完整')
+    return
+  }
+
+  try {
+    // 调用后端 API 更新 relation
+    const response = await fetch('http://localhost:3000/api/runs/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        runName,
+        fileName,
+        id: nodeId,
+        updates: { relation }
+      })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'API请求失败')
+    }
+
+    console.log('✅ 关系更新成功:', result)
+
+    // 更新本地数据
+    const node = jsonElements.value.find((el: any) => el.id === nodeId)
+    if (node) {
+      node.relation = relation
+    }
+
+    message.success('关系更新成功')
+  } catch (error) {
+    console.error('❌ 关系更新失败:', error)
+    message.error(`关系更新失败: ${error.message}`)
+  }
+}
+
+// 处理树节点选择
+const handleTreeNodeSelect = (nodeId: any) => {
+  const element = jsonElements.value.find((el: any) => el.line_id === nodeId || el.id === nodeId)
+  if (element) {
+    handleElementClick(element)
+  }
+}
+
+// 处理段落点击（暂时占位，根据实际需求实现）
+const handleParagraphClick = (paragraphIds: any[]) => {
+  console.log('📄 段落点击:', paragraphIds)
+}
+
 const loadJsonFiles = async (taskId: string) => {
   try {
     const baseUrl = isDev
@@ -1947,6 +2122,13 @@ onBeforeUnmount(() => {
 .json-elements-list {
   flex: 1;
   overflow-y: auto;
+}
+
+.tree-view-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .elements-container {

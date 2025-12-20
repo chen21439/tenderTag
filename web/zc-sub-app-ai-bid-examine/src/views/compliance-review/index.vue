@@ -172,6 +172,7 @@
               @drag-over-node="handleDragOverNode"
               @drag-end="handleDragEndOnNode"
               @update-label="handleUpdateLabel"
+              @update-relation="handleUpdateRelation"
             />
           </div>
 
@@ -200,6 +201,7 @@
               @drag-over-node="handleDragOverNode"
               @drag-end="handleDragEndOnNode"
               @update-label="handleUpdateLabel"
+              @update-relation="handleUpdateRelation"
             />
           </div>
 
@@ -2760,6 +2762,50 @@ const handleUpdateLabel = async (data: { nodeId: number; pid: string; label: str
   } catch (error) {
     console.error('❌ 更新标签失败:', error)
     message.error(`更新标签失败: ${error.message}`)
+  }
+}
+
+/**
+ * 处理更新节点关系
+ */
+const handleUpdateRelation = async (data: { nodeId: string; relation: string }) => {
+  console.log('🔗 更新节点关系:', data)
+
+  // TODO: 这里需要实现具体的API调用逻辑
+  // 暂时只更新本地数据
+
+  try {
+    // 在本地数据中更新关系（立即反映）
+    const updateNodeRelation = (nodes: any[]): boolean => {
+      for (const node of nodes) {
+        if (node.line_id === data.nodeId) {
+          node.relation = data.relation
+          return true
+        }
+        if (node.children && updateNodeRelation(node.children)) {
+          return true
+        }
+      }
+      return false
+    }
+
+    // 更新所有树结构中的节点关系
+    const updated = updateNodeRelation(builtTreeData.value) ||
+                   updateNodeRelation(ontologyTreeData.value) ||
+                   updateNodeRelation(allTreeNodes.value)
+
+    if (updated) {
+      // 触发响应式更新
+      builtTreeData.value = [...builtTreeData.value]
+      console.log('✅ 关系更新成功（仅本地）')
+      message.success('关系已更新')
+    } else {
+      console.warn('⚠️ 未找到节点:', data.nodeId)
+      message.warning('未找到指定节点')
+    }
+  } catch (error) {
+    console.error('❌ 更新关系失败:', error)
+    message.error(`更新关系失败: ${error.message}`)
   }
 }
 
