@@ -9,6 +9,7 @@
       class="node-header"
       :class="{
         'selected': selectedId === node.line_id || selectedIds.includes(node.line_id),
+        'highlighted-equality': highlightedNodes.has(node.id) || highlightedNodes.has(node.line_id),
         [`depth-${Math.min(depth, 6)}`]: true,
         [`class-${node.class}`]: true,
         'is-meta': node.is_meta,
@@ -63,9 +64,13 @@
         <span v-else-if="debugMode && node.class === 'label-group-2'" class="label-prefix label-level-2">二级</span>
       </span>
 
-      <!-- 关系类型标记 -->
-      <span v-if="node.relation && node.relation !== 'none'" class="relation-badge" :class="node.relation">
-        {{ getRelationLabel(node.relation) }}
+      <!-- 只显示 Equality 平级关系 -->
+      <span v-if="node.relation === 'equality' && node.parent_id"
+            class="equality-indicator"
+            :title="`与节点 ${node.parent_id} 平级`">
+        <span class="equality-line">━━</span>
+        <span class="equality-label">⚖</span>
+        <span class="equality-target">#{{ node.parent_id }}</span>
       </span>
 
       <!-- Level 标记 -->
@@ -75,12 +80,22 @@
 
       <!-- 页码标记 -->
       <span v-if="node.page !== undefined" class="page-badge">
-        P{{ node.page + 1 }}
+        P{{ node.page }}
       </span>
 
       <!-- Class 类型标记 -->
       <span v-if="node.class" class="class-badge" :class="`class-${node.class.toLowerCase()}`">
         {{ node.class }}
+      </span>
+
+      <!-- ID 显示 -->
+      <span v-if="node.id !== undefined" class="id-badge">
+        ID:{{ node.id }}
+      </span>
+
+      <!-- Parent ID 显示 -->
+      <span v-if="node.parent_id !== undefined && node.parent_id !== null && node.parent_id !== ''" class="parent-id-badge">
+        P:{{ node.parent_id }}
       </span>
 
       <!-- 标签显示 -->
@@ -160,6 +175,7 @@
           :expanded-nodes="expandedNodes"
           :selected-id="selectedId"
           :selected-ids="selectedIds"
+          :highlighted-nodes="highlightedNodes"
           :node-map="nodeMap"
           :debug-mode="debugMode"
           :edit-mode="editMode"
@@ -253,6 +269,10 @@ const props = defineProps({
   selectedIds: {
     type: Array as () => number[],
     default: () => []
+  },
+  highlightedNodes: {
+    type: Set,
+    default: () => new Set()
   },
   nodeMap: {
     type: Object,
@@ -596,6 +616,28 @@ const getRelationLabel = (relation: string) => {
   return labelMap[relation] || relation
 }
 
+// 获取关系类型图标
+const getRelationIcon = (relation: string) => {
+  const iconMap: Record<string, string> = {
+    contain: '📦',
+    equality: '⚖️',
+    connect: '🔗',
+    meta: 'ℹ️'
+  }
+  return iconMap[relation] || '•'
+}
+
+// 获取关系类型提示
+const getRelationTooltip = (node: any) => {
+  const relationMap: Record<string, string> = {
+    contain: `被节点 ${node.parent_id} 包含`,
+    equality: `与节点 ${node.parent_id} 平级`,
+    connect: `连接到节点 ${node.parent_id}`,
+    meta: '元信息'
+  }
+  return relationMap[node.relation] || node.relation
+}
+
 // 截断文本
 const truncateText = (text: string, maxLength = 60) => {
   if (!text) return ''
@@ -700,6 +742,13 @@ const saveRelationEdit = () => {
     background: #e3f2fd;
     border-left-color: #1976d2;
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+  }
+
+  &.highlighted-equality {
+    background: linear-gradient(90deg, #fff9c4 0%, #fffde7 100%);
+    border-left: 3px solid #ffd54f;
+    box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.3), 0 2px 8px rgba(245, 127, 23, 0.2);
+    animation: pulse-equality 2s ease-in-out infinite;
   }
 
   &.is-meta {
@@ -948,34 +997,48 @@ const saveRelationEdit = () => {
   font-family: 'Courier New', monospace;
 }
 
-.relation-badge {
-  font-size: 9px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  background: #e0e0e0;
-  color: #616161;
+.equality-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+  border: 1px solid #ffd54f;
   flex-shrink: 0;
-  font-weight: 500;
-}
-
-.relation-badge.contain {
-  background: #c8e6c9;
-  color: #2e7d32;
-}
-
-.relation-badge.equality {
-  background: #fff9c4;
+  font-size: 10px;
+  font-weight: 600;
   color: #f57f17;
+  box-shadow: 0 1px 3px rgba(245, 127, 23, 0.15);
+  cursor: help;
+  transition: all 0.2s;
 }
 
-.relation-badge.connect {
-  background: #b3e5fc;
-  color: #01579b;
+.equality-indicator:hover {
+  background: linear-gradient(135deg, #fff59d 0%, #ffee58 100%);
+  box-shadow: 0 2px 6px rgba(245, 127, 23, 0.3);
+  transform: translateY(-1px);
 }
 
-.relation-badge.meta {
-  background: #f3e5f5;
-  color: #6a1b9a;
+.equality-line {
+  font-size: 14px;
+  color: #f57f17;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.equality-label {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.equality-target {
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 700;
 }
 
 .level-badge {
@@ -1052,6 +1115,28 @@ const saveRelationEdit = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.id-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  flex-shrink: 0;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.parent-id-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: #fff3e0;
+  color: #f57c00;
+  flex-shrink: 0;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
 }
 
 .multi-select-badge {
@@ -1162,6 +1247,15 @@ const saveRelationEdit = () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   min-width: 120px;
   padding: 4px 0;
+}
+
+@keyframes pulse-equality {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.3), 0 2px 8px rgba(245, 127, 23, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 213, 79, 0.5), 0 4px 12px rgba(245, 127, 23, 0.4);
+  }
 }
 
 .context-menu-item {

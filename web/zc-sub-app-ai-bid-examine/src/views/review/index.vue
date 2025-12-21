@@ -107,6 +107,40 @@
           </div>
         </div>
 
+        <!-- 推理范围设置 (仅 runs 文件显示) -->
+        <div v-if="currentFileSource.isFromRuns" class="range-section">
+          <span class="range-label">范围:</span>
+          <a-input-number
+            v-model:value="inferRange.start"
+            placeholder="起始"
+            size="small"
+            :min="0"
+            style="width: 80px;"
+          />
+          <span class="range-separator">-</span>
+          <a-input-number
+            v-model:value="inferRange.end"
+            placeholder="结束"
+            size="small"
+            :min="0"
+            style="width: 80px;"
+          />
+          <a-button
+            size="small"
+            @click="handleFilterByRange"
+          >
+            过滤
+          </a-button>
+          <a-button
+            type="primary"
+            size="small"
+            @click="handleSaveInferRange"
+            :loading="inferRange.saving"
+          >
+            保存
+          </a-button>
+        </div>
+
         <!-- 操作工具栏（仅列表视图显示） -->
         <div v-show="viewMode === 'list'" class="toolbar-section">
           <!-- 按类型高亮 -->
@@ -239,11 +273,23 @@
 
         <!-- 树形视图 -->
         <div v-show="viewMode === 'tree'" class="review-items tree-view-container">
+          <!-- 树形视图工具栏 -->
+          <div class="tree-toolbar">
+            <div class="toolbar-item">
+              <span class="toolbar-label">筛选类型：</span>
+              <a-checkbox-group v-model:value="selectedClasses">
+                <a-checkbox v-for="classType in availableClasses" :key="classType" :value="classType">
+                  <span class="type-badge" :class="`type-${classType}`">{{ classType }}</span>
+                </a-checkbox>
+              </a-checkbox-group>
+            </div>
+          </div>
+
           <EditableTree
             v-if="filteredTreeElements.length > 0"
             :raw-data="filteredTreeElements"
             build-strategy="parentId"
-            :build-options="{ idField: 'line_id', parentIdField: 'parent_id' }"
+            :build-options="{ idField: 'id', parentIdField: 'parent_id' }"
             :editable="true"
             :show-toolbar="true"
             :loading="treeLoading"
@@ -254,7 +300,7 @@
             @paragraph-click="handleParagraphClick"
           />
           <div v-else style="padding: 20px; text-align: center; color: #999">
-            暂无 Section 或 Title 数据
+            暂无符合筛选条件的数据
           </div>
         </div>
       </div>
@@ -355,6 +401,20 @@ const currentFileSource = ref<{
   isFromRuns: false
 })
 
+// 推理范围
+const inferRange = reactive({
+  start: 0,
+  end: 0,
+  saving: false
+})
+
+// 范围过滤状态
+const rangeFilter = reactive({
+  enabled: false,
+  start: 0,
+  end: 0
+})
+
 const pdfData = reactive({
   pdfUrl: '',
   currentPage: 1,
@@ -362,32 +422,65 @@ const pdfData = reactive({
 })
 
 // JSON数据存储
-const jsonElements = ref<any[]>([])
+const jsonElementsOriginal = ref<any[]>([])  // 完整原始数据
+const jsonElementsFiltered = ref<any[]>([])  // 范围过滤后的数据
+const jsonElements = jsonElementsFiltered  // 直接指向同一个 ref,避免 computed 的响应式开销
 const selectedElement = ref<any>(null)
 
 // 视图模式：list | tree
 const viewMode = ref<'list' | 'tree'>('list')
 const treeLoading = ref(false)
 
-// 过滤后的树形数据（只包含 section 和 title）
-const filteredTreeElements = computed(() => {
-  return jsonElements.value.filter(el => {
-    const classType = el.class?.toLowerCase()
-    return classType === 'section' || classType === 'title'
+// Class 类型筛选
+const selectedClasses = ref<string[]>(['section', 'title'])
+
+// 获取所有可用的 class 类型（从过滤后的数据获取）
+const availableClasses = computed(() => {
+  const classSet = new Set<string>()
+  jsonElementsFiltered.value.forEach(el => {
+    if (el.class) {
+      classSet.add(el.class.toLowerCase())
+    }
   })
+  return Array.from(classSet).sort()
 })
 
-// 当前页的元素（筛选后）
-const currentPageElements = computed(() => {
-  if (!pdfData.currentPage || jsonElements.value.length === 0) return []
-  // pdfData.currentPage 是 1-based，jsonElements 中的 page 是 0-based
-  return jsonElements.value.filter(el => el.page === pdfData.currentPage - 1)
-})
+// 过滤后的树形数据（根据选中的 class 类型）- 改用 ref 缓存
+const filteredTreeElements = ref<any[]>([])
+
+// 当前页的元素（筛选后）- 改用 ref 缓存
+const currentPageElements = ref<any[]>([])
+
+// 更新 filteredTreeElements 的函数
+const updateFilteredTreeElements = () => {
+  filteredTreeElements.value = jsonElementsFiltered.value.filter(el => {
+    const classType = el.class?.toLowerCase()
+    return selectedClasses.value.includes(classType)
+  })
+}
+
+// 更新 currentPageElements 的函数
+const updateCurrentPageElements = () => {
+  if (!pdfData.currentPage || jsonElementsFiltered.value.length === 0) {
+    currentPageElements.value = []
+    return
+  }
+
+  // 如果启用范围过滤，显示所有过滤后的元素；否则只显示当前页
+  if (rangeFilter.enabled) {
+    currentPageElements.value = jsonElementsFiltered.value
+  } else {
+    // 未启用过滤时，显示当前页
+    // pdfData.currentPage 是 1-based，jsonElements 中的 page 是 0-based
+    currentPageElements.value = jsonElementsFiltered.value.filter(el => el.page === pdfData.currentPage - 1)
+  }
+}
 
 // 监听 PDF 翻页，右侧列表滚动到顶部，并应用类型高亮
 watch(() => pdfData.currentPage, (newPage, oldPage) => {
   if (newPage !== oldPage) {
-    console.log(`📄 PDF 翻页: ${oldPage} → ${newPage}，右侧列表重置到顶部`)
+    // 更新当前页元素
+    updateCurrentPageElements()
 
     // 等待 DOM 更新后
     nextTick(() => {
@@ -405,6 +498,11 @@ watch(() => pdfData.currentPage, (newPage, oldPage) => {
   }
 })
 
+// 监听类型筛选变化，更新树形数据
+watch(selectedClasses, () => {
+  updateFilteredTreeElements()
+})
+
 // 编辑状态
 const editingElement = ref<any>(null)
 const originalClass = ref<string>('')
@@ -413,7 +511,7 @@ const batchEditType = ref<string>('')
 // 类型筛选（改为数组）
 const selectedHighlightTypes = ref<string[]>([])
 
-// 当前页元素数量（使用 currentPageElements computed）
+// 当前页元素数量（直接从 ref 获取长度，避免 computed 套 computed）
 const currentPageElementsCount = computed(() => currentPageElements.value.length)
 
 const resultData = reactive<Record<string, any>>({ ...DEFAULT_REVIEW_RESULT })
@@ -1349,8 +1447,8 @@ const handleNodeMove = async ({ nodeId, newParentId }: { nodeId: string, newPare
 
     console.log('✅ 节点移动成功:', result)
 
-    // 更新本地数据
-    const node = jsonElements.value.find((el: any) => el.id === nodeId)
+    // 更新本地数据（在原始数据中查找）
+    const node = jsonElementsOriginal.value.find((el: any) => el.id === nodeId)
     if (node) {
       node.parent_id = newParentId
     }
@@ -1368,7 +1466,7 @@ const handleLabelUpdate = async ({ nodeId, newLabel }: { nodeId: string, newLabe
 
   try {
     // TODO: 调用后端API更新标签
-    const node = jsonElements.value.find((el: any) => el.id === nodeId)
+    const node = jsonElementsOriginal.value.find((el: any) => el.id === nodeId)
     if (node) {
       node.label = newLabel
       message.success('标签更新成功')
@@ -1419,8 +1517,8 @@ const handleRelationUpdate = async ({ nodeId, relation }: { nodeId: string, rela
 
     console.log('✅ 关系更新成功:', result)
 
-    // 更新本地数据
-    const node = jsonElements.value.find((el: any) => el.id === nodeId)
+    // 更新本地数据（在原始数据中查找）
+    const node = jsonElementsOriginal.value.find((el: any) => el.id === nodeId)
     if (node) {
       node.relation = relation
     }
@@ -1429,6 +1527,89 @@ const handleRelationUpdate = async ({ nodeId, relation }: { nodeId: string, rela
   } catch (error) {
     console.error('❌ 关系更新失败:', error)
     message.error(`关系更新失败: ${error.message}`)
+  }
+}
+
+// 按范围过滤元素
+const handleFilterByRange = () => {
+  // 验证输入
+  if (inferRange.start < 0 || inferRange.end < 0) {
+    message.error('页码不能小于0')
+    return
+  }
+
+  if (inferRange.start > inferRange.end) {
+    message.error('起始值不能大于结束值')
+    return
+  }
+
+  // 启用范围过滤，更新过滤后的数据
+  rangeFilter.enabled = true
+  rangeFilter.start = inferRange.start
+  rangeFilter.end = inferRange.end
+
+  // 从原始数据中过滤出范围内的元素
+  jsonElementsFiltered.value = jsonElementsOriginal.value.filter(el => {
+    const page = el.page
+    return page >= inferRange.start && page <= inferRange.end
+  })
+
+  // 更新视图数据
+  updateFilteredTreeElements()
+  updateCurrentPageElements()
+
+  console.log('🔍 启用范围过滤:', {
+    start: inferRange.start,
+    end: inferRange.end,
+    原始数据: jsonElementsOriginal.value.length,
+    过滤后: jsonElementsFiltered.value.length
+  })
+  message.success(`已过滤页面范围: ${inferRange.start} - ${inferRange.end}，共 ${jsonElementsFiltered.value.length} 个元素`)
+}
+
+// 保存推理范围到 metadata.jsonl
+const handleSaveInferRange = async () => {
+  if (!currentFileSource.value.isFromRuns) {
+    message.warning('只支持从 runs 目录加载的文件')
+    return
+  }
+
+  // 验证输入
+  if (inferRange.start < 0 || inferRange.end < 0) {
+    message.error('页码不能小于0')
+    return
+  }
+
+  if (inferRange.start > inferRange.end) {
+    message.error('起始值不能大于结束值')
+    return
+  }
+
+  inferRange.saving = true
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/runs/${currentFileSource.value.runName}/update-metadata`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: currentFileSource.value.fileName,
+        infer_range: [inferRange.start, inferRange.end]
+      })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || '保存失败')
+    }
+
+    console.log('✅ 推理范围保存到 metadata.jsonl:', { filename: currentFileSource.value.fileName, range: [inferRange.start, inferRange.end] })
+    message.success('推理范围已保存')
+  } catch (error) {
+    console.error('❌ 保存推理范围失败:', error)
+    message.error(`保存失败: ${error.message}`)
+  } finally {
+    inferRange.saving = false
   }
 }
 
@@ -1521,15 +1702,21 @@ const getFile = async () => {
           page: typeof item.page === 'string' ? parseInt(item.page) - 1 : item.page  // 转为数字，并转为0索引
         }
       })
-      jsonElements.value = elements
+      // 保存完整原始数据
+      jsonElementsOriginal.value = elements
+      // 没有范围过滤时，过滤后的数据等于原始数据
+      jsonElementsFiltered.value = elements
+      rangeFilter.enabled = false
       console.log('加载JSON数据成功:', jsonData.total, '个元素')
     } else {
       console.error('JSON数据加载失败:', jsonResp.status)
-      jsonElements.value = []
+      jsonElementsOriginal.value = []
+      jsonElementsFiltered.value = []
     }
   } catch (error) {
     console.error('JSON数据加载异常:', error)
-    jsonElements.value = []
+    jsonElementsOriginal.value = []
+    jsonElementsFiltered.value = []
   }
 
   return
@@ -1604,7 +1791,7 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
 
       // 更新 jsonElements（假设返回的数据格式是数组）
       if (Array.isArray(data.data)) {
-        jsonElements.value = data.data.map((item: any) => {
+        const processedData = data.data.map((item: any) => {
           const bboxStr = item.bbox || item.box
           let box = []
           if (typeof bboxStr === 'string') {
@@ -1620,7 +1807,37 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
             page: typeof item.page === 'string' ? parseInt(item.page) : item.page
           }
         })
-        console.log(`📊 加载了 ${jsonElements.value.length} 个元素`)
+
+        // 保存完整原始数据
+        jsonElementsOriginal.value = processedData
+
+        // 初始化推理范围
+        if (file.infer_range && file.infer_range.length === 2) {
+          inferRange.start = file.infer_range[0]
+          inferRange.end = file.infer_range[1]
+
+          // 如果有 infer_range，自动应用范围过滤
+          jsonElementsFiltered.value = processedData.filter(el => {
+            const page = el.page
+            return page >= file.infer_range[0] && page <= file.infer_range[1]
+          })
+          rangeFilter.enabled = true
+          rangeFilter.start = file.infer_range[0]
+          rangeFilter.end = file.infer_range[1]
+          console.log(`🔍 自动应用范围过滤: ${file.infer_range[0]} - ${file.infer_range[1]}，共 ${jsonElementsFiltered.value.length} 个元素`)
+        } else {
+          inferRange.start = 0
+          inferRange.end = 0
+          // 没有范围过滤时，过滤后的数据等于原始数据
+          jsonElementsFiltered.value = processedData
+          rangeFilter.enabled = false
+        }
+
+        // 初始化视图数据
+        updateFilteredTreeElements()
+        updateCurrentPageElements()
+
+        console.log(`📊 加载了 ${jsonElementsOriginal.value.length} 个元素，当前显示 ${jsonElementsFiltered.value.length} 个`)
 
         // 更新文件名显示
         statsData.value.fileName = file.fileName
@@ -1895,6 +2112,26 @@ onBeforeUnmount(() => {
     }
   }
 
+  .range-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e5e7eb;
+
+    .range-label {
+      font-size: 14px;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    .range-separator {
+      color: #999;
+      padding: 0 4px;
+    }
+  }
+
   .filter-tabs {
     display: flex;
     align-items: center;
@@ -2126,7 +2363,7 @@ onBeforeUnmount(() => {
 
 .tree-view-container {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
@@ -2273,6 +2510,56 @@ onBeforeUnmount(() => {
     &.type-caption {
       background: #fce7f3;
       color: #ec4899;
+    }
+
+    &.type-page {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    &.type-fstline {
+      background: #d1fae5;
+      color: #059669;
+    }
+
+    &.type-para_line {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+
+    &.type-para_line2 {
+      background: #bfdbfe;
+      color: #1e40af;
+    }
+
+    &.type-image {
+      background: #fed7aa;
+      color: #ea580c;
+    }
+
+    &.type-footnote {
+      background: #e0e7ff;
+      color: #6366f1;
+    }
+  }
+}
+
+.tree-toolbar {
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+
+  .toolbar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    .toolbar-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      white-space: nowrap;
     }
   }
 }

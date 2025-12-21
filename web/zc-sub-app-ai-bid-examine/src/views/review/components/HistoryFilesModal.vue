@@ -36,13 +36,14 @@
           @click="handlePreview(file)"
         >
           <div class="file-header">
-            <div class="file-info"> 
-              <div class="file-name">{{ file.fileName }}</div> 
+            <div class="file-info">
+              <div class="file-name">{{ file.fileName }}</div>
               <div class="file-meta">
-                <span class="file-date">{{ file.createTime }}</span> 
+                <span class="file-date">{{ file.createTime }}</span>
               </div>
-            </div> 
+            </div>
           </div>
+
           <div class="status-badge" v-if="getExamineResult(file).text">
             <component v-if="getExamineResult(file).icon" :is="getExamineResult(file).icon" class="status-icon"
             :style="{color: getExamineResult(file).color}"/>
@@ -167,7 +168,8 @@ const loadRunsFiles = async (runName: string) => {
           taskId: null,
           reviewResult: null,
           _runName: runName,
-          _isFromRuns: true
+          _isFromRuns: true,
+          infer_range: file.infer_range || []
         }))
         // 按修改时间降序排序（最新的在前）
         .sort((a: any, b: any) => {
@@ -291,7 +293,7 @@ const handleCancel = () => {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        width: fit-content; 
+        width: fit-content;
         .status-icon {
           width: 16px;
           height: 16px;

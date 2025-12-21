@@ -231,31 +231,81 @@ app.get('/api/runs/:timestamp/files', (req, res) => {
     })
   }
 
+  // 读取 metadata.jsonl
+  const metadataPath = path.join(RUNS_DIR, timestamp, 'metadata.jsonl')
+  let metadata = []
+
+  if (fs.existsSync(metadataPath)) {
+    try {
+      const metadataContent = fs.readFileSync(metadataPath, 'utf8')
+      metadata = JSON.parse(metadataContent)
+      console.log(`✅ 读取 metadata.jsonl: ${metadata.length} 条记录`)
+    } catch (error) {
+      console.error('❌ 读取 metadata.jsonl 失败:', error.message)
+    }
+  } else {
+    console.warn('⚠️  metadata.jsonl 不存在，使用实时文件列表')
+  }
+
   fs.readdir(runDir, (err, files) => {
     if (err) {
       return res.status(500).json({ error: err.message })
     }
 
-    // 返回文件列表及其详细信息
-    const fileList = files.map(fileName => {
-      const filePath = path.join(runDir, fileName)
-      const stats = fs.statSync(filePath)
+    // 如果有 metadata，从中读取文件列表
+    let fileList
+    if (metadata.length > 0) {
+      fileList = metadata.map(meta => {
+        const filePath = path.join(runDir, meta.filename)
+        let stats = null
 
-      return {
-        name: fileName,
-        size: stats.size,
-        isDirectory: stats.isDirectory(),
-        modified: stats.mtime,
-        ext: path.extname(fileName)
-      }
-    })
+        try {
+          stats = fs.statSync(filePath)
+        } catch (error) {
+          console.error(`⚠️  文件不存在: ${meta.filename}`)
+        }
+
+        return {
+          name: meta.filename,
+          size: stats ? stats.size : 0,
+          isDirectory: false,
+          modified: stats ? stats.mtime : null,
+          ext: path.extname(meta.filename),
+          // metadata 字段
+          stage1_gt_status: meta.stage1_gt_status,
+          stage2_gt_status: meta.stage2_gt_status,
+          stage3_gt_status: meta.stage3_gt_status,
+          infer_range: meta.infer_range
+        }
+      })
+    } else {
+      // 回退到实时读取文件目录
+      fileList = files.map(fileName => {
+        const filePath = path.join(runDir, fileName)
+        const stats = fs.statSync(filePath)
+
+        return {
+          name: fileName,
+          size: stats.size,
+          isDirectory: stats.isDirectory(),
+          modified: stats.mtime,
+          ext: path.extname(fileName),
+          // 默认 metadata 字段
+          stage1_gt_status: false,
+          stage2_gt_status: false,
+          stage3_gt_status: false,
+          infer_range: []
+        }
+      })
+    }
 
     res.json({
       timestamp,
       subPath,
       path: runDir,
       total: fileList.length,
-      files: fileList
+      files: fileList,
+      _source: metadata.length > 0 ? 'metadata' : 'filesystem'
     })
   })
 })
@@ -597,6 +647,90 @@ app.post('/api/runs/:timestamp/move-nodes', express.json(), (req, res) => {
           updatedCount,
           totalRequested: lineIds.length,
           newParentId
+        })
+      })
+    } catch (parseErr) {
+      res.status(500).json({
+        success: false,
+        error: 'JSON解析失败',
+        details: parseErr.message
+      })
+    }
+  })
+})
+
+// 更新 metadata.jsonl 中的字段
+app.post('/api/runs/:timestamp/update-metadata', express.json(), (req, res) => {
+  const timestamp = req.params.timestamp
+  const { filename, infer_range, stage1_gt_status, stage2_gt_status, stage3_gt_status } = req.body
+
+  if (!filename) {
+    return res.status(400).json({
+      success: false,
+      error: '缺少必要参数：filename'
+    })
+  }
+
+  const metadataPath = path.join(RUNS_DIR, timestamp, 'metadata.jsonl')
+
+  console.log(`📝 更新 metadata:`, { timestamp, filename, infer_range })
+
+  // 读取 metadata.jsonl
+  fs.readFile(metadataPath, 'utf8', (err, data) => {
+    if (err) {
+      return res.status(404).json({
+        success: false,
+        error: `metadata.jsonl 未找到: ${metadataPath}`
+      })
+    }
+
+    try {
+      const metadata = JSON.parse(data)
+
+      // 查找并更新对应的文件记录
+      let found = false
+      for (let i = 0; i < metadata.length; i++) {
+        if (metadata[i].filename === filename) {
+          // 更新字段
+          if (infer_range !== undefined) {
+            metadata[i].infer_range = infer_range
+          }
+          if (stage1_gt_status !== undefined) {
+            metadata[i].stage1_gt_status = stage1_gt_status
+          }
+          if (stage2_gt_status !== undefined) {
+            metadata[i].stage2_gt_status = stage2_gt_status
+          }
+          if (stage3_gt_status !== undefined) {
+            metadata[i].stage3_gt_status = stage3_gt_status
+          }
+          found = true
+          console.log(`✅ 更新文件元数据: ${filename}`, metadata[i])
+          break
+        }
+      }
+
+      if (!found) {
+        return res.status(404).json({
+          success: false,
+          error: `未找到文件: ${filename}`
+        })
+      }
+
+      // 写回文件
+      fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf8', (err) => {
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            error: '写入 metadata.jsonl 失败'
+          })
+        }
+
+        res.json({
+          success: true,
+          message: 'Metadata 更新成功',
+          timestamp,
+          filename
         })
       })
     } catch (parseErr) {

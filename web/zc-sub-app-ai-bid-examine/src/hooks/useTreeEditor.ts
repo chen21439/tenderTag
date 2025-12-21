@@ -61,9 +61,13 @@ export function useTreeEditor(
   const removeNodeFromTree = (nodes: any[], targetId: any): any | null => {
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i]
-      if (node.line_id === targetId || node.id === targetId) {
+      const nodeId = node.id || node.line_id
+      console.log(`🔍 检查节点: ${nodeId}, 目标: ${targetId}, 匹配: ${nodeId == targetId}`)
+      // 使用 == 进行宽松比较，允许字符串和数字匹配
+      if (node.line_id == targetId || node.id == targetId) {
         // 找到目标节点，从数组中移除
         const [removed] = nodes.splice(i, 1)
+        console.log(`✅ 找到并移除节点: ${nodeId}`)
         return removed
       }
       if (node.children && node.children.length > 0) {
@@ -81,52 +85,17 @@ export function useTreeEditor(
    */
   const moveNode = async (nodeId: any, newParentId: any | null) => {
     console.log('🔄 移动节点:', { nodeId, newParentId })
-    console.log('📊 当前树数据节点数:', treeData.value.length)
-    console.log('📊 树数据根节点 IDs:', treeData.value.map((n: any) => n.id || n.line_id))
 
-    // 1. 从树中移除节点
-    const removedNode = removeNodeFromTree(treeData.value, nodeId)
-    if (!removedNode) {
-      console.error('❌ 未找到要移动的节点:', nodeId)
-      return
-    }
-
-    // 2. 添加到新位置
-    if (newParentId === null) {
-      // 移动到根节点
-      treeData.value.push(removedNode)
-    } else {
-      // 移动到指定父节点
-      const newParent = findNodeById(treeData.value, newParentId)
-      if (!newParent) {
-        console.error('❌ 未找到新父节点:', newParentId)
-        // 恢复节点（添加回根节点）
-        treeData.value.push(removedNode)
-        return
-      }
-      if (!newParent.children) {
-        newParent.children = []
-      }
-      newParent.children.push(removedNode)
-
-      // 自动展开新父节点
-      expandedNodes.value.add(newParent.line_id || newParent.id)
-    }
-
-    // 3. 调用回调函数（可选，用于API调用）
+    // 直接调用回调函数（API调用），让后端处理数据更新
     if (options.onNodeMove) {
       try {
         await options.onNodeMove(nodeId, newParentId)
-        console.log('✅ 节点移动成功')
+        console.log('✅ 节点移动成功，等待数据重新加载')
+        // 数据会由父组件重新加载，不需要手动操作树结构
       } catch (error) {
         console.error('❌ 节点移动失败:', error)
-        // 可以在这里实现回滚逻辑
       }
     }
-
-    // 4. 触发响应式更新
-    treeData.value = [...treeData.value]
-    expandedNodes.value = new Set(expandedNodes.value)
   }
 
   /**

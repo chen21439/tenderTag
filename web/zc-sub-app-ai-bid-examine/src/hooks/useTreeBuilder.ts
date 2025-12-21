@@ -43,7 +43,9 @@ export function useTreeBuilder() {
         siblings: [],      // equality 关系的平级节点
         connectedNodes: [] // connect 关系的连接节点
       }
-      idMap.set(item[idField], node)
+      // 统一转换为字符串类型作为 Map 的 key
+      const nodeId = String(item[idField])
+      idMap.set(nodeId, node)
     })
 
     console.log('  - ID映射表大小:', idMap.size)
@@ -55,8 +57,9 @@ export function useTreeBuilder() {
     let connectCount = 0
 
     flatData.forEach(item => {
-      const node = idMap.get(item[idField])
-      const parentId = item[parentIdField]
+      const nodeId = String(item[idField])
+      const node = idMap.get(nodeId)
+      const parentId = item[parentIdField] ? String(item[parentIdField]) : null
       const relation = item[relationField]
 
       if (parentId && idMap.has(parentId)) {
@@ -67,21 +70,53 @@ export function useTreeBuilder() {
           // contain: 包含关系 - 作为子节点
           relatedNode.children.push(node)
           containCount++
-          console.log(`  📦 Contain: ${item[idField]} → ${parentId}`)
+          console.log(`  📦 Contain: ${nodeId} → ${parentId}`)
         } else if (relation === 'equality') {
-          // equality: 平级关系 - 添加到 siblings
-          relatedNode.siblings.push(node)
+          // equality: 平级关系 - 找到 relatedNode 的父节点，添加到同一层级
+          // parent_id 指向的是平级节点，需要找到那个节点的父节点
+          const relatedNodeParentId = relatedNode[parentIdField] ? String(relatedNode[parentIdField]) : null
+
+          if (relatedNodeParentId && idMap.has(relatedNodeParentId)) {
+            // 找到共同的父节点，添加到其 children
+            const grandParent = idMap.get(relatedNodeParentId)
+            grandParent.children.push(node)
+            // 更新当前节点的 parent_id，指向真实的父节点（用于后续多层 equality 处理）
+            node[parentIdField] = relatedNodeParentId
+            console.log(`  ⚖️ Equality: ${nodeId} ↔ ${parentId}，添加到共同父节点 ${relatedNodeParentId}`)
+          } else {
+            // relatedNode 是根节点，那当前节点也应该是根节点
+            roots.push(node)
+            rootCount++
+            // 更新 parent_id 为 null，表示当前节点是根节点
+            node[parentIdField] = null
+            console.log(`  ⚖️ Equality: ${nodeId} ↔ ${parentId}，都作为根节点`)
+          }
           equalityCount++
-          console.log(`  ⚖️ Equality: ${item[idField]} ↔ ${parentId}`)
         } else if (relation === 'connect') {
-          // connect: 连接关系 - 添加到 connectedNodes
-          relatedNode.connectedNodes.push(node)
+          // connect: 连接关系 - 段落内的行连接（fstline, para_line, para_line2...）
+          // parent_id 指向前一行，需要找到共同的父节点（section），添加到同一层级
+          const relatedNodeParentId = relatedNode[parentIdField] ? String(relatedNode[parentIdField]) : null
+
+          if (relatedNodeParentId && idMap.has(relatedNodeParentId)) {
+            // 找到共同的父节点（section），添加到其 children
+            const grandParent = idMap.get(relatedNodeParentId)
+            grandParent.children.push(node)
+            // 更新当前节点的 parent_id，指向真实的父节点（用于后续多层 connect 处理）
+            node[parentIdField] = relatedNodeParentId
+            console.log(`  🔗 Connect: ${nodeId} → ${parentId}，添加到共同父节点 ${relatedNodeParentId}`)
+          } else {
+            // relatedNode 是根节点，那当前节点也应该是根节点
+            roots.push(node)
+            rootCount++
+            // 更新 parent_id 为 null，表示当前节点是根节点
+            node[parentIdField] = null
+            console.log(`  🔗 Connect: ${nodeId} → ${parentId}，都作为根节点`)
+          }
           connectCount++
-          console.log(`  🔗 Connect: ${item[idField]} → ${parentId}`)
         } else {
           // 没有 relation 或未知关系类型，默认作为子节点（向后兼容）
           relatedNode.children.push(node)
-          console.log(`  ❓ Unknown/Empty relation: ${item[idField]} → ${parentId}`)
+          console.log(`  ❓ Unknown/Empty relation: ${nodeId} → ${parentId}`)
         }
       } else {
         // 无父节点或父节点不存在，作为根节点
