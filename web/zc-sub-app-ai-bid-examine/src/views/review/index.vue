@@ -447,6 +447,8 @@ const availableClasses = computed(() => {
 // 过滤后的树形数据（根据选中的 class 类型）
 const filteredTreeElements = computed(() => {
   return jsonElements.value.filter(el => {
+    // 始终包含文档根节点
+    if (el.id === -1) return true
     const classType = el.class?.toLowerCase()
     return selectedClasses.value.includes(classType)
   })
@@ -980,7 +982,7 @@ const handleSingleElementClassChange = async (element: any) => {
         body: JSON.stringify({
           runName: currentFileSource.value.runName,
           fileName: currentFileSource.value.fileName,
-          lineId: element.line_id,
+          id: element.id,
           updates: {
             class: element.class
           }
@@ -1036,7 +1038,7 @@ const handleToggleTodo = async (element: any) => {
         body: JSON.stringify({
           runName: currentFileSource.value.runName,
           fileName: currentFileSource.value.fileName,
-          lineId: element.line_id,
+          id: element.id,
           updates: {
             todo: newTodoStatus
           }
@@ -1091,28 +1093,47 @@ const applyBatchEdit = async () => {
   }
 
   try {
-    const pdfFileName = statsData.value.fileName || '少年宫.pdf'
-    const jsonFileName = pdfFileName.replace(/\.pdf$/i, '.json')
-
     // 批量更新
     const updatePromises = currentPageElements.value.map(element => {
       // 更新内存中的数据
       element.class = batchEditType.value
 
       // 调用 API 更新
-      return fetch('http://localhost:3000/api/json/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fileName: jsonFileName,
-          lineId: element.line_id,
-          updates: {
-            class: batchEditType.value
-          }
+      if (currentFileSource.value.isFromRuns) {
+        // Runs 目录文件
+        return fetch('http://localhost:3000/api/runs/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            runName: currentFileSource.value.runName,
+            fileName: currentFileSource.value.fileName,
+            id: element.id,
+            updates: {
+              class: batchEditType.value
+            }
+          })
         })
-      })
+      } else {
+        // 本地 JSON 目录文件
+        const pdfFileName = statsData.value.fileName || '少年宫.pdf'
+        const jsonFileName = pdfFileName.replace(/\.pdf$/i, '.json')
+
+        return fetch('http://localhost:3000/api/json/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            fileName: jsonFileName,
+            id: element.id,
+            updates: {
+              class: batchEditType.value
+            }
+          })
+        })
+      }
     })
 
     await Promise.all(updatePromises)
@@ -1529,8 +1550,10 @@ const handleFilterByRange = () => {
     return
   }
 
-  // 从原始数据中过滤出范围内的元素
+  // 从原始数据中过滤出范围内的元素（保留文档根节点）
   jsonElements.value = jsonElementsRaw.value.filter(el => {
+    // 始终保留文档根节点
+    if (el.id === -1) return true
     const page = el.page
     return page >= inferRange.start && page <= inferRange.end
   })
@@ -1789,16 +1812,46 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
           }
         })
 
+        // 在数据开头添加文档根节点
+        const documentRootNode = {
+          line_id: 'L_ROOT',
+          class: 'document',
+          page: '0',
+          box: [0, 0, 0, 0],
+          text: file.name.replace('.json', ''),
+          id: -1,
+          parent_id: '',
+          is_meta: '',
+          relation: ''
+        }
+
+        // 将所有根节点（parent_id为空或0的节点）的parent_id指向文档根节点
+        const processedDataWithRoot = processedData.map((item: any) => {
+          if (item.parent_id === '' || item.parent_id === null || item.parent_id === undefined) {
+            return {
+              ...item,
+              parent_id: -1,
+              relation: item.relation || 'contain'
+            }
+          }
+          return item
+        })
+
+        // 合并文档根节点和处理后的数据
+        const finalData = [documentRootNode, ...processedDataWithRoot]
+
         // 保存原始数据
-        jsonElementsRaw.value = processedData
+        jsonElementsRaw.value = finalData
 
         // 检查是否有 infer_range，如果有则自动过滤
         if (file.infer_range && file.infer_range.length === 2) {
           inferRange.start = file.infer_range[0]
           inferRange.end = file.infer_range[1]
 
-          // 应用范围过滤
-          jsonElements.value = processedData.filter(el => {
+          // 应用范围过滤（保留文档根节点）
+          jsonElements.value = finalData.filter(el => {
+            // 始终保留文档根节点
+            if (el.id === -1) return true
             const page = el.page
             return page >= file.infer_range[0] && page <= file.infer_range[1]
           })
@@ -1807,12 +1860,12 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
           rangeFilter.start = file.infer_range[0]
           rangeFilter.end = file.infer_range[1]
 
-          console.log(`📊 加载了 ${processedData.length} 个元素，应用范围过滤 [${file.infer_range[0]}-${file.infer_range[1]}]，显示 ${jsonElements.value.length} 个`)
+          console.log(`📊 加载了 ${finalData.length} 个元素，应用范围过滤 [${file.infer_range[0]}-${file.infer_range[1]}]，显示 ${jsonElements.value.length} 个`)
         } else {
           // 没有范围过滤，显示全部数据
           inferRange.start = 0
           inferRange.end = 0
-          jsonElements.value = processedData
+          jsonElements.value = finalData
           rangeFilter.enabled = false
 
           console.log(`📊 加载了 ${jsonElements.value.length} 个元素`)
