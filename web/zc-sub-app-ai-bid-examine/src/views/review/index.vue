@@ -422,9 +422,8 @@ const pdfData = reactive({
 })
 
 // JSON数据存储
-const jsonElementsOriginal = ref<any[]>([])  // 完整原始数据
-const jsonElementsFiltered = ref<any[]>([])  // 范围过滤后的数据
-const jsonElements = jsonElementsFiltered  // 直接指向同一个 ref,避免 computed 的响应式开销
+const jsonElementsRaw = ref<any[]>([])     // 原始完整数据
+const jsonElements = ref<any[]>([])        // 显示数据(可能是过滤后的)
 const selectedElement = ref<any>(null)
 
 // 视图模式：list | tree
@@ -434,10 +433,10 @@ const treeLoading = ref(false)
 // Class 类型筛选
 const selectedClasses = ref<string[]>(['section', 'title'])
 
-// 获取所有可用的 class 类型（从过滤后的数据获取）
+// 获取所有可用的 class 类型
 const availableClasses = computed(() => {
   const classSet = new Set<string>()
-  jsonElementsFiltered.value.forEach(el => {
+  jsonElements.value.forEach(el => {
     if (el.class) {
       classSet.add(el.class.toLowerCase())
     }
@@ -445,42 +444,26 @@ const availableClasses = computed(() => {
   return Array.from(classSet).sort()
 })
 
-// 过滤后的树形数据（根据选中的 class 类型）- 改用 ref 缓存
-const filteredTreeElements = ref<any[]>([])
-
-// 当前页的元素（筛选后）- 改用 ref 缓存
-const currentPageElements = ref<any[]>([])
-
-// 更新 filteredTreeElements 的函数
-const updateFilteredTreeElements = () => {
-  filteredTreeElements.value = jsonElementsFiltered.value.filter(el => {
+// 过滤后的树形数据（根据选中的 class 类型）
+const filteredTreeElements = computed(() => {
+  return jsonElements.value.filter(el => {
     const classType = el.class?.toLowerCase()
     return selectedClasses.value.includes(classType)
   })
-}
+})
 
-// 更新 currentPageElements 的函数
-const updateCurrentPageElements = () => {
-  if (!pdfData.currentPage || jsonElementsFiltered.value.length === 0) {
-    currentPageElements.value = []
-    return
-  }
+// 当前页的元素
+const currentPageElements = computed(() => {
+  if (!pdfData.currentPage || jsonElements.value.length === 0) return []
 
-  // 如果启用范围过滤，显示所有过滤后的元素；否则只显示当前页
-  if (rangeFilter.enabled) {
-    currentPageElements.value = jsonElementsFiltered.value
-  } else {
-    // 未启用过滤时，显示当前页
-    // pdfData.currentPage 是 1-based，jsonElements 中的 page 是 0-based
-    currentPageElements.value = jsonElementsFiltered.value.filter(el => el.page === pdfData.currentPage - 1)
-  }
-}
+  // pdfData.currentPage 是 1-based，jsonElements 中的 page 是 0-based
+  return jsonElements.value.filter(el => el.page === pdfData.currentPage - 1)
+})
 
 // 监听 PDF 翻页，右侧列表滚动到顶部，并应用类型高亮
 watch(() => pdfData.currentPage, (newPage, oldPage) => {
   if (newPage !== oldPage) {
-    // 更新当前页元素
-    updateCurrentPageElements()
+    console.log(`📄 PDF 翻页: ${oldPage} → ${newPage}，右侧列表重置到顶部`)
 
     // 等待 DOM 更新后
     nextTick(() => {
@@ -496,11 +479,6 @@ watch(() => pdfData.currentPage, (newPage, oldPage) => {
       }
     })
   }
-})
-
-// 监听类型筛选变化，更新树形数据
-watch(selectedClasses, () => {
-  updateFilteredTreeElements()
 })
 
 // 编辑状态
@@ -1447,10 +1425,18 @@ const handleNodeMove = async ({ nodeId, newParentId }: { nodeId: string, newPare
 
     console.log('✅ 节点移动成功:', result)
 
-    // 更新本地数据（在原始数据中查找）
-    const node = jsonElementsOriginal.value.find((el: any) => el.id === nodeId)
-    if (node) {
-      node.parent_id = newParentId
+    // 更新本地数据（在原始完整数据中查找和更新）
+    const nodeInRaw = jsonElementsRaw.value.find((el: any) => el.id === nodeId)
+    if (nodeInRaw) {
+      nodeInRaw.parent_id = newParentId
+      console.log('✅ 已更新原始数据中的 parent_id')
+    }
+
+    // 同时更新过滤后的数据(如果节点在过滤范围内)
+    const nodeInFiltered = jsonElements.value.find((el: any) => el.id === nodeId)
+    if (nodeInFiltered) {
+      nodeInFiltered.parent_id = newParentId
+      console.log('✅ 已更新过滤数据中的 parent_id')
     }
 
     message.success('节点移动成功')
@@ -1466,7 +1452,7 @@ const handleLabelUpdate = async ({ nodeId, newLabel }: { nodeId: string, newLabe
 
   try {
     // TODO: 调用后端API更新标签
-    const node = jsonElementsOriginal.value.find((el: any) => el.id === nodeId)
+    const node = jsonElements.value.find((el: any) => el.id === nodeId)
     if (node) {
       node.label = newLabel
       message.success('标签更新成功')
@@ -1518,7 +1504,7 @@ const handleRelationUpdate = async ({ nodeId, relation }: { nodeId: string, rela
     console.log('✅ 关系更新成功:', result)
 
     // 更新本地数据（在原始数据中查找）
-    const node = jsonElementsOriginal.value.find((el: any) => el.id === nodeId)
+    const node = jsonElements.value.find((el: any) => el.id === nodeId)
     if (node) {
       node.relation = relation
     }
@@ -1543,28 +1529,24 @@ const handleFilterByRange = () => {
     return
   }
 
-  // 启用范围过滤，更新过滤后的数据
-  rangeFilter.enabled = true
-  rangeFilter.start = inferRange.start
-  rangeFilter.end = inferRange.end
-
   // 从原始数据中过滤出范围内的元素
-  jsonElementsFiltered.value = jsonElementsOriginal.value.filter(el => {
+  jsonElements.value = jsonElementsRaw.value.filter(el => {
     const page = el.page
     return page >= inferRange.start && page <= inferRange.end
   })
 
-  // 更新视图数据
-  updateFilteredTreeElements()
-  updateCurrentPageElements()
+  // 更新过滤状态
+  rangeFilter.enabled = true
+  rangeFilter.start = inferRange.start
+  rangeFilter.end = inferRange.end
 
   console.log('🔍 启用范围过滤:', {
     start: inferRange.start,
     end: inferRange.end,
-    原始数据: jsonElementsOriginal.value.length,
-    过滤后: jsonElementsFiltered.value.length
+    原始数据: jsonElementsRaw.value.length,
+    过滤后: jsonElements.value.length
   })
-  message.success(`已过滤页面范围: ${inferRange.start} - ${inferRange.end}，共 ${jsonElementsFiltered.value.length} 个元素`)
+  message.success(`已过滤页面范围: ${inferRange.start} - ${inferRange.end}，共 ${jsonElements.value.length} 个元素`)
 }
 
 // 保存推理范围到 metadata.jsonl
@@ -1702,21 +1684,20 @@ const getFile = async () => {
           page: typeof item.page === 'string' ? parseInt(item.page) - 1 : item.page  // 转为数字，并转为0索引
         }
       })
-      // 保存完整原始数据
-      jsonElementsOriginal.value = elements
-      // 没有范围过滤时，过滤后的数据等于原始数据
-      jsonElementsFiltered.value = elements
+      // 本地任务没有 range 过滤，直接赋值
+      jsonElementsRaw.value = elements
+      jsonElements.value = elements
       rangeFilter.enabled = false
       console.log('加载JSON数据成功:', jsonData.total, '个元素')
     } else {
       console.error('JSON数据加载失败:', jsonResp.status)
-      jsonElementsOriginal.value = []
-      jsonElementsFiltered.value = []
+      jsonElementsRaw.value = []
+      jsonElements.value = []
     }
   } catch (error) {
     console.error('JSON数据加载异常:', error)
-    jsonElementsOriginal.value = []
-    jsonElementsFiltered.value = []
+    jsonElementsRaw.value = []
+    jsonElements.value = []
   }
 
   return
@@ -1808,36 +1789,34 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
           }
         })
 
-        // 保存完整原始数据
-        jsonElementsOriginal.value = processedData
+        // 保存原始数据
+        jsonElementsRaw.value = processedData
 
-        // 初始化推理范围
+        // 检查是否有 infer_range，如果有则自动过滤
         if (file.infer_range && file.infer_range.length === 2) {
           inferRange.start = file.infer_range[0]
           inferRange.end = file.infer_range[1]
 
-          // 如果有 infer_range，自动应用范围过滤
-          jsonElementsFiltered.value = processedData.filter(el => {
+          // 应用范围过滤
+          jsonElements.value = processedData.filter(el => {
             const page = el.page
             return page >= file.infer_range[0] && page <= file.infer_range[1]
           })
+
           rangeFilter.enabled = true
           rangeFilter.start = file.infer_range[0]
           rangeFilter.end = file.infer_range[1]
-          console.log(`🔍 自动应用范围过滤: ${file.infer_range[0]} - ${file.infer_range[1]}，共 ${jsonElementsFiltered.value.length} 个元素`)
+
+          console.log(`📊 加载了 ${processedData.length} 个元素，应用范围过滤 [${file.infer_range[0]}-${file.infer_range[1]}]，显示 ${jsonElements.value.length} 个`)
         } else {
+          // 没有范围过滤，显示全部数据
           inferRange.start = 0
           inferRange.end = 0
-          // 没有范围过滤时，过滤后的数据等于原始数据
-          jsonElementsFiltered.value = processedData
+          jsonElements.value = processedData
           rangeFilter.enabled = false
+
+          console.log(`📊 加载了 ${jsonElements.value.length} 个元素`)
         }
-
-        // 初始化视图数据
-        updateFilteredTreeElements()
-        updateCurrentPageElements()
-
-        console.log(`📊 加载了 ${jsonElementsOriginal.value.length} 个元素，当前显示 ${jsonElementsFiltered.value.length} 个`)
 
         // 更新文件名显示
         statsData.value.fileName = file.fileName
