@@ -20,11 +20,8 @@
           <ClockFading class="icon" :size="16" />
           <span>解析完成时间：{{ statsData.analysisFinishTime || '-' }}</span>
         </div>
-        <div class="review-time">
-          <Calendar1 class="icon" :size="16" />
-          <span>审查时间：{{ statsData.reviewTime || '-' }}</span>
-        </div>
         <div class="action-buttons">
+          <a-button @click="handleEditMetadata">编辑文档元信息</a-button>
           <a-dropdown
             v-model:open="exportState.visible"
             :trigger="['click']"
@@ -317,6 +314,15 @@
       :filteredItems="filteredItems"
       @preview="handleFilePreview"
     />
+
+    <!-- 编辑元信息弹窗 -->
+    <EditMetadataModal
+      v-model:open="state.metadataModalVisible"
+      :metadata="currentMetadata"
+      :run-name="currentFileSource.runName"
+      @save="handleMetadataSave"
+    />
+
     <!-- 下载中离开页面提示 -->
     <BaseDialog v-model="leaveConfirmVisible" title="提示" @confirm="confirmLeave">
       正在下载中，离开页面将中断下载，确定要离开吗？
@@ -339,6 +345,7 @@ import BaseEmpty from '@/components/BaseEmpty/index.vue'
 import LeftSideActions from '@/components/LeftSideActions/index.vue'
 import CheckListModal from './components/CheckListModal.vue'
 import HistoryFilesModal from './components/HistoryFilesModal.vue'
+import EditMetadataModal from './components/EditMetadataModal.vue'
 import ReviewItem from './components/ReviewItem.vue'
 import { EditableTree } from '@/components/tree'
 import config from '../../config'
@@ -362,7 +369,17 @@ const state = reactive({
   loading: false,
   activeFilter: 1 as number | null,
   checkListVisible: false,
-  historyFilesVisible: false
+  historyFilesVisible: false,
+  metadataModalVisible: false
+})
+
+// 当前文档元信息
+const currentMetadata = ref({
+  filename: '',
+  stage1_gt_status: false,
+  stage2_gt_status: false,
+  stage3_gt_status: false,
+  infer_range: [0, 0] as [number, number]
 })
 const markList = ref<any[]>([])
 const getMarkList = async () => {
@@ -1782,6 +1799,50 @@ const showCheckList = () => {
 
 const showHistoryFiles = () => {
   state.historyFilesVisible = true
+}
+
+// 编辑文档元信息
+const handleEditMetadata = async () => {
+  if (!currentFileSource.value.isFromRuns) {
+    message.warning('只支持从 runs 目录加载的文件')
+    return
+  }
+
+  if (!currentFileSource.value.runName || !currentFileSource.value.fileName) {
+    message.error('文件信息不完整')
+    return
+  }
+
+  // 从后端加载当前文件的元信息
+  try {
+    const response = await fetch(`http://localhost:3000/api/runs/metadata?runName=${currentFileSource.value.runName}&filename=${currentFileSource.value.fileName}`)
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || '加载元信息失败')
+    }
+
+    // 设置当前元信息
+    currentMetadata.value = {
+      filename: currentFileSource.value.fileName,
+      stage1_gt_status: result.metadata?.stage1_gt_status || false,
+      stage2_gt_status: result.metadata?.stage2_gt_status || false,
+      stage3_gt_status: result.metadata?.stage3_gt_status || false,
+      infer_range: result.metadata?.infer_range || [0, 0]
+    }
+
+    // 打开模态框
+    state.metadataModalVisible = true
+  } catch (error: any) {
+    console.error('❌ 加载元信息失败:', error)
+    message.error(`加载失败: ${error.message}`)
+  }
+}
+
+// 保存元信息后的回调
+const handleMetadataSave = (metadata: any) => {
+  console.log('✅ 元信息已保存:', metadata)
+  // 可以在这里更新本地状态或刷新数据
 }
 
 const handleFilePreview = async (file: any, autoLoad = false) => {
