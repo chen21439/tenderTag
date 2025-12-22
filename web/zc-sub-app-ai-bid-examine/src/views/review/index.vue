@@ -430,9 +430,6 @@ const selectedElement = ref<any>(null)
 const viewMode = ref<'list' | 'tree'>('list')
 const treeLoading = ref(false)
 
-// Class 类型筛选
-const selectedClasses = ref<string[]>(['section', 'title'])
-
 // 获取所有可用的 class 类型
 const availableClasses = computed(() => {
   const classSet = new Set<string>()
@@ -444,14 +441,20 @@ const availableClasses = computed(() => {
   return Array.from(classSet).sort()
 })
 
-// 过滤后的树形数据（根据选中的 class 类型）
+// Class 类型筛选（默认选中所有类型）
+const selectedClasses = ref<string[]>([])
+
+// 监听 availableClasses 变化，自动全选
+watch(availableClasses, (newClasses) => {
+  if (newClasses.length > 0 && selectedClasses.value.length === 0) {
+    selectedClasses.value = [...newClasses]
+  }
+}, { immediate: true })
+
+// 过滤后的树形数据（禁用类型过滤，显示全部）
 const filteredTreeElements = computed(() => {
-  return jsonElements.value.filter(el => {
-    // 始终包含文档根节点
-    if (el.id === -1) return true
-    const classType = el.class?.toLowerCase()
-    return selectedClasses.value.includes(classType)
-  })
+  // 直接返回全部数据，不进行类型过滤
+  return jsonElements.value
 })
 
 // 当前页的元素
@@ -1485,8 +1488,8 @@ const handleLabelUpdate = async ({ nodeId, newLabel }: { nodeId: string, newLabe
 }
 
 // 处理关系更新
-const handleRelationUpdate = async ({ nodeId, relation }: { nodeId: string, relation: string }) => {
-  console.log('🔗 更新关系:', { nodeId, relation })
+const handleRelationUpdate = async ({ nodeId, class: nodeClass, relation, parent_id }: { nodeId: string, class?: string, relation: string, parent_id?: number | string }) => {
+  console.log('🔗 更新关系:', { nodeId, class: nodeClass, relation, parent_id })
 
   // 检查是否从 runs 目录加载
   if (!currentFileSource.value.isFromRuns) {
@@ -1504,7 +1507,14 @@ const handleRelationUpdate = async ({ nodeId, relation }: { nodeId: string, rela
   }
 
   try {
-    // 调用后端 API 更新 relation
+    // 构建更新数据 (总是包含 class, relation 和 parent_id)
+    const updates: any = {
+      class: nodeClass || '',
+      relation,
+      parent_id: parent_id !== undefined ? parent_id : ''
+    }
+
+    // 调用后端 API 更新 class, relation 和 parent_id
     const response = await fetch('http://localhost:3000/api/runs/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1512,7 +1522,7 @@ const handleRelationUpdate = async ({ nodeId, relation }: { nodeId: string, rela
         runName,
         fileName,
         id: nodeId,
-        updates: { relation }
+        updates
       })
     })
 
@@ -1527,13 +1537,15 @@ const handleRelationUpdate = async ({ nodeId, relation }: { nodeId: string, rela
     // 更新本地数据（在原始数据中查找）
     const node = jsonElements.value.find((el: any) => el.id === nodeId)
     if (node) {
+      if (nodeClass) node.class = nodeClass
       node.relation = relation
+      node.parent_id = parent_id !== undefined ? parent_id : ''
     }
 
-    message.success('关系更新成功')
+    message.success('更新成功')
   } catch (error) {
     console.error('❌ 关系更新失败:', error)
-    message.error(`关系更新失败: ${error.message}`)
+    message.error(`更新失败: ${error.message}`)
   }
 }
 
@@ -1812,7 +1824,7 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
           }
         })
 
-        // 在数据开头添加文档根节点
+        // 在数据开头添加文档根节点（不修改原始数据，只添加虚拟根节点）
         const documentRootNode = {
           line_id: 'L_ROOT',
           class: 'document',
@@ -1825,20 +1837,8 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
           relation: ''
         }
 
-        // 将所有根节点（parent_id为空或0的节点）的parent_id指向文档根节点
-        const processedDataWithRoot = processedData.map((item: any) => {
-          if (item.parent_id === '' || item.parent_id === null || item.parent_id === undefined) {
-            return {
-              ...item,
-              parent_id: -1,
-              relation: item.relation || 'contain'
-            }
-          }
-          return item
-        })
-
-        // 合并文档根节点和处理后的数据
-        const finalData = [documentRootNode, ...processedDataWithRoot]
+        // 合并文档根节点和原始数据（不修改 parent_id）
+        const finalData = [documentRootNode, ...processedData]
 
         // 保存原始数据
         jsonElementsRaw.value = finalData

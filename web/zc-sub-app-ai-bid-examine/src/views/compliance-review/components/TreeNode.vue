@@ -124,16 +124,42 @@
           <span class="close-btn" @click="closeRelationModal">×</span>
         </div>
         <div class="label-modal-body">
-          <select
-            ref="relationSelectRef"
-            v-model="editingRelation"
-            class="relation-select"
-          >
-            <option value="">无关系</option>
-            <option value="connect">connect</option>
-            <option value="equality">equality</option>
-            <option value="contain">contain</option>
-          </select>
+          <div class="form-group">
+            <label>元素类型 (class):</label>
+            <select
+              v-model="editingClass"
+              class="class-select"
+            >
+              <option value="section">section</option>
+              <option value="fstline">fstline</option>
+              <option value="para">para</option>
+              <option value="table">table</option>
+              <option value="title">title</option>
+              <option value="caption">caption</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>关系类型:</label>
+            <select
+              ref="relationSelectRef"
+              v-model="editingRelation"
+              class="relation-select"
+            >
+              <option value="">无关系</option>
+              <option value="connect">connect</option>
+              <option value="equality">equality</option>
+              <option value="contain">contain</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>父节点 ID:</label>
+            <input
+              type="number"
+              v-model="editingParentId"
+              class="parent-id-input"
+              placeholder="输入父节点 ID"
+            />
+          </div>
         </div>
         <div class="label-modal-footer">
           <button class="btn-cancel" @click="closeRelationModal">取消</button>
@@ -300,7 +326,9 @@ const contextMenuY = ref(0)
 
 // Relation 编辑状态
 const showRelationModal = ref(false)
+const editingClass = ref('')
 const editingRelation = ref('')
+const editingParentId = ref<number | ''>('')
 const relationSelectRef = ref<HTMLSelectElement | null>(null)
 let isDraggingNow = false
 let mouseDownTime = Date.now() // 初始化为当前时间，避免计算错误
@@ -673,7 +701,11 @@ const handleContextMenu = (event: MouseEvent) => {
 // 处理编辑关系
 const handleEditRelation = () => {
   showContextMenu.value = false
+  editingClass.value = props.node.class || ''
   editingRelation.value = props.node.relation || ''
+  editingParentId.value = props.node.parent_id !== undefined && props.node.parent_id !== null && props.node.parent_id !== ''
+    ? Number(props.node.parent_id)
+    : ''
   showRelationModal.value = true
 
   // 自动聚焦选择框
@@ -685,22 +717,45 @@ const handleEditRelation = () => {
 // 关闭关系编辑模态框
 const closeRelationModal = () => {
   showRelationModal.value = false
+  editingClass.value = ''
   editingRelation.value = ''
+  editingParentId.value = ''
 }
 
 // 保存关系编辑
 const saveRelationEdit = () => {
+  const newClass = editingClass.value.trim()
   const newRelation = editingRelation.value.trim()
-  console.log('💾 保存关系:', {
-    nodeId: props.node.id,
-    oldRelation: props.node.relation,
-    newRelation
+
+  console.log('🔍 调试 editingParentId:', {
+    raw: editingParentId.value,
+    type: typeof editingParentId.value,
+    isEmpty: editingParentId.value === '',
+    isNull: editingParentId.value === null,
+    isUndefined: editingParentId.value === undefined
   })
 
-  // 通知父组件更新关系
+  // 处理 parent_id: 空值统一为 '', 有值则转为数字
+  const newParentId = (editingParentId.value === '' || editingParentId.value === null || editingParentId.value === undefined)
+    ? ''
+    : Number(editingParentId.value)
+
+  console.log('💾 保存关系:', {
+    nodeId: props.node.id,
+    oldClass: props.node.class,
+    newClass,
+    oldRelation: props.node.relation,
+    newRelation,
+    oldParentId: props.node.parent_id,
+    newParentId
+  })
+
+  // 通知父组件更新 class、relation 和 parent_id
   emit('update-relation', {
     nodeId: props.node.id,
-    relation: newRelation
+    class: newClass,
+    relation: newRelation,
+    parent_id: newParentId
   })
 
   closeRelationModal()
@@ -1317,10 +1372,28 @@ const saveRelationEdit = () => {
 
 .label-modal-body {
   padding: 20px;
+
+  .form-group {
+    margin-bottom: 16px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
 }
 
 .label-input,
-.relation-select {
+.class-select,
+.relation-select,
+.parent-id-input {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #d9d9d9;

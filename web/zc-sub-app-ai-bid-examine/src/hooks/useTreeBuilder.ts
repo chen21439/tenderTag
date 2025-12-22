@@ -59,8 +59,30 @@ export function useTreeBuilder() {
     flatData.forEach(item => {
       const nodeId = String(item[idField])
       const node = idMap.get(nodeId)
-      const parentId = item[parentIdField] ? String(item[parentIdField]) : null
+      const rawParentId = item[parentIdField]
+      // 明确判断 null/undefined/空字符串，数字 0 是有效值
+      let parentId = (rawParentId !== null && rawParentId !== undefined && rawParentId !== '')
+        ? String(rawParentId)
+        : null
       const relation = item[relationField]
+
+      console.log(`  🔍 处理节点 ${nodeId}: parent_id原始值=${JSON.stringify(rawParentId)}, 转换后=${parentId}, relation=${relation}`)
+
+      // 跳过文档根节点本身（它应该是真正的根节点）
+      if (nodeId === '-1') {
+        roots.push(node)
+        rootCount++
+        console.log(`  📄 文档根节点 (id=-1) 作为根节点`)
+        return
+      }
+
+      // 如果 parent_id 为空字符串/null/undefined（但不包括数字0）且存在文档根节点(id=-1)，则将其挂到文档根节点
+      if (parentId === null && idMap.has('-1')) {
+        parentId = '-1'
+        // 记录实际父节点ID，供后续 equality/connect 关系查找使用
+        node._actualParentId = '-1'
+        console.log(`  📄 将根节点元素 ${nodeId} (原parent_id为空) 挂载到文档根节点`)
+      }
 
       if (parentId && idMap.has(parentId)) {
         const relatedNode = idMap.get(parentId)
@@ -136,6 +158,20 @@ export function useTreeBuilder() {
     console.log('  - Contain 关系:', containCount)
     console.log('  - Equality 关系:', equalityCount)
     console.log('  - Connect 关系:', connectCount)
+
+    // 检查树结构
+    const checkTree = (node: any, depth: number = 0) => {
+      const prefix = '  '.repeat(depth)
+      console.log(`${prefix}├─ id=${node[idField]}, class=${node.class}, children=${node.children?.length || 0}`)
+      if (node.children && node.children.length > 0 && depth < 3) {
+        node.children.slice(0, 5).forEach((child: any) => checkTree(child, depth + 1))
+        if (node.children.length > 5) {
+          console.log(`${prefix}   ... 还有 ${node.children.length - 5} 个子节点`)
+        }
+      }
+    }
+    console.log('🌳 树结构预览:')
+    roots.slice(0, 3).forEach(root => checkTree(root))
 
     return roots
   }

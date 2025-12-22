@@ -3,26 +3,11 @@
     <!-- 工具栏 -->
     <div v-if="showToolbar" class="tree-toolbar">
       <div class="toolbar-left">
-        <a-button
-          v-if="editable"
-          size="small"
-          :type="editMode ? 'primary' : 'default'"
-          @click="toggleEditMode"
-        >
-          {{ editMode ? '退出编辑' : '编辑模式' }}
+        <a-button size="small" type="primary" @click="handleEditMetadata">
+          编辑文档元信息
         </a-button>
-        <a-button size="small" @click="expandAll">全部展开</a-button>
-        <a-button size="small" @click="collapseAll">全部折叠</a-button>
-        <a-checkbox-group v-model:value="highlightRelations" style="margin-left: 12px;">
-          <a-checkbox value="equality">Equality</a-checkbox>
-          <a-checkbox value="contain">Contain</a-checkbox>
-          <a-checkbox value="connect">Connect</a-checkbox>
-        </a-checkbox-group>
       </div>
       <div class="toolbar-right">
-        <span v-if="editMode && selectedNodeIds.length > 0" class="selection-info">
-          已选中 {{ selectedNodeIds.length }} 个节点
-        </span>
         <span class="node-count">共 {{ totalNodeCount }} 个节点</span>
       </div>
     </div>
@@ -51,7 +36,7 @@
           :depth="0"
           :expanded-nodes="expandedNodes"
           :selected-ids="selectedNodeIds"
-          :highlighted-nodes="highlightedEqualityNodes"
+          :highlighted-nodes="new Set()"
           :node-map="nodeMap"
           :debug-mode="debugMode"
           :edit-mode="editMode"
@@ -204,58 +189,7 @@ const totalNodeCount = computed(() => {
   return countNodes(treeData.value)
 })
 
-// 高亮关系节点模式
-const highlightRelations = ref<string[]>([])
-const highlightedEqualityNodes = ref<Set<any>>(new Set())
-
-// 查找所有符合指定关系的节点（parent_id 指向目标节点）
-const findRelatedNodes = (targetNodeId: any, relations: string[]): Set<any> => {
-  const relatedSet = new Set<any>()
-
-  if (!relations || relations.length === 0) {
-    return relatedSet
-  }
-
-  console.log(`🔍 开始查找关系节点，目标ID: ${targetNodeId}, 关系类型: ${relations.join(', ')}`)
-  console.log(`📊 原始数据节点数: ${props.rawData.length}`)
-
-  // 首先找到目标节点，获取其 id
-  const targetNode = props.rawData.find((n: any) => {
-    const nId = n.id || n.line_id
-    const nLineId = n.line_id
-    return String(nId) === String(targetNodeId) || String(nLineId) === String(targetNodeId)
-  })
-
-  if (!targetNode) {
-    console.warn(`⚠️ 未找到目标节点: ${targetNodeId}`)
-    return relatedSet
-  }
-
-  const targetId = targetNode.id || targetNode.line_id
-  console.log(`📍 目标节点: id=${targetNode.id}, line_id=${targetNode.line_id}`)
-
-  // 在原始数据中查找所有 parent_id 指向目标节点的节点
-  props.rawData.forEach((node: any) => {
-    const nodeId = node.id || node.line_id
-    const parentId = node.parent_id
-
-    // parent_id 可能指向 id 或 line_id，都要检查
-    const isParentMatch = String(parentId) === String(targetNode.id) ||
-                          String(parentId) === String(targetNode.line_id)
-
-    // 如果节点的 parent_id 指向目标节点，且 relation 在选中的关系列表中
-    if (isParentMatch && relations.includes(node.relation)) {
-      // 转为数字存储
-      const numId = Number(node.id)
-      relatedSet.add(numId)
-      console.log(`✅ 找到关系节点: ${numId}, relation: ${node.relation}, parent_id: ${parentId}`)
-    }
-  })
-
-  console.log(`📊 共找到 ${relatedSet.size} 个关系节点`)
-
-  return relatedSet
-}
+// 已移除高亮关系节点功能
 
 // 在树中查找节点
 const findNodeInTree = (nodes: any[], targetId: any): any => {
@@ -278,32 +212,6 @@ const handleToggle = (nodeId: any) => {
 }
 
 const handleSelect = (nodeId: any) => {
-  if (editMode.value) {
-    toggleNodeSelection(nodeId)
-  }
-
-  // 如果有选中的关系类型，查找并高亮相关节点
-  if (highlightRelations.value.length > 0) {
-    highlightedEqualityNodes.value = findRelatedNodes(nodeId, highlightRelations.value)
-    const count = highlightedEqualityNodes.value.size
-    console.log(`🔍 高亮关系节点 (${highlightRelations.value.join(', ')}):`, Array.from(highlightedEqualityNodes.value))
-
-    // 显示提示信息
-    if (count > 0) {
-      const relationLabels = {
-        equality: '平级',
-        contain: '包含',
-        connect: '连接'
-      }
-      const labels = highlightRelations.value.map(r => relationLabels[r] || r).join('、')
-      message.success(`找到 ${count} 个${labels}关系的节点`)
-    } else {
-      message.info(`没有找到符合条件的关系节点`)
-    }
-  } else {
-    highlightedEqualityNodes.value.clear()
-  }
-
   emit('node-select', nodeId)
 }
 
@@ -394,9 +302,9 @@ const handleUpdateLabel = (data: any) => {
 }
 
 const handleUpdateRelation = (data: any) => {
-  const { nodeId, relation } = data
-  console.log('🔗 更新节点关系:', { nodeId, relation })
-  emit('relation-update', { nodeId, relation })
+  const { nodeId, class: nodeClass, relation, parent_id } = data
+  console.log('🔗 更新节点关系:', { nodeId, class: nodeClass, relation, parent_id })
+  emit('relation-update', { nodeId, class: nodeClass, relation, parent_id })
 }
 
 const toggleEditMode = () => {
