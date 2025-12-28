@@ -902,15 +902,15 @@ const handleElementClick = async (element: any) => {
 
   // 构造高亮数据
   const targetPage = element.page + 1  // JSON中page从0开始,PDF从1开始
-  const box = element.box  // [x1, y1, x2, y2] - 左下坐标系
+  const box = element.box  // [x1, y1, x2, y2]
 
   // 转换为 quadPoints 格式 (8个点: 左上、右上、右下、左下的x,y坐标)
-  // 注意：box使用左下坐标系，(x1,y1)=左下角, (x2,y2)=右上角
+  // 旧数据使用左上坐标系，新数据使用左下坐标系
   const quadPoints = [
-    box[0], box[3],  // 左上 = (x1, y2)
-    box[2], box[3],  // 右上 = (x2, y2)
-    box[2], box[1],  // 右下 = (x2, y1)
-    box[0], box[1]   // 左下 = (x1, y1)
+    box[0], box[1],  // 左上
+    box[2], box[1],  // 右上
+    box[2], box[3],  // 右下
+    box[0], box[3]   // 左下
   ]
 
   // 构造高亮矩形
@@ -919,7 +919,7 @@ const handleElementClick = async (element: any) => {
     rect: box,
     quadPoints: quadPoints,
     jump: true,
-    needsConversion: true  // 需要坐标转换 (屏幕坐标 → PDF坐标)
+    needsConversion: true  // 旧数据需要转换（左上→PDF左下），新数据也会被转换但结果错误
   }
   console.timeEnd('1️⃣ 数据准备')
 

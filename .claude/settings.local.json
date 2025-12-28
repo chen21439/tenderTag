@@ -34,7 +34,8 @@
       "Read(//e/models/data/Section/tender_document/runs/20251218_141436_checkpoint-3000_096b7b/**)",
       "Read(//e/models/data/Section/tender_document/images/**)",
       "Bash(pip install:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
