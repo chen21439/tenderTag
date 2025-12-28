@@ -3,11 +3,26 @@
     <!-- 工具栏 -->
     <div v-if="showToolbar" class="tree-toolbar">
       <div class="toolbar-left">
-        <a-button size="small" type="primary" @click="handleEditMetadata">
-          编辑文档元信息
+        <a-button
+          v-if="editable"
+          size="small"
+          :type="editMode ? 'primary' : 'default'"
+          @click="toggleEditMode"
+        >
+          {{ editMode ? '退出编辑' : '编辑模式' }}
         </a-button>
+        <a-button size="small" @click="expandAll">全部展开</a-button>
+        <a-button size="small" @click="collapseAll">全部折叠</a-button>
+        <a-checkbox-group v-model="highlightRelations" style="margin-left: 12px;">
+          <a-checkbox value="equality">Equality</a-checkbox>
+          <a-checkbox value="contain">Contain</a-checkbox>
+          <a-checkbox value="connect">Connect</a-checkbox>
+        </a-checkbox-group>
       </div>
       <div class="toolbar-right">
+        <span v-if="editMode && selectedNodeIds.length > 0" class="selection-info">
+          已选中 {{ selectedNodeIds.length }} 个节点
+        </span>
         <span class="node-count">共 {{ totalNodeCount }} 个节点</span>
       </div>
     </div>

@@ -1,0 +1,20 @@
+{
+  "watch": ["server.js"],
+  "ignore": [
+    "node_modules/*",
+    "dist/*",
+    "src/*",
+    "public/*",
+    "../../pdf/*",
+    "../../../docxServer/*",
+    "*.log",
+    "*.json",
+    "!server.js",
+    "!package.json"
+  ],
+  "ext": "js",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": "1000"
+}

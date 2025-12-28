@@ -44,6 +44,11 @@
             </div>
           </div>
 
+          <!-- 标注状态标签 (仅 runs 文件) -->
+          <div v-if="file._isFromRuns" class="annotation-badge" :class="getAnnotationStatus(file).class">
+            {{ getAnnotationStatus(file).text }}
+          </div>
+
           <div class="status-badge" v-if="getExamineResult(file).text">
             <component v-if="getExamineResult(file).icon" :is="getExamineResult(file).icon" class="status-icon"
             :style="{color: getExamineResult(file).color}"/>
@@ -121,11 +126,20 @@ watch(() => props.modelValue, (newVal) => {
 watch(visible, (newVal) => {
   emit('update:modelValue', newVal)
 })
-const getExamineResult: any = (item: any) => { 
-  return item.taskId === selectedFile.value.taskId ? { 
+const getExamineResult: any = (item: any) => {
+  return item.taskId === selectedFile.value.taskId ? {
       color: '#133CE8',
       text: '当前文件',
-  } : getRiskStyle(item.reviewResult) 
+  } : getRiskStyle(item.reviewResult)
+}
+
+// 获取标注状态
+const getAnnotationStatus = (file: any) => {
+  const isCompleted = file.stage1_gt_status && file.stage2_gt_status && file.stage3_gt_status
+  return {
+    text: isCompleted ? '标注完成' : '待标注',
+    class: isCompleted ? 'completed' : 'pending'
+  }
 }
 
 // 加载本地任务列表
@@ -157,20 +171,41 @@ const loadRunsFiles = async (runName: string) => {
 
       console.log('📁 Enriched 目录文件列表:', data)
 
+      // 加载 metadata.jsonl 获取标注状态
+      let metadataMap = new Map()
+      try {
+        const metaResponse = await fetch(`http://localhost:3000/api/runs/${runName}/metadata/all`)
+        const metaData = await metaResponse.json()
+        if (metaResponse.ok && metaData.success) {
+          // 将 metadata 转为 Map 方便查找
+          metaData.metadata.forEach((item: any) => {
+            metadataMap.set(item.filename, item)
+          })
+        }
+      } catch (err) {
+        console.warn('加载 metadata 失败:', err)
+      }
+
       // 转换为统一格式
       files.value = data.files
         .filter((file: any) => file.ext === '.json')
-        .map((file: any) => ({
-          name: file.name,
-          fileName: file.name.replace('.json', ''),
-          createTime: new Date(file.modified).toLocaleString('zh-CN'),
-          size: file.size,
-          taskId: null,
-          reviewResult: null,
-          _runName: runName,
-          _isFromRuns: true,
-          infer_range: file.infer_range || []
-        }))
+        .map((file: any) => {
+          const metadata = metadataMap.get(file.name) || {}
+          return {
+            name: file.name,
+            fileName: file.name.replace('.json', ''),
+            createTime: new Date(file.modified).toLocaleString('zh-CN'),
+            size: file.size,
+            taskId: null,
+            reviewResult: null,
+            _runName: runName,
+            _isFromRuns: true,
+            infer_range: file.infer_range || [],
+            stage1_gt_status: metadata.stage1_gt_status || false,
+            stage2_gt_status: metadata.stage2_gt_status || false,
+            stage3_gt_status: metadata.stage3_gt_status || false
+          }
+        })
         // 按修改时间降序排序（最新的在前）
         .sort((a: any, b: any) => {
           return new Date(b.createTime).getTime() - new Date(a.createTime).getTime()
@@ -288,6 +323,27 @@ const handleCancel = () => {
           }
         }  
       }
+      .annotation-badge {
+        margin-top: 8px;
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 12px;
+        border-radius: 4px;
+        font-weight: 500;
+
+        &.completed {
+          background-color: #f6ffed;
+          color: #52c41a;
+          border: 1px solid #b7eb8f;
+        }
+
+        &.pending {
+          background-color: #fff7e6;
+          color: #fa8c16;
+          border: 1px solid #ffd591;
+        }
+      }
+
       .status-badge {
         margin-top: 12px;
         display: inline-flex;

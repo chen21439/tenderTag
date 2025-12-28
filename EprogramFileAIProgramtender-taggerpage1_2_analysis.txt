@@ -1,0 +1,40 @@
+=== 第1页（page=1）的PARA ===
+1. line_id=47: 供证书扫描件。
+2. line_id=48: 注 ：（1）“信用中国”（www.creditchina.gov.cn，查询“信用服务”栏的“重大
+3. line_id=49: 税收违法失信主体”“失信被执行人”或者下载信用信息报告），“中国政府采购网”（w
+4. line_id=50: ww.ccgp.gov.cn）中的“政府采购严重违法失信行为记录名单”，以及“深圳市政府采购
+5. line_id=51: 监 管网”（http://zfcg.sz.gov.cn）为供应商信用信息的查询渠道，相关信息以开标当
+6. line_id=52: 日的查询结果为准；
+7. line_id=53: （2）供应商投标（上传投标文件）必须先行办理注册手续，具体请按照本公告“六、
+8. line_id=54: 其他补充事宜”相关内容指引办理。
+9. line_id=55: 完整公告内容详见：深圳公共资源交易网（https://www.szggzy.com）
+
+=== 第0-1页的sec结构 ===
+sec1: line_id=0, page=0, text="第一册 专用条款"
+sec2: line_id=1, page=0, text="第一章 招标公告"
+sec3: line_id=2, page=0, text="申 请人的资格要求："
+sec2: line_id=56, page=2, text="第二章 对通用条款的补充内容及其他关键信息"
+
+=== 第2页（page=2）的sec和PARA ===
+sec2: line_id=56, text="第二章 对通用条款的补充内容及其他关键信息"
+PARA: line_id=57, text="一、对通用条款的补充内容"
+PARA: line_id=58, text="通用条"
+PARA: line_id=59, text="款序号"
+PARA: line_id=60, text="涉 及事项"
+PARA: line_id=61, text="具 体 补 充 内 容"
+PARA: line_id=62, text="3.1"
+PARA: line_id=63, text="采购人"
+PARA: line_id=64, text="深圳市大数据资源管理中心"
+PARA: line_id=65, text="3.2 政府集中采购机构"
+PARA: line_id=66, text="深圳公共资源交易中心"
+PARA: line_id=67, text="（深 圳交 易集 团有 限公 司政 府采 购业 务分 公司 ）"
+PARA: line_id=68, text="9"
+PARA: line_id=69, text="踏勘现场"
+PARA: line_id=70, text="不组织"
+PARA: line_id=71, text="10"
+PARA: line_id=72, text="标前会议"
+PARA: line_id=73, text="不组织"
+PARA: line_id=74, text="12/13 招标 文件 的澄 清和 修改"
+PARA: line_id=75, text="投标截止日三日前，投标人有义务在招标期间在政府"
+
+第2页总共有 65 个PARA

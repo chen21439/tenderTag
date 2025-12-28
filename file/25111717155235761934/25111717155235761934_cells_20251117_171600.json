@@ -1,0 +1,79 @@
+{
+  "doc_id": "25111717155235761934",
+  "total_cells": 3,
+  "cells": [
+    {
+      "doc_id": "25111717155235761934",
+      "table_id": "doc001",
+      "row_id": "r004",
+      "col_id": "c006",
+      "page": 4,
+      "header_name": "ADSCDSRecall@1",
+      "canonical_header": "ADSCDSRecall@1",
+      "col_index": 5,
+      "cell_value_raw": "Recall@1Recall@5Recall@10",
+      "row_context": "ADSCDSRecall@1:Recall@1Recall@5Recall@10",
+      "cell_value_norm": "ADSCDSRecall@1：Recall@1Recall@5Recall@10",
+      "cell_value_with_context": "ADSCDSRecall@1：Recall@1Recall@5Recall@10 | 行上下文：ADSCDSRecall@1:Recall@1Recall@5Recall@10",
+      "row_index": 2,
+      "table_index": 0,
+      "num_value": 1.0,
+      "unit": "",
+      "has_number": true
+    },
+    {
+      "doc_id": "25111717155235761934",
+      "table_id": "doc002",
+      "row_id": "r004",
+      "col_id": "c006",
+      "page": 4,
+      "header_name": "",
+      "canonical_header": "",
+      "col_index": 5,
+      "cell_value_raw": "ADSCDSRecall@1",
+      "row_context": ":ADSCDSRecall@1",
+      "cell_value_norm": "：ADSCDSRecall@1",
+      "cell_value_with_context": "：ADSCDSRecall@1 | 行上下文：:ADSCDSRecall@1",
+      "row_index": 2,
+      "table_index": 1,
+      "num_value": 1.0,
+      "unit": "",
+      "has_number": true
+    },
+    {
+      "doc_id": "25111717155235761934",
+      "table_id": "doc002",
+      "row_id": "r007",
+      "col_id": "c006",
+      "page": 4,
+      "header_name": "",
+      "canonical_header": "",
+      "col_index": 5,
+      "cell_value_raw": "Recall@1Recall@5Recall@10",
+      "row_context": ":Recall@1Recall@5Recall@10",
+      "cell_value_norm": "：Recall@1Recall@5Recall@10",
+      "cell_value_with_context": "：Recall@1Recall@5Recall@10 | 行上下文：:Recall@1Recall@5Recall@10",
+      "row_index": 5,
+      "table_index": 1,
+      "num_value": 1.0,
+      "unit": "",
+      "has_number": true
+    }
+  ],
+  "schema": {
+    "fields": [
+      "doc_id",
+      "table_id",
+      "row_id",
+      "col_id",
+      "page",
+      "header_name",
+      "canonical_header",
+      "cell_value_raw",
+      "cell_value_norm",
+      "row_context",
+      "num_value",
+      "unit"
+    ]
+  }
+}

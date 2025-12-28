@@ -1,0 +1,1871 @@
+{
+  "pdf_file": "file\\25111717155235761934\\2020.acl-main.1.pdf",
+  "total_tables": 2,
+  "tables": [
+    {
+      "type": "table",
+      "level": 1,
+      "parent_table_id": null,
+      "page": 4,
+      "bbox": [
+        324.6388765000001,
+        69.27161287499992,
+        517.1480124999999,
+        194.55261224999992
+      ],
+      "raw_bbox": [
+        324.6388765000001,
+        69.27161287499992,
+        517.1480124999999,
+        194.55261224999992
+      ],
+      "columns": [
+        {
+          "id": "c001",
+          "index": 0,
+          "name": ""
+        },
+        {
+          "id": "c002",
+          "index": 1,
+          "name": ""
+        },
+        {
+          "id": "c003",
+          "index": 2,
+          "name": ""
+        },
+        {
+          "id": "c004",
+          "index": 3,
+          "name": ""
+        },
+        {
+          "id": "c005",
+          "index": 4,
+          "name": ""
+        },
+        {
+          "id": "c006",
+          "index": 5,
+          "name": ""
+        }
+      ],
+      "rows": [
+        {
+          "id": "r001",
+          "raw_row_id": "r001",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r001",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": [
+                324.6388765000001,
+                69.27161287499992,
+                363.2560477,
+                93.92809262999992
+              ]
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": [
+                363.2560477,
+                69.27161287499992,
+                401.8732189,
+                93.92809262999992
+              ]
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": [
+                401.8732189,
+                69.27161287499992,
+                440.4903901,
+                93.92809262999992
+              ]
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": [
+                440.4903901,
+                69.27161287499992,
+                478.05021726999996,
+                93.92809262999992
+              ]
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "ADSCDSRecall@1",
+              "bbox": [
+                478.05021726999996,
+                69.27161287499992,
+                517.1480124999999,
+                93.92809262999992
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r002",
+          "raw_row_id": "r002",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r002",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                76.70204294999996,
+                478.05021726999996,
+                85.16360669999995
+              ]
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r003",
+          "raw_row_id": "r003",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r003",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                85.16360669999995,
+                478.05021726999996,
+                93.92809262999992
+              ]
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r004",
+          "raw_row_id": "r004",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r004",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": [
+                324.6388765000001,
+                93.92809262999992,
+                363.2560477,
+                119.31141416999992
+              ]
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": [
+                363.2560477,
+                93.92809262999992,
+                401.8732189,
+                119.31141416999992
+              ]
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": [
+                401.8732189,
+                93.92809262999992,
+                440.4903901,
+                119.31141416999992
+              ]
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": [
+                440.4903901,
+                93.92809262999992,
+                478.05021726999996,
+                119.31141416999992
+              ]
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                93.92809262999992,
+                478.05021726999996,
+                100.06821419999994
+              ]
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "Recall@1Recall@5Recall@10",
+              "bbox": [
+                478.05021726999996,
+                93.92809262999992,
+                517.1480124999999,
+                119.31141416999992
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r005",
+          "raw_row_id": "r005",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r005",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                100.06821419999994,
+                478.05021726999996,
+                104.10525419999999
+              ]
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r006",
+          "raw_row_id": "r006",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r006",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                104.10525419999999,
+                478.05021726999996,
+                108.52977794999993
+              ]
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r007",
+          "raw_row_id": "r007",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r007",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                108.52977794999993,
+                478.05021726999996,
+                112.56681794999997
+              ]
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r008",
+          "raw_row_id": "r008",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r008",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                112.56681794999997,
+                478.05021726999996,
+                116.0721941999999
+              ]
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r009",
+          "raw_row_id": "r009",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r009",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r010",
+          "raw_row_id": "r010",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r010",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": [
+                324.6388765000001,
+                119.31141416999992,
+                363.2560477,
+                144.39181352999992
+              ]
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": [
+                363.2560477,
+                119.31141416999992,
+                401.8732189,
+                144.39181352999992
+              ]
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": [
+                401.8732189,
+                119.31141416999992,
+                440.4903901,
+                144.39181352999992
+              ]
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": [
+                440.4903901,
+                119.31141416999992,
+                478.05021726999996,
+                144.39181352999992
+              ]
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": [
+                478.05021726999996,
+                119.31141416999992,
+                517.1480124999999,
+                144.39181352999992
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r011",
+          "raw_row_id": "r011",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r011",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": [
+                324.6388765000001,
+                144.39181352999992,
+                363.2560477,
+                169.47221288999992
+              ]
+            },
+            {
+              "row_id": "r011",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": [
+                363.2560477,
+                144.39181352999992,
+                401.8732189,
+                169.47221288999992
+              ]
+            },
+            {
+              "row_id": "r011",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": [
+                401.8732189,
+                144.39181352999992,
+                440.4903901,
+                169.47221288999992
+              ]
+            },
+            {
+              "row_id": "r011",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": [
+                440.4903901,
+                144.39181352999992,
+                478.05021726999996,
+                169.47221288999992
+              ]
+            },
+            {
+              "row_id": "r011",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r011",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": [
+                478.05021726999996,
+                144.39181352999992,
+                517.1480124999999,
+                169.47221288999992
+              ]
+            }
+          ]
+        }
+      ],
+      "header_info": {
+        "col_levels": 0,
+        "row_levels": 0,
+        "multi_level": false,
+        "header_detected": false
+      },
+      "method": "no_header_detection (delayed)",
+      "raw_uuid": "736a687a-1a86-4bd8-a0d0-5f7c5993fc9c",
+      "tableCountInPage": 1,
+      "id": "temp_000"
+    },
+    {
+      "type": "table",
+      "level": 1,
+      "parent_table_id": null,
+      "page": 4,
+      "bbox": [
+        324.6388765000001,
+        253.07349236,
+        517.1480124999999,
+        378.34189224999994
+      ],
+      "raw_bbox": [
+        324.6388765000001,
+        253.07349236,
+        517.1480124999999,
+        378.34189224999994
+      ],
+      "columns": [
+        {
+          "id": "c001",
+          "index": 0,
+          "name": ""
+        },
+        {
+          "id": "c002",
+          "index": 1,
+          "name": ""
+        },
+        {
+          "id": "c003",
+          "index": 2,
+          "name": ""
+        },
+        {
+          "id": "c004",
+          "index": 3,
+          "name": ""
+        },
+        {
+          "id": "c005",
+          "index": 4,
+          "name": ""
+        },
+        {
+          "id": "c006",
+          "index": 5,
+          "name": ""
+        }
+      ],
+      "rows": [
+        {
+          "id": "r001",
+          "raw_row_id": "r001",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r001",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": [
+                324.6388765000001,
+                253.07349236,
+                363.2560477,
+                278.59701481
+              ]
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": [
+                363.2560477,
+                253.07349236,
+                401.8732189,
+                278.59701481
+              ]
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": [
+                401.8732189,
+                253.07349236,
+                440.4903901,
+                278.59701481
+              ]
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": [
+                440.4903901,
+                253.07349236,
+                478.05021726999996,
+                278.59701481
+              ]
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r001",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": [
+                478.05021726999996,
+                253.07349236,
+                517.1480124999999,
+                278.59701481
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r002",
+          "raw_row_id": "r002",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r002",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": [
+                324.6388765000001,
+                278.59701481,
+                363.2560477,
+                303.67741417
+              ]
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": [
+                363.2560477,
+                278.59701481,
+                401.8732189,
+                303.67741417
+              ]
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": [
+                401.8732189,
+                278.59701481,
+                440.4903901,
+                303.67741417
+              ]
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": [
+                440.4903901,
+                278.59701481,
+                478.05021726999996,
+                303.67741417
+              ]
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r002",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": [
+                478.05021726999996,
+                278.59701481,
+                517.1480124999999,
+                303.67741417
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r003",
+          "raw_row_id": "r003",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r003",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": [
+                324.6388765000001,
+                303.67741417,
+                363.2560477,
+                328.75781353
+              ]
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": [
+                363.2560477,
+                303.67741417,
+                401.8732189,
+                328.75781353
+              ]
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": [
+                401.8732189,
+                303.67741417,
+                440.4903901,
+                328.75781353
+              ]
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": [
+                440.4903901,
+                303.67741417,
+                478.05021726999996,
+                328.75781353
+              ]
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r003",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": [
+                478.05021726999996,
+                303.67741417,
+                517.1480124999999,
+                328.75781353
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r004",
+          "raw_row_id": "r004",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r004",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": [
+                324.6388765000001,
+                328.75781353,
+                363.2560477,
+                353.713100695
+              ]
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": [
+                363.2560477,
+                328.75781353,
+                401.8732189,
+                353.713100695
+              ]
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": [
+                401.8732189,
+                328.75781353,
+                440.4903901,
+                353.713100695
+              ]
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": [
+                440.4903901,
+                328.75781353,
+                478.05021726999996,
+                353.713100695
+              ]
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r004",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "ADSCDSRecall@1",
+              "bbox": [
+                478.05021726999996,
+                328.75781353,
+                517.1480124999999,
+                353.713100695
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r005",
+          "raw_row_id": "r005",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r005",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                334.15129816666666,
+                478.05021726999996,
+                345.12642474999996
+              ]
+            },
+            {
+              "row_id": "r005",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r006",
+          "raw_row_id": "r006",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r006",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                345.12642474999996,
+                478.05021726999996,
+                353.713100695
+              ]
+            },
+            {
+              "row_id": "r006",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r007",
+          "raw_row_id": "r007",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r007",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": [
+                324.6388765000001,
+                353.713100695,
+                363.2560477,
+                378.34189224999994
+              ]
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": [
+                363.2560477,
+                353.713100695,
+                401.8732189,
+                378.34189224999994
+              ]
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": [
+                401.8732189,
+                353.713100695,
+                440.4903901,
+                378.34189224999994
+              ]
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": [
+                440.4903901,
+                353.713100695,
+                478.05021726999996,
+                378.34189224999994
+              ]
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                353.713100695,
+                478.05021726999996,
+                360.03103224999995
+              ]
+            },
+            {
+              "row_id": "r007",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "Recall@1Recall@5Recall@10",
+              "bbox": [
+                478.05021726999996,
+                353.713100695,
+                517.1480124999999,
+                378.34189224999994
+              ]
+            }
+          ]
+        },
+        {
+          "id": "r008",
+          "raw_row_id": "r008",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r008",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                360.03103224999995,
+                478.05021726999996,
+                364.06807225
+              ]
+            },
+            {
+              "row_id": "r008",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r009",
+          "raw_row_id": "r009",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r009",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                364.06807225,
+                478.05021726999996,
+                368.492596
+              ]
+            },
+            {
+              "row_id": "r009",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        },
+        {
+          "id": "r010",
+          "raw_row_id": "r010",
+          "rowPath": [],
+          "cells": [
+            {
+              "row_id": "r010",
+              "col_id": "c001",
+              "rowPath": [],
+              "cellPath": [
+                "c001"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c002",
+              "rowPath": [],
+              "cellPath": [
+                "c002"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c003",
+              "rowPath": [],
+              "cellPath": [
+                "c003"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c004",
+              "rowPath": [],
+              "cellPath": [
+                "c004"
+              ],
+              "content": "",
+              "bbox": null
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c005",
+              "rowPath": [],
+              "cellPath": [
+                "c005"
+              ],
+              "content": "",
+              "bbox": [
+                465.23420124999996,
+                368.492596,
+                478.05021726999996,
+                372.529636
+              ]
+            },
+            {
+              "row_id": "r010",
+              "col_id": "c006",
+              "rowPath": [],
+              "cellPath": [
+                "c006"
+              ],
+              "content": "",
+              "bbox": null
+            }
+          ]
+        }
+      ],
+      "header_info": {
+        "col_levels": 0,
+        "row_levels": 0,
+        "multi_level": false,
+        "header_detected": false
+      },
+      "method": "no_header_detection (delayed)",
+      "raw_uuid": "e787af28-4d94-4a0b-be14-d083790adb65",
+      "tableCountInPage": 2,
+      "id": "temp_001"
+    }
+  ],
+  "page_metadata": [
+    {
+      "page": 1,
+      "method": "pymupdf",
+      "width": 595.2760009765625,
+      "height": 841.8900146484375,
+      "blocks_count": 14
+    },
+    {
+      "page": 2,
+      "method": "pymupdf",
+      "width": 595.2760009765625,
+      "height": 841.8900146484375,
+      "blocks_count": 10
+    },
+    {
+      "page": 3,
+      "method": "pymupdf",
+      "width": 595.2760009765625,
+      "height": 841.8900146484375,
+      "blocks_count": 13
+    },
+    {
+      "page": 4,
+      "method": "pymupdf",
+      "width": 595.2760009765625,
+      "height": 841.8900146484375,
+      "blocks_count": 25
+    },
+    {
+      "page": 5,
+      "method": "pymupdf",
+      "width": 595.2760009765625,
+      "height": 841.8900146484375,
+      "blocks_count": 13
+    },
+    {
+      "page": 6,
+      "method": "pymupdf",
+      "width": 595.2760009765625,
+      "height": 841.8900146484375,
+      "blocks_count": 18
+    }
+  ]
+}

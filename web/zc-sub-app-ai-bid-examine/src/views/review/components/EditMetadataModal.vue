@@ -43,6 +43,11 @@
         <a-switch v-model:checked="formData.stage3_gt_status" />
         <span style="margin-left: 8px">{{ formData.stage3_gt_status ? '已完成' : '未完成' }}</span>
       </a-form-item>
+
+      <a-form-item label="是否完成推理">
+        <a-switch v-model:checked="formData.infer_completed" />
+        <span style="margin-left: 8px">{{ formData.infer_completed ? '已完成' : '未完成' }}</span>
+      </a-form-item>
     </a-form>
   </a-modal>
 </template>
@@ -59,6 +64,7 @@ interface Props {
     stage2_gt_status?: boolean
     stage3_gt_status?: boolean
     infer_range?: [number, number]
+    infer_completed?: boolean
   }
   runName?: string
 }
@@ -72,7 +78,8 @@ const formData = ref({
   stage1_gt_status: false,
   stage2_gt_status: false,
   stage3_gt_status: false,
-  infer_range: [0, 0] as [number, number]
+  infer_range: [0, 0] as [number, number],
+  infer_completed: false
 })
 
 // 监听 open 变化
@@ -85,7 +92,8 @@ watch(() => props.open, (newVal) => {
       stage1_gt_status: props.metadata.stage1_gt_status || false,
       stage2_gt_status: props.metadata.stage2_gt_status || false,
       stage3_gt_status: props.metadata.stage3_gt_status || false,
-      infer_range: props.metadata.infer_range || [0, 0]
+      infer_range: props.metadata.infer_range || [0, 0],
+      infer_completed: props.metadata.infer_completed || false
     }
   }
 })
@@ -117,7 +125,8 @@ const handleSave = async () => {
           stage1_gt_status: formData.value.stage1_gt_status,
           stage2_gt_status: formData.value.stage2_gt_status,
           stage3_gt_status: formData.value.stage3_gt_status,
-          infer_range: formData.value.infer_range
+          infer_range: formData.value.infer_range,
+          infer_completed: formData.value.infer_completed
         }
       })
     })

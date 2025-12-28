@@ -1,0 +1,181 @@
+{
+  "id": "招标文件",
+  "label": "招标文件",
+  "type": "normal",
+  "level": 1,
+  "children": [
+    {
+      "id": "采购项目",
+      "label": "采购项目",
+      "type": "normal",
+      "level": 1,
+      "children": [
+        {
+          "id": "项目基本信息",
+          "label": "项目基本信息",
+          "type": "normal",
+          "level": 1,
+          "children": []
+        },
+        {
+          "id": "投标人须知",
+          "label": "投标人须知",
+          "type": "normal",
+          "level": 1,
+          "children": []
+        },
+        {
+          "id": "采购包",
+          "label": "采购包",
+          "type": "normal",
+          "level": 1,
+          "children": [
+            {
+              "id": "商务要求",
+              "label": "商务要求",
+              "type": "normal",
+              "level": 1,
+              "children": [
+                {
+                  "id": "商务要求表",
+                  "label": "商务要求表",
+                  "type": "normal",
+                  "level": 2,
+                  "children": [
+                    {
+                      "id": "商务要求项",
+                      "label": "商务要求项",
+                      "type": "normal",
+                      "level": 2,
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "商务要求说明",
+                  "label": "商务要求说明",
+                  "type": "normal",
+                  "level": 2,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "技术要求",
+              "label": "技术要求",
+              "type": "normal",
+              "level": 1,
+              "children": [
+                {
+                  "id": "技术要求表",
+                  "label": "技术要求表",
+                  "type": "normal",
+                  "level": 2,
+                  "children": [
+                    {
+                      "id": "技术要求项",
+                      "label": "技术要求项",
+                      "type": "normal",
+                      "level": 2,
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "技术要求说明",
+                  "label": "技术要求说明",
+                  "type": "normal",
+                  "level": 2,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "资格要求",
+              "label": "资格要求",
+              "type": "normal",
+              "level": 1,
+              "children": [
+                {
+                  "id": "资格性审查表",
+                  "label": "资格性审查表",
+                  "type": "normal",
+                  "level": 2,
+                  "children": [
+                    {
+                      "id": "资格性审查项",
+                      "label": "资格性审查项",
+                      "type": "normal",
+                      "level": 2,
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "符合性要求",
+              "label": "符合性要求",
+              "type": "normal",
+              "level": 1,
+              "children": [
+                {
+                  "id": "符合性审查表",
+                  "label": "符合性审查表",
+                  "type": "normal",
+                  "level": 2,
+                  "children": [
+                    {
+                      "id": "符合性审查项",
+                      "label": "符合性审查项",
+                      "type": "normal",
+                      "level": 2,
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "评标信息",
+              "label": "评标信息",
+              "type": "normal",
+              "level": 1,
+              "children": [
+                {
+                  "id": "评标信息表",
+                  "label": "评标信息表",
+                  "type": "normal",
+                  "level": 2,
+                  "children": [
+                    {
+                      "id": "评标信息项",
+                      "label": "评标信息项",
+                      "type": "normal",
+                      "level": 2,
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "评标方法",
+                  "label": "评标方法",
+                  "type": "normal",
+                  "level": 1,
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "采购标的",
+              "label": "采购标的",
+              "type": "normal",
+              "level": 1,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

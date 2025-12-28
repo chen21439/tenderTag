@@ -351,12 +351,12 @@ app.get('/api/runs/:timestamp/json', (req, res) => {
 
 // 修改JSON文件中的元素（本地 JSON 目录）
 app.post('/api/json/update', express.json(), (req, res) => {
-  const { fileName, lineId, updates } = req.body
+  const { fileName, id, updates } = req.body
 
-  if (!fileName || !lineId || !updates) {
+  if (!fileName || (id === undefined && id !== 0) || !updates) {
     return res.status(400).json({
       success: false,
-      error: '缺少必要参数：fileName, lineId, updates'
+      error: '缺少必要参数：fileName, id, updates'
     })
   }
 
@@ -374,14 +374,14 @@ app.post('/api/json/update', express.json(), (req, res) => {
     try {
       const jsonData = JSON.parse(data)
 
-      // 查找并更新对应的元素
+      // 查找并更新对应的元素（使用 id 字段）
       let found = false
       for (let i = 0; i < jsonData.length; i++) {
-        if (jsonData[i].line_id === lineId) {
+        if (jsonData[i].id === id) {
           // 更新字段
           Object.assign(jsonData[i], updates)
           found = true
-          console.log(`✅ 更新元素 ${lineId}:`, updates)
+          console.log(`✅ 更新元素 id=${id}:`, updates)
           break
         }
       }
@@ -389,7 +389,7 @@ app.post('/api/json/update', express.json(), (req, res) => {
       if (!found) {
         return res.status(404).json({
           success: false,
-          error: `未找到 line_id=${lineId} 的元素`
+          error: `未找到 id=${id} 的元素`
         })
       }
 
@@ -405,7 +405,7 @@ app.post('/api/json/update', express.json(), (req, res) => {
         res.json({
           success: true,
           message: '更新成功',
-          lineId,
+          id,
           updates
         })
       })
@@ -453,10 +453,23 @@ app.post('/api/runs/update', express.json(), (req, res) => {
       let found = false
       for (let i = 0; i < jsonData.length; i++) {
         if (jsonData[i].id === id) {
-          // 更新字段
-          Object.assign(jsonData[i], updates)
+          // 更新字段，确保 parent_id 是数字类型
+          const processedUpdates = { ...updates }
+          if ('parent_id' in processedUpdates) {
+            // 如果 parent_id 是空字符串，保持为空字符串；否则转为数字
+            if (processedUpdates.parent_id === '' || processedUpdates.parent_id === null || processedUpdates.parent_id === undefined) {
+              processedUpdates.parent_id = ''
+            } else {
+              processedUpdates.parent_id = Number(processedUpdates.parent_id)
+            }
+          }
+          // 处理 is_infer 字段：如果不存在则添加，存在则更新
+          if ('is_infer' in processedUpdates) {
+            jsonData[i].is_infer = processedUpdates.is_infer
+          }
+          Object.assign(jsonData[i], processedUpdates)
           found = true
-          console.log(`✅ [Runs] 更新元素 id=${id}:`, updates)
+          console.log(`✅ [Runs] 更新元素 id=${id}:`, processedUpdates)
           break
         }
       }
@@ -738,6 +751,219 @@ app.post('/api/runs/:timestamp/update-metadata', express.json(), (req, res) => {
         success: false,
         error: 'JSON解析失败',
         details: parseErr.message
+      })
+    }
+  })
+})
+
+// 读取 metadata.jsonl 中的单个文件元信息
+app.get('/api/runs/metadata', (req, res) => {
+  const { runName, filename } = req.query
+
+  if (!runName || !filename) {
+    return res.status(400).json({
+      success: false,
+      error: '缺少必要参数：runName, filename'
+    })
+  }
+
+  const metadataPath = path.join(RUNS_DIR, runName, 'metadata.jsonl')
+
+  fs.readFile(metadataPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('❌ metadata.jsonl 读取失败:', err.message)
+      return res.status(404).json({
+        success: false,
+        error: 'metadata.jsonl 文件未找到'
+      })
+    }
+
+    try {
+      const metadataList = JSON.parse(data)
+      const fileMetadata = metadataList.find((item) => item.filename === filename)
+
+      if (!fileMetadata) {
+        return res.json({
+          success: true,
+          metadata: {
+            filename,
+            stage1_gt_status: false,
+            stage2_gt_status: false,
+            stage3_gt_status: false,
+            infer_range: [0, 0],
+            infer_completed: false
+          }
+        })
+      }
+
+      res.json({
+        success: true,
+        metadata: fileMetadata
+      })
+    } catch (parseErr) {
+      console.error('❌ metadata.jsonl 解析失败:', parseErr.message)
+      res.status(500).json({
+        success: false,
+        error: 'metadata.jsonl 解析失败'
+      })
+    }
+  })
+})
+
+// 读取整个 metadata.jsonl
+app.get('/api/runs/:runName/metadata/all', (req, res) => {
+  const { runName } = req.params
+
+  if (!runName) {
+    return res.status(400).json({
+      success: false,
+      error: '缺少必要参数：runName'
+    })
+  }
+
+  const metadataPath = path.join(RUNS_DIR, runName, 'metadata.jsonl')
+
+  fs.readFile(metadataPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('❌ metadata.jsonl 读取失败:', err.message)
+      return res.status(404).json({
+        success: false,
+        error: 'metadata.jsonl 文件未找到'
+      })
+    }
+
+    try {
+      const metadataList = JSON.parse(data)
+
+      res.json({
+        success: true,
+        metadata: metadataList
+      })
+    } catch (parseErr) {
+      console.error('❌ metadata.jsonl 解析失败:', parseErr.message)
+      res.status(500).json({
+        success: false,
+        error: 'metadata.jsonl 解析失败'
+      })
+    }
+  })
+})
+
+// 更新 metadata.jsonl 中的单个文件元信息
+app.post('/api/runs/metadata/update', express.json(), (req, res) => {
+  const { runName, filename, metadata } = req.body
+
+  console.log('📝 [Metadata] 更新请求:', { runName, filename, metadata })
+
+  if (!runName || !filename || !metadata) {
+    return res.status(400).json({
+      success: false,
+      error: '缺少必要参数：runName, filename, metadata'
+    })
+  }
+
+  const metadataPath = path.join(RUNS_DIR, runName, 'metadata.jsonl')
+
+  fs.readFile(metadataPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('❌ metadata.jsonl 读取失败:', err.message)
+      return res.status(404).json({
+        success: false,
+        error: 'metadata.jsonl 文件未找到'
+      })
+    }
+
+    try {
+      const metadataList = JSON.parse(data)
+      const fileIndex = metadataList.findIndex((item) => item.filename === filename)
+
+      if (fileIndex === -1) {
+        // 文件不存在，添加新记录
+        metadataList.push({
+          filename,
+          ...metadata
+        })
+        console.log(`✅ [Metadata] 添加新记录: ${filename}`)
+      } else {
+        // 文件存在，更新记录
+        metadataList[fileIndex] = {
+          ...metadataList[fileIndex],
+          ...metadata
+        }
+        console.log(`✅ [Metadata] 更新记录: ${filename}`)
+      }
+
+      // 写回 metadata.jsonl
+      fs.writeFile(metadataPath, JSON.stringify(metadataList, null, 2), 'utf8', (writeErr) => {
+        if (writeErr) {
+          console.error('❌ metadata.jsonl 写入失败:', writeErr.message)
+          return res.status(500).json({
+            success: false,
+            error: 'metadata.jsonl 写入失败'
+          })
+        }
+
+        console.log('✅ [Metadata] metadata.jsonl 更新成功')
+
+        // 如果包含 infer_completed 字段，需要同步更新对应文件中所有元素的 is_infer 字段
+        if ('infer_completed' in metadata) {
+          const jsonPath = path.join(RUNS_DIR, runName, 'enriched', filename)
+
+          fs.readFile(jsonPath, 'utf8', (readErr, jsonData) => {
+            if (readErr) {
+              console.error(`❌ [Metadata] 读取元素文件失败: ${jsonPath}`, readErr.message)
+              // metadata 已更新成功，元素文件更新失败不影响主流程
+              return res.json({
+                success: true,
+                message: '元信息更新成功，但元素文件 is_infer 字段更新失败',
+                warning: '元素文件更新失败'
+              })
+            }
+
+            try {
+              const elements = JSON.parse(jsonData)
+
+              // 批量更新所有元素的 is_infer 字段
+              elements.forEach(element => {
+                element.is_infer = metadata.infer_completed
+              })
+
+              fs.writeFile(jsonPath, JSON.stringify(elements, null, 2), 'utf8', (writeJsonErr) => {
+                if (writeJsonErr) {
+                  console.error(`❌ [Metadata] 写入元素文件失败: ${jsonPath}`, writeJsonErr.message)
+                  return res.json({
+                    success: true,
+                    message: '元信息更新成功，但元素文件 is_infer 字段更新失败'
+                  })
+                }
+
+                console.log(`✅ [Metadata] 已将 ${filename} 中所有元素的 is_infer 更新为: ${metadata.infer_completed}`)
+                res.json({
+                  success: true,
+                  message: '元信息和元素 is_infer 字段更新成功'
+                })
+              })
+            } catch (parseJsonErr) {
+              console.error(`❌ [Metadata] 元素文件解析失败: ${jsonPath}`, parseJsonErr.message)
+              res.json({
+                success: true,
+                message: '元信息更新成功，但元素文件解析失败'
+              })
+            }
+          })
+        } else {
+          // 没有 infer_completed 字段，直接返回成功
+          res.json({
+            success: true,
+            message: '元信息更新成功'
+          })
+        }
+      })
+    } catch (parseErr) {
+      console.error('❌ metadata.jsonl 解析失败:', parseErr.message)
+      res.status(500).json({
+        success: false,
+        error: 'metadata.jsonl 解析失败'
       })
     }
   })

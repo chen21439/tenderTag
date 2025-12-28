@@ -1,0 +1,275 @@
+{
+  "doc_name": "城市大数据中心物业管理服务",
+  "pages": [
+    {
+      "page": 0,
+      "lines_count": 29,
+      "results": [
+        {
+          "line_id": 0,
+          "label": "Title"
+        },
+        {
+          "line_id": 1,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 2,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 3,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 4,
+          "label": "Section"
+        },
+        {
+          "line_id": 5,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 6,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 7,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 8,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 9,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 10,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 11,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 12,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 13,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 14,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 15,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 16,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 17,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 18,
+          "label": "Section"
+        },
+        {
+          "line_id": 19,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 20,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 21,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 22,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 23,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 24,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 25,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 26,
+          "label": "Section"
+        },
+        {
+          "line_id": 27,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 2374,
+          "label": "Figure"
+        }
+      ],
+      "success": true
+    },
+    {
+      "page": 1,
+      "lines_count": 23,
+      "results": [
+        {
+          "line_id": 28,
+          "label": "Page-Footer"
+        },
+        {
+          "line_id": 29,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 30,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 31,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 32,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 33,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 34,
+          "label": "Section"
+        },
+        {
+          "line_id": 35,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 36,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 37,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 38,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 39,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 40,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 41,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 42,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 43,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 44,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 45,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 46,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 47,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 48,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 49,
+          "label": "Para-Line"
+        },
+        {
+          "line_id": 50,
+          "label": "Para-Line"
+        }
+      ],
+      "success": true
+    },
+    {
+      "page": 2,
+      "lines_count": 9,
+      "results": [
+        {
+          "line_id": 51,
+          "label": "Page-Footer"
+        },
+        {
+          "line_id": 52,
+          "label": "Title"
+        },
+        {
+          "line_id": 53,
+          "label": "Section"
+        },
+        {
+          "line_id": 54,
+          "label": "Section"
+        },
+        {
+          "line_id": 55,
+          "label": "Section"
+        },
+        {
+          "line_id": 56,
+          "label": "Section"
+        },
+        {
+          "line_id": 57,
+          "label": "Section"
+        },
+        {
+          "line_id": 58,
+          "label": "Section"
+        },
+        {
+          "line_id": 59,
+          "label": "Section"
+        }
+      ],
+      "success": true
+    }
+  ],
+  "summary": {
+    "total_pages": 3,
+    "success_pages": 3,
+    "total_lines": 61
+  }
+}

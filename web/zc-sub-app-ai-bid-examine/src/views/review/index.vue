@@ -16,9 +16,18 @@
       </div>
 
       <div class="info-actions">
+        <div class="file-version-switch">
+          <span class="switch-label">推理前</span>
+          <a-switch
+            v-model:checked="useInferVersion"
+            @change="handleVersionSwitch"
+            :loading="versionSwitchLoading"
+          />
+          <span class="switch-label">推理后</span>
+        </div>
         <div class="review-time">
-          <ClockFading class="icon" :size="16" />
-          <span>解析完成时间：{{ statsData.analysisFinishTime || '-' }}</span>
+          <Calendar1 class="icon" :size="16" />
+          <span>审查时间：{{ statsData.reviewTime || '-' }}</span>
         </div>
         <div class="action-buttons">
           <a-button @click="handleEditMetadata">编辑文档元信息</a-button>
@@ -372,6 +381,10 @@ const state = reactive({
   historyFilesVisible: false,
   metadataModalVisible: false
 })
+
+// 文件版本切换
+const useInferVersion = ref(false)
+const versionSwitchLoading = ref(false)
 
 // 当前文档元信息
 const currentMetadata = ref({
@@ -889,14 +902,15 @@ const handleElementClick = async (element: any) => {
 
   // 构造高亮数据
   const targetPage = element.page + 1  // JSON中page从0开始,PDF从1开始
-  const box = element.box  // [x1, y1, x2, y2]
+  const box = element.box  // [x1, y1, x2, y2] - 左下坐标系
 
   // 转换为 quadPoints 格式 (8个点: 左上、右上、右下、左下的x,y坐标)
+  // 注意：box使用左下坐标系，(x1,y1)=左下角, (x2,y2)=右上角
   const quadPoints = [
-    box[0], box[1],  // 左上
-    box[2], box[1],  // 右上
-    box[2], box[3],  // 右下
-    box[0], box[3]   // 左下
+    box[0], box[3],  // 左上 = (x1, y2)
+    box[2], box[3],  // 右上 = (x2, y2)
+    box[2], box[1],  // 右下 = (x2, y1)
+    box[0], box[1]   // 左下 = (x1, y1)
   ]
 
   // 构造高亮矩形
@@ -1828,7 +1842,8 @@ const handleEditMetadata = async () => {
       stage1_gt_status: result.metadata?.stage1_gt_status || false,
       stage2_gt_status: result.metadata?.stage2_gt_status || false,
       stage3_gt_status: result.metadata?.stage3_gt_status || false,
-      infer_range: result.metadata?.infer_range || [0, 0]
+      infer_range: result.metadata?.infer_range || [0, 0],
+      infer_completed: result.metadata?.infer_completed || false
     }
 
     // 打开模态框
@@ -1845,6 +1860,100 @@ const handleMetadataSave = (metadata: any) => {
   // 可以在这里更新本地状态或刷新数据
 }
 
+// 版本切换处理
+const handleVersionSwitch = async (checked: boolean) => {
+  console.log('🔄 切换文件版本:', checked ? '推理后' : '推理前')
+  versionSwitchLoading.value = true
+
+  try {
+    // 获取当前文件名和runName
+    const currentFileName = currentFileSource.value.fileName
+    const runName = currentFileSource.value.runName
+
+    if (!currentFileName || !runName) {
+      message.warning('没有加载的文件')
+      return
+    }
+
+    // 构造新文件名
+    let newFileName = currentFileName
+    if (checked) {
+      // 切换到推理后版本
+      if (!currentFileName.includes('_infer.json')) {
+        newFileName = currentFileName.replace('.json', '_infer.json')
+      }
+    } else {
+      // 切换到推理前版本
+      newFileName = currentFileName.replace('_infer.json', '.json')
+    }
+
+    console.log('📝 切换JSON文件:', currentFileName, '->', newFileName)
+
+    // 只加载JSON数据，不加载PDF（添加时间戳避免缓存）
+    const timestamp = Date.now()
+    const response = await fetch(
+      `http://localhost:3000/api/runs/${runName}/json?file=enriched/${newFileName}&t=${timestamp}`
+    )
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || '加载失败')
+    }
+
+    console.log('✅ JSON数据加载成功，不重新加载PDF')
+
+    // 更新 jsonElements
+    if (Array.isArray(data.data)) {
+      const processedData = data.data.map((item: any) => {
+        const bboxStr = item.bbox || item.box
+        let box = []
+        if (typeof bboxStr === 'string') {
+          box = bboxStr.split(',').map(Number)
+        } else if (Array.isArray(bboxStr)) {
+          box = bboxStr
+        }
+
+        return {
+          ...item,
+          box: box,
+          page: typeof item.page === 'string' ? parseInt(item.page) : item.page
+        }
+      })
+
+      // 添加文档根节点
+      const documentRootNode = {
+        line_id: 'L_ROOT',
+        class: 'document',
+        page: '0',
+        box: [0, 0, 0, 0],
+        text: newFileName.replace('.json', '').replace('_infer', ''),
+        id: -1,
+        parent_id: '',
+        is_meta: '',
+        relation: ''
+      }
+
+      const finalData = [documentRootNode, ...processedData]
+      jsonElementsRaw.value = finalData
+      jsonElements.value = finalData
+
+      // 更新当前文件源的文件名
+      currentFileSource.value.fileName = newFileName
+
+      console.log(`📊 已加载 ${finalData.length} 个元素`)
+    }
+
+    message.success(`已切换到${checked ? '推理后' : '推理前'}版本`)
+  } catch (error: any) {
+    console.error('❌ 版本切换失败:', error)
+    message.error(`切换失败: ${error.message}`)
+    // 切换失败，恢复原状态
+    useInferVersion.value = !checked
+  } finally {
+    versionSwitchLoading.value = false
+  }
+}
+
 const handleFilePreview = async (file: any, autoLoad = false) => {
   console.log('📂 切换文件:', file, '自动加载:', autoLoad)
 
@@ -1854,9 +1963,10 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
     console.log('📁 加载 Runs 文件:', file._runName, file.name)
 
     try {
-      // 读取 JSON 文件（使用查询参数）
+      // 读取 JSON 文件（使用查询参数，添加时间戳避免缓存）
+      const timestamp = Date.now()
       const response = await fetch(
-        `http://localhost:3000/api/runs/${file._runName}/json?file=enriched/${file.name}`
+        `http://localhost:3000/api/runs/${file._runName}/json?file=enriched/${file.name}&t=${timestamp}`
       )
       const data = await response.json()
 
@@ -2085,6 +2195,23 @@ onBeforeUnmount(() => {
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+
+    .file-version-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+
+      .switch-label {
+        font-size: 14px;
+        color: #6b7280;
+        white-space: nowrap;
+      }
+    }
+
     .review-time {
       display: flex;
       align-items: center;
