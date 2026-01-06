@@ -119,11 +119,11 @@
             v-model:start="inferRange.start"
             v-model:end="inferRange.end"
             :run-name="currentFileSource.runName"
-            :file-name="currentFileSource.fileName"
+            :file-name="currentFileSource.baseFileName || currentFileSource.fileName"
             @filter="handleFilterByRange"
           />
           <SaveToTrainingButton
-            :file-name="currentFileSource.fileName || statsData.fileName"
+            :file-name="currentFileSource.baseFileName || currentFileSource.fileName || statsData.fileName"
             :run-name="currentFileSource.runName"
             :is-from-runs="currentFileSource.isFromRuns"
             :use-infer-version="useInferVersion"
@@ -345,7 +345,7 @@ import InferRangeControl from './components/InferRangeControl.vue'
 import { EditableTree } from '@/components/tree'
 import config from '../../config'
 import { useMetadata } from './hooks/useMetadata'
-import { getInferFileName } from './utils/fileNameUtils'
+import { getInferFileName, getBaseFileName } from './utils/fileNameUtils'
 
 defineOptions({
   name: 'ComplianceReview'
@@ -415,7 +415,8 @@ const statsData = ref<Record<string, any>>({})
 const currentFileSource = ref<{
   isFromRuns: boolean
   runName?: string
-  fileName?: string
+  fileName?: string  // 当前加载的文件名（可能带 _infer 后缀）
+  baseFileName?: string  // 原始文件名（不带 _infer 后缀，用于 metadata 操作）
 }>({
   isFromRuns: false
 })
@@ -1770,18 +1771,18 @@ const handleEditMetadata = async () => {
     return
   }
 
-  // 从后端加载当前文件的元信息
+  // 从后端加载当前文件的元信息（使用 baseFileName，不带 _infer 后缀）
   try {
-    const response = await fetch(`http://localhost:3000/api/runs/metadata?runName=${currentFileSource.value.runName}&filename=${currentFileSource.value.fileName}`)
+    const response = await fetch(`http://localhost:3000/api/runs/metadata?runName=${currentFileSource.value.runName}&filename=${currentFileSource.value.baseFileName || currentFileSource.value.fileName}`)
     const result = await response.json()
 
     if (!response.ok || !result.success) {
       throw new Error(result.error || '加载元信息失败')
     }
 
-    // 设置当前元信息
+    // 设置当前元信息（使用 baseFileName，不带 _infer 后缀）
     currentMetadata.value = {
-      filename: currentFileSource.value.fileName,
+      filename: currentFileSource.value.baseFileName || currentFileSource.value.fileName,
       stage1_gt_status: result.metadata?.stage1_gt_status || false,
       stage2_gt_status: result.metadata?.stage2_gt_status || false,
       stage3_gt_status: result.metadata?.stage3_gt_status || false,
@@ -1880,7 +1881,7 @@ const handleVersionSwitch = async (checked: boolean) => {
       jsonElementsRaw.value = finalData
       jsonElements.value = finalData
 
-      // 更新当前文件源的文件名
+      // 更新当前文件源的文件名（fileName 会变，但 baseFileName 保持不变）
       currentFileSource.value.fileName = newFileName
 
       console.log(`📊 已加载 ${finalData.length} 个元素`)
@@ -2005,7 +2006,8 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
         currentFileSource.value = {
           isFromRuns: true,
           runName: file._runName,
-          fileName: file.name
+          fileName: actualFileName,  // 实际加载的文件名（可能带 _infer）
+          baseFileName: getBaseFileName(file.name)  // 原始文件名（不带 _infer）
         }
 
         // 根据文件名加载对应的 PDF（从之前的 PDF 目录）
