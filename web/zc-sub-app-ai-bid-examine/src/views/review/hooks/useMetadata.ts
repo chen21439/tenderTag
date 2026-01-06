@@ -18,8 +18,9 @@ export const useMetadata = () => {
   const getMetadata = async (runName: string, filename: string): Promise<Metadata | null> => {
     try {
       loading.value = true
+      const timestamp = Date.now()
       const response = await fetch(
-        `http://localhost:3000/api/runs/metadata?runName=${runName}&filename=${filename}`
+        `http://localhost:3000/api/runs/metadata?runName=${runName}&filename=${filename}&t=${timestamp}`
       )
       const result = await response.json()
 
