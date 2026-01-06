@@ -114,37 +114,21 @@
         </div>
 
         <!-- 推理范围设置 (仅 runs 文件显示) -->
-        <div v-if="currentFileSource.isFromRuns" class="range-section">
-          <span class="range-label">范围:</span>
-          <a-input-number
-            v-model:value="inferRange.start"
-            placeholder="起始"
-            size="small"
-            :min="0"
-            style="width: 80px;"
+        <div v-if="currentFileSource.isFromRuns" style="display: flex; gap: 12px; align-items: center;">
+          <InferRangeControl
+            v-model:start="inferRange.start"
+            v-model:end="inferRange.end"
+            :run-name="currentFileSource.runName"
+            :file-name="currentFileSource.fileName"
+            @filter="handleFilterByRange"
           />
-          <span class="range-separator">-</span>
-          <a-input-number
-            v-model:value="inferRange.end"
-            placeholder="结束"
-            size="small"
-            :min="0"
-            style="width: 80px;"
+          <SaveToTrainingButton
+            :file-name="currentFileSource.fileName || statsData.fileName"
+            :run-name="currentFileSource.runName"
+            :is-from-runs="currentFileSource.isFromRuns"
+            :use-infer-version="useInferVersion"
+            :page-range="rangeFilter.enabled ? { start: rangeFilter.start, end: rangeFilter.end } : undefined"
           />
-          <a-button
-            size="small"
-            @click="handleFilterByRange"
-          >
-            过滤
-          </a-button>
-          <a-button
-            type="primary"
-            size="small"
-            @click="handleSaveInferRange"
-            :loading="inferRange.saving"
-          >
-            保存
-          </a-button>
         </div>
 
         <!-- 操作工具栏（仅列表视图显示） -->
@@ -356,8 +340,12 @@ import CheckListModal from './components/CheckListModal.vue'
 import HistoryFilesModal from './components/HistoryFilesModal.vue'
 import EditMetadataModal from './components/EditMetadataModal.vue'
 import ReviewItem from './components/ReviewItem.vue'
+import SaveToTrainingButton from './components/SaveToTrainingButton.vue'
+import InferRangeControl from './components/InferRangeControl.vue'
 import { EditableTree } from '@/components/tree'
 import config from '../../config'
+import { useMetadata } from './hooks/useMetadata'
+import { getInferFileName } from './utils/fileNameUtils'
 
 defineOptions({
   name: 'ComplianceReview'
@@ -365,6 +353,7 @@ defineOptions({
 
 const router = useRouter()
 const route = useRoute()
+const { getMetadata: fetchMetadata, hasInferVersion } = useMetadata()
 
 const isDev = import.meta.env.DEV === true || import.meta.env.MODE === 'dev'
 
@@ -1615,52 +1604,6 @@ const handleFilterByRange = () => {
   message.success(`已过滤页面范围: ${inferRange.start} - ${inferRange.end}，共 ${jsonElements.value.length} 个元素`)
 }
 
-// 保存推理范围到 metadata.jsonl
-const handleSaveInferRange = async () => {
-  if (!currentFileSource.value.isFromRuns) {
-    message.warning('只支持从 runs 目录加载的文件')
-    return
-  }
-
-  // 验证输入
-  if (inferRange.start < 0 || inferRange.end < 0) {
-    message.error('页码不能小于0')
-    return
-  }
-
-  if (inferRange.start > inferRange.end) {
-    message.error('起始值不能大于结束值')
-    return
-  }
-
-  inferRange.saving = true
-
-  try {
-    const response = await fetch(`http://localhost:3000/api/runs/${currentFileSource.value.runName}/update-metadata`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filename: currentFileSource.value.fileName,
-        infer_range: [inferRange.start, inferRange.end]
-      })
-    })
-
-    const result = await response.json()
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || '保存失败')
-    }
-
-    console.log('✅ 推理范围保存到 metadata.jsonl:', { filename: currentFileSource.value.fileName, range: [inferRange.start, inferRange.end] })
-    message.success('推理范围已保存')
-  } catch (error) {
-    console.error('❌ 保存推理范围失败:', error)
-    message.error(`保存失败: ${error.message}`)
-  } finally {
-    inferRange.saving = false
-  }
-}
-
 // 处理树节点选择
 const handleTreeNodeSelect = (nodeId: any) => {
   const element = jsonElements.value.find((el: any) => el.line_id === nodeId || el.id === nodeId)
@@ -1963,10 +1906,23 @@ const handleFilePreview = async (file: any, autoLoad = false) => {
     console.log('📁 加载 Runs 文件:', file._runName, file.name)
 
     try {
+      // 先读取 metadata，检查是否有推理后版本
+      const metadata = await fetchMetadata(file._runName, file.name)
+
+      // 如果 metadata 中有 infer_completed=true，自动切换到推理后版本
+      let actualFileName = file.name
+      if (hasInferVersion(metadata)) {
+        console.log('📊 检测到该文件有推理后版本，自动切换')
+        useInferVersion.value = true
+        actualFileName = getInferFileName(file.name)
+      } else {
+        useInferVersion.value = false
+      }
+
       // 读取 JSON 文件（使用查询参数，添加时间戳避免缓存）
       const timestamp = Date.now()
       const response = await fetch(
-        `http://localhost:3000/api/runs/${file._runName}/json?file=enriched/${file.name}&t=${timestamp}`
+        `http://localhost:3000/api/runs/${file._runName}/json?file=enriched/${actualFileName}&t=${timestamp}`
       )
       const data = await response.json()
 

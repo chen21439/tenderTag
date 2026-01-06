@@ -12,6 +12,22 @@ const PDF_DIR = 'E:\\models\\data\\Section\\tender_document\\pdf'
 const JSON_DIR = 'E:\\models\\data\\Section\\tender_document\\json'
 // Runs目录（存放时间戳文件夹）
 const RUNS_DIR = 'E:\\models\\data\\Section\\tender_document\\runs'
+// 训练数据目录
+const TRAIN_DIR = 'E:\\models\\data\\Section\\tender_document\\train'
+
+// ==================== 工具函数 ====================
+
+// 去除 _infer 后缀，获取原始文件名
+const getBaseFileName = (fileName) => {
+  return fileName.replace(/_infer\.json$/i, '.json')
+}
+
+// 添加 _infer 后缀
+const getInferFileName = (fileName) => {
+  return fileName.replace(/\.json$/i, '_infer.json')
+}
+
+// ==================== Express 配置 ====================
 
 // 启用CORS
 app.use(cors())
@@ -684,9 +700,17 @@ app.post('/api/runs/:timestamp/update-metadata', express.json(), (req, res) => {
     })
   }
 
+  // 获取原始文件名（去除 _infer 后缀），metadata 中只存储原始文件名
+  const baseFileName = getBaseFileName(filename)
+
   const metadataPath = path.join(RUNS_DIR, timestamp, 'metadata.jsonl')
 
-  console.log(`📝 更新 metadata:`, { timestamp, filename, infer_range })
+  console.log(`📝 更新 metadata:`, {
+    timestamp,
+    原始filename: filename,
+    metadata中的filename: baseFileName,
+    infer_range
+  })
 
   // 读取 metadata.jsonl
   fs.readFile(metadataPath, 'utf8', (err, data) => {
@@ -700,10 +724,10 @@ app.post('/api/runs/:timestamp/update-metadata', express.json(), (req, res) => {
     try {
       const metadata = JSON.parse(data)
 
-      // 查找并更新对应的文件记录
+      // 查找并更新对应的文件记录（使用原始文件名匹配）
       let found = false
       for (let i = 0; i < metadata.length; i++) {
-        if (metadata[i].filename === filename) {
+        if (metadata[i].filename === baseFileName) {
           // 更新字段
           if (infer_range !== undefined) {
             metadata[i].infer_range = infer_range
@@ -853,7 +877,15 @@ app.get('/api/runs/:runName/metadata/all', (req, res) => {
 app.post('/api/runs/metadata/update', express.json(), (req, res) => {
   const { runName, filename, metadata } = req.body
 
-  console.log('📝 [Metadata] 更新请求:', { runName, filename, metadata })
+  // 获取原始文件名（去除 _infer 后缀），metadata 中只存储原始文件名
+  const baseFileName = getBaseFileName(filename)
+
+  console.log('📝 [Metadata] 更新请求:', {
+    runName,
+    原始filename: filename,
+    metadata中的filename: baseFileName,
+    metadata
+  })
 
   if (!runName || !filename || !metadata) {
     return res.status(400).json({
@@ -875,22 +907,22 @@ app.post('/api/runs/metadata/update', express.json(), (req, res) => {
 
     try {
       const metadataList = JSON.parse(data)
-      const fileIndex = metadataList.findIndex((item) => item.filename === filename)
+      const fileIndex = metadataList.findIndex((item) => item.filename === baseFileName)
 
       if (fileIndex === -1) {
-        // 文件不存在，添加新记录
+        // 文件不存在，添加新记录（使用原始文件名）
         metadataList.push({
-          filename,
+          filename: baseFileName,
           ...metadata
         })
-        console.log(`✅ [Metadata] 添加新记录: ${filename}`)
+        console.log(`✅ [Metadata] 添加新记录: ${baseFileName}`)
       } else {
         // 文件存在，更新记录
         metadataList[fileIndex] = {
           ...metadataList[fileIndex],
           ...metadata
         }
-        console.log(`✅ [Metadata] 更新记录: ${filename}`)
+        console.log(`✅ [Metadata] 更新记录: ${baseFileName}`)
       }
 
       // 写回 metadata.jsonl
@@ -964,6 +996,100 @@ app.post('/api/runs/metadata/update', express.json(), (req, res) => {
       res.status(500).json({
         success: false,
         error: 'metadata.jsonl 解析失败'
+      })
+    }
+  })
+})
+
+// 保存到训练目录
+app.post('/api/save-training-data', express.json(), (req, res) => {
+  const { fileName, runName, isFromRuns, useInferVersion, pageRange } = req.body
+
+  console.log('📥 收到保存训练数据请求:', {
+    fileName,
+    runName,
+    isFromRuns,
+    useInferVersion,
+    pageRange
+  })
+
+  if (!fileName) {
+    return res.status(400).json({
+      success: false,
+      error: '缺少必要参数：fileName'
+    })
+  }
+
+  // 确定源文件路径
+  let sourceFilePath
+  let actualFileName = useInferVersion ? getInferFileName(fileName) : getBaseFileName(fileName)
+
+  if (isFromRuns && runName) {
+    // 从 runs 目录读取（enriched子目录）
+    sourceFilePath = path.join(RUNS_DIR, runName, 'enriched', actualFileName)
+  } else {
+    // 从本地 JSON 目录读取
+    sourceFilePath = path.join(JSON_DIR, actualFileName)
+  }
+
+  console.log('📂 读取源文件:', sourceFilePath)
+
+  // 读取源文件
+  fs.readFile(sourceFilePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('❌ 读取源文件失败:', err.message)
+      return res.status(404).json({
+        success: false,
+        error: `源文件未找到: ${sourceFilePath}`
+      })
+    }
+
+    try {
+      let jsonData = JSON.parse(data)
+
+      // 根据 pageRange 过滤数据
+      if (pageRange && pageRange.start !== undefined && pageRange.end !== undefined) {
+        const originalCount = jsonData.length
+        jsonData = jsonData.filter(item => {
+          const page = typeof item.page === 'string' ? parseInt(item.page) : item.page
+          return page >= pageRange.start && page <= pageRange.end
+        })
+        console.log(`📊 按页码范围过滤: [${pageRange.start}-${pageRange.end}], ${originalCount} -> ${jsonData.length}`)
+      }
+
+      // 确保 train 目录存在
+      if (!fs.existsSync(TRAIN_DIR)) {
+        console.log('📁 创建训练目录:', TRAIN_DIR)
+        fs.mkdirSync(TRAIN_DIR, { recursive: true })
+      }
+
+      // 保存到训练目录（使用原始文件名，去除 _infer 后缀）
+      const outputFileName = getBaseFileName(actualFileName)
+      const outputFilePath = path.join(TRAIN_DIR, outputFileName)
+
+      // 写入文件（覆盖模式）
+      fs.writeFile(outputFilePath, JSON.stringify(jsonData, null, 2), 'utf8', (writeErr) => {
+        if (writeErr) {
+          console.error('❌ 保存文件失败:', writeErr.message)
+          return res.status(500).json({
+            success: false,
+            error: '保存文件失败: ' + writeErr.message
+          })
+        }
+
+        console.log('✅ 文件已保存到训练目录:', outputFilePath)
+        res.json({
+          success: true,
+          message: '文件保存成功',
+          filePath: outputFilePath,
+          dataCount: jsonData.length
+        })
+      })
+    } catch (parseErr) {
+      console.error('❌ JSON解析失败:', parseErr.message)
+      res.status(500).json({
+        success: false,
+        error: 'JSON解析失败: ' + parseErr.message
       })
     }
   })
