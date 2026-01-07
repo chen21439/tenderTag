@@ -133,8 +133,13 @@ const emit = defineEmits([
 // 树数据
 const treeData = ref<any[]>([])
 
-// 树构建器
-const { buildTree } = useTreeBuilder()
+// 树构建器（支持两个版本）
+import { useTreeBuilderV2 } from '@/hooks/useTreeBuilderV2'
+const { buildTree: buildTreeV1 } = useTreeBuilder()
+const { buildTree: buildTreeV2 } = useTreeBuilderV2()
+
+// 使用 V2 版本（参考 Python tree_utils.py 的实现）
+const buildTree = buildTreeV2
 
 // 树编辑器
 const {
