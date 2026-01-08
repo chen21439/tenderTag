@@ -17,17 +17,7 @@
         <a-input
           v-model:value="formData.fileName"
           placeholder="请输入文件名（不含 .json 后缀）"
-          @blur="handleFileNameBlur"
         />
-        <div v-if="fileExistsChecking" class="check-status">
-          <a-spin size="small" /> 检查中...
-        </div>
-        <div v-else-if="fileExists === true" class="check-status error">
-          ⚠️ 该文件名已存在
-        </div>
-        <div v-else-if="fileExists === false" class="check-status success">
-          ✓ 文件名可用
-        </div>
       </a-form-item>
 
       <a-form-item label="推理页码范围">
@@ -74,8 +64,6 @@ const emit = defineEmits<Emits>()
 
 const visible = ref(false)
 const loading = ref(false)
-const fileExistsChecking = ref(false)
-const fileExists = ref<boolean | null>(null)
 const formRef = ref<FormInstance>()
 
 const formData = reactive({
@@ -109,46 +97,7 @@ const resetForm = () => {
   formData.fileName = ''
   formData.inferRangeStart = 0
   formData.inferRangeEnd = 999
-  fileExists.value = null
   formRef.value?.clearValidate()
-}
-
-// 检查文件名是否存在
-const checkFileExists = async (fileName: string) => {
-  if (!fileName.trim() || !props.runName) {
-    fileExists.value = null
-    return
-  }
-
-  fileExistsChecking.value = true
-  fileExists.value = null
-
-  try {
-    const response = await fetch(
-      `http://localhost:3000/api/runs/metadata?runName=${props.runName}&filename=${fileName}.json`
-    )
-    const result = await response.json()
-
-    if (response.ok && result.success && result.metadata) {
-      // 文件已存在
-      fileExists.value = true
-    } else {
-      // 文件不存在
-      fileExists.value = false
-    }
-  } catch (error) {
-    console.error('❌ 检查文件是否存在失败:', error)
-    fileExists.value = null
-  } finally {
-    fileExistsChecking.value = false
-  }
-}
-
-// 文件名输入框失焦时检查
-const handleFileNameBlur = () => {
-  if (formData.fileName.trim()) {
-    checkFileExists(formData.fileName.trim())
-  }
 }
 
 // 提交表单
@@ -158,16 +107,6 @@ const handleSubmit = async () => {
   try {
     // 验证表单
     await formRef.value.validate()
-
-    // 检查文件是否已存在
-    if (fileExists.value === null) {
-      await checkFileExists(formData.fileName.trim())
-    }
-
-    if (fileExists.value === true) {
-      message.error('文件名已存在，请使用其他名称')
-      return
-    }
 
     // 验证页码范围
     if (formData.inferRangeStart > formData.inferRangeEnd) {
@@ -216,19 +155,6 @@ const handleCancel = () => {
 </script>
 
 <style scoped>
-.check-status {
-  margin-top: 8px;
-  font-size: 12px;
-}
-
-.check-status.error {
-  color: #ff4d4f;
-}
-
-.check-status.success {
-  color: #52c41a;
-}
-
 .hint-text {
   margin-top: 4px;
   font-size: 12px;
