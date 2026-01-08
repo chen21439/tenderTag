@@ -25,9 +25,11 @@
           />
           <span class="switch-label">推理后</span>
         </div>
-        <div class="review-time">
-          <Calendar1 class="icon" :size="16" />
-          <span>审查时间：{{ statsData.reviewTime || '-' }}</span>
+        <div class="add-document-section">
+          <a-button type="primary">
+            <template #icon><PlusOutlined /></template>
+            添加文档
+          </a-button>
         </div>
         <div class="action-buttons">
           <a-button @click="handleEditMetadata">编辑文档元信息</a-button>
@@ -327,8 +329,8 @@
 import { ref, computed, reactive, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { DownOutlined } from '@ant-design/icons-vue'
-import { CornerUpLeft, Clock8, Calendar1, Download, ClockFading } from 'lucide-vue-next'
+import { DownOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { CornerUpLeft, Clock8, Download, ClockFading } from 'lucide-vue-next'
 import { SKELETON_CONFIG, createFilterTabs, DEFAULT_REVIEW_RESULT, exportOptionsList } from '@/views/hooks/examine'
 import { useExport } from '@/views/hooks/use-export'
 import { getTaskReview, apiGetFile, reviewTipList, getLocalTaskList } from '@/api/examine'
