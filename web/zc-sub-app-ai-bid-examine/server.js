@@ -1001,6 +1001,84 @@ app.post('/api/runs/metadata/update', express.json(), (req, res) => {
   })
 })
 
+// 添加文件到 metadata.jsonl
+app.post('/api/runs/:runName/add-file', express.json(), (req, res) => {
+  const { runName } = req.params
+  const { fileName, inferRange } = req.body
+
+  console.log('📝 [Add File] 添加文件请求:', { runName, fileName, inferRange })
+
+  if (!runName || !fileName) {
+    return res.status(400).json({
+      success: false,
+      error: '缺少必要参数：runName, fileName'
+    })
+  }
+
+  const metadataPath = path.join(RUNS_DIR, runName, 'metadata.jsonl')
+
+  // 读取 metadata.jsonl
+  fs.readFile(metadataPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('❌ metadata.jsonl 读取失败:', err.message)
+      return res.status(404).json({
+        success: false,
+        error: 'metadata.jsonl 文件未找到'
+      })
+    }
+
+    try {
+      const metadataList = JSON.parse(data)
+      const baseFileName = getBaseFileName(fileName)
+
+      // 检查文件是否已存在
+      const existingFile = metadataList.find((item) => item.filename === baseFileName)
+      if (existingFile) {
+        return res.status(400).json({
+          success: false,
+          error: '文件名已存在'
+        })
+      }
+
+      // 添加新文件记录
+      const newFileMetadata = {
+        filename: baseFileName,
+        stage1_gt_status: false,
+        stage2_gt_status: false,
+        stage3_gt_status: false,
+        infer_range: inferRange || [0, 999],
+        infer_completed: false
+      }
+
+      metadataList.push(newFileMetadata)
+
+      // 写回 metadata.jsonl
+      fs.writeFile(metadataPath, JSON.stringify(metadataList, null, 2), 'utf8', (writeErr) => {
+        if (writeErr) {
+          console.error('❌ metadata.jsonl 写入失败:', writeErr.message)
+          return res.status(500).json({
+            success: false,
+            error: 'metadata.jsonl 写入失败'
+          })
+        }
+
+        console.log('✅ [Add File] 文件添加成功:', baseFileName)
+        res.json({
+          success: true,
+          message: '文件添加成功',
+          metadata: newFileMetadata
+        })
+      })
+    } catch (parseErr) {
+      console.error('❌ metadata.jsonl 解析失败:', parseErr.message)
+      res.status(500).json({
+        success: false,
+        error: 'metadata.jsonl 解析失败'
+      })
+    }
+  })
+})
+
 // 保存到训练目录
 app.post('/api/save-training-data', express.json(), (req, res) => {
   const { fileName, runName, isFromRuns, useInferVersion, pageRange } = req.body

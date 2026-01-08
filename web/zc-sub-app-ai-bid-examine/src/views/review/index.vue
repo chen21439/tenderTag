@@ -26,7 +26,7 @@
           <span class="switch-label">推理后</span>
         </div>
         <div class="add-document-section">
-          <a-button type="primary">
+          <a-button type="primary" @click="handleAddFile">
             <template #icon><PlusOutlined /></template>
             添加文档
           </a-button>
@@ -318,6 +318,13 @@
       @save="handleMetadataSave"
     />
 
+    <!-- 添加文件弹窗 -->
+    <AddFileModal
+      v-model:open="state.addFileModalVisible"
+      :run-name="currentFileSource.runName || ''"
+      @success="handleAddFileSuccess"
+    />
+
     <!-- 下载中离开页面提示 -->
     <BaseDialog v-model="leaveConfirmVisible" title="提示" @confirm="confirmLeave">
       正在下载中，离开页面将中断下载，确定要离开吗？
@@ -341,6 +348,7 @@ import LeftSideActions from '@/components/LeftSideActions/index.vue'
 import CheckListModal from './components/CheckListModal.vue'
 import HistoryFilesModal from './components/HistoryFilesModal.vue'
 import EditMetadataModal from './components/EditMetadataModal.vue'
+import AddFileModal from './components/AddFileModal.vue'
 import ReviewItem from './components/ReviewItem.vue'
 import SaveToTrainingButton from './components/SaveToTrainingButton.vue'
 import InferRangeControl from './components/InferRangeControl.vue'
@@ -370,7 +378,8 @@ const state = reactive({
   activeFilter: 1 as number | null,
   checkListVisible: false,
   historyFilesVisible: false,
-  metadataModalVisible: false
+  metadataModalVisible: false,
+  addFileModalVisible: false
 })
 
 // 文件版本切换
@@ -1804,6 +1813,28 @@ const handleEditMetadata = async () => {
 const handleMetadataSave = (metadata: any) => {
   console.log('✅ 元信息已保存:', metadata)
   // 可以在这里更新本地状态或刷新数据
+}
+
+// 打开添加文件弹窗
+const handleAddFile = () => {
+  if (!currentFileSource.value.isFromRuns) {
+    message.warning('只支持从 runs 目录添加文件')
+    return
+  }
+
+  if (!currentFileSource.value.runName) {
+    message.error('未选择 runs 目录')
+    return
+  }
+
+  state.addFileModalVisible = true
+}
+
+// 添加文件成功回调
+const handleAddFileSuccess = (fileName: string) => {
+  console.log('✅ 文件添加成功:', fileName)
+  message.success(`文件 ${fileName} 已添加到训练集`)
+  // 可以在这里刷新文件列表或其他操作
 }
 
 // 版本切换处理
