@@ -1047,7 +1047,7 @@ app.post('/api/runs/:runName/add-file', express.json(), (req, res) => {
         stage2_gt_status: false,
         stage3_gt_status: false,
         infer_range: inferRange || [0, 999],
-        infer_completed: false
+        infer_completed: true  // 默认为 true，表示已有推理版本
       }
 
       metadataList.push(newFileMetadata)
