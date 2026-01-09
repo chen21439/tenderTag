@@ -394,6 +394,22 @@ app.post('/api/json/update', express.json(), (req, res) => {
       let found = false
       for (let i = 0; i < jsonData.length; i++) {
         if (jsonData[i].id === id) {
+          // 校验 parent_id（如果有的话）
+          if ('parent_id' in updates) {
+            const newParentId = updates.parent_id
+            // 校验：不能指向自身（检查 id 和 line_id）
+            if (newParentId !== '' && newParentId !== null && newParentId !== undefined) {
+              const parentIdNum = Number(newParentId)
+              if (parentIdNum === jsonData[i].id || parentIdNum === jsonData[i].line_id) {
+                console.error(`❌ [JSON] parent_id 不能指向自身: id=${id}, parent_id=${newParentId}`)
+                return res.status(400).json({
+                  success: false,
+                  error: 'parent_id 不能指向自身'
+                })
+              }
+            }
+          }
+
           // 更新字段
           Object.assign(jsonData[i], updates)
           found = true
@@ -476,7 +492,18 @@ app.post('/api/runs/update', express.json(), (req, res) => {
             if (processedUpdates.parent_id === '' || processedUpdates.parent_id === null || processedUpdates.parent_id === undefined) {
               processedUpdates.parent_id = ''
             } else {
-              processedUpdates.parent_id = Number(processedUpdates.parent_id)
+              const newParentId = Number(processedUpdates.parent_id)
+
+              // 校验：不能指向自身（检查 id 和 line_id）
+              if (newParentId === jsonData[i].id || newParentId === jsonData[i].line_id) {
+                console.error(`❌ [Runs] parent_id 不能指向自身: id=${id}, parent_id=${newParentId}`)
+                return res.status(400).json({
+                  success: false,
+                  error: 'parent_id 不能指向自身'
+                })
+              }
+
+              processedUpdates.parent_id = newParentId
             }
           }
           // 处理 is_infer 字段：如果不存在则添加，存在则更新
