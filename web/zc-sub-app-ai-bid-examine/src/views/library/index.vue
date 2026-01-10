@@ -156,7 +156,7 @@
           <div class="btns">
             <!-- 查看按钮 -->
             <a-button
-              v-if="record.reviewStatus === 2"
+              v-if="record.reviewStatus == 2"
               type="text"
               @click="goResult(record)">
               <template #icon>
@@ -168,8 +168,8 @@
 
             <!-- 导出报告按钮 -->
             <a-button
-              v-if="record.reviewStatus === 2"
-              type="text" 
+              v-if="record.reviewStatus == 2"
+              type="text"
               :loading="exportingIds.has(record.taskId)"
               @click="exportReport(record)">
               <template #icon>
