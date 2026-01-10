@@ -94,8 +94,8 @@ export default defineConfig(env => {
         },
         // 本地Python后端代理（开发环境）
         '/python': {
-          target: 'http://127.0.0.1:8000',  // 使用 127.0.0.1 而不是 localhost，避免 IPv6 问题
-                  // target: 'http://175.42.62.118:9103/',
+          //target: 'http://127.0.0.1:8000',  // 使用 127.0.0.1 而不是 localhost，避免 IPv6 问题
+                  target: 'http://175.42.62.118:9103/',
           changeOrigin: true,
           rewrite: pathStr => pathStr.replace(/^\/python/, ''),
           configure: (proxy, options) => {

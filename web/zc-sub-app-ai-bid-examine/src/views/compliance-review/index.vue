@@ -1999,16 +1999,43 @@ const buildConstructTree = async () => {
   console.log('🏗️ 构建 Construct 树，数据源: constructRawData')
   console.log('   - 数据节点数:', dataSource.length)
 
-  // 使用 useTreeBuilderV2 的算法构建树（基于 parent_id 和 relation）
-  const { buildTreeByParentId } = useTreeBuilderV2()
-  const treeData = buildTreeByParentId(
-    dataSource,
-    'line_id',      // ID 字段
-    'parent_id',    // 父ID字段
-    'relation'      // 关系字段
-  )
+  // 数据验证：检查节点是否指向自身
+  const invalidNodes: any[] = []
+  dataSource.forEach((item, index) => {
+    if (item.line_id === item.parent_id) {
+      console.error(`❌ 节点指向自身: index=${index}, line_id=${item.line_id}, text="${item.text}"`)
+      invalidNodes.push(item)
+    }
+  })
 
-  constructTreeData.value = treeData
+  if (invalidNodes.length > 0) {
+    console.error(`❌ 发现 ${invalidNodes.length} 个无效节点（指向自身），已过滤`)
+    // 过滤掉指向自身的节点
+    const validData = dataSource.filter(item => item.line_id !== item.parent_id)
+    console.log('   - 过滤后节点数:', validData.length)
+
+    // 使用 useTreeBuilderV2 的算法构建树（基于 parent_id 和 relation）
+    const { buildTreeByParentId } = useTreeBuilderV2()
+    const treeData = buildTreeByParentId(
+      validData,
+      'line_id',      // ID 字段
+      'parent_id',    // 父ID字段
+      'relation'      // 关系字段
+    )
+
+    constructTreeData.value = treeData
+  } else {
+    // 使用 useTreeBuilderV2 的算法构建树（基于 parent_id 和 relation）
+    const { buildTreeByParentId } = useTreeBuilderV2()
+    const treeData = buildTreeByParentId(
+      dataSource,
+      'line_id',      // ID 字段
+      'parent_id',    // 父ID字段
+      'relation'      // 关系字段
+    )
+
+    constructTreeData.value = treeData
+  }
 
   console.log('✅ Construct 树构建完成')
   console.log('  - 根节点数量:', constructTreeData.value.length)
