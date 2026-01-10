@@ -74,10 +74,10 @@
           </div>
           <div style="margin-left: auto; display: flex; gap: 12px; align-items: center">
             <a-radio-group v-model:value="treeGroupMode" size="middle" button-style="solid">
-              <a-radio-button value="label">业务语义结构树</a-radio-button>
+              <a-radio-button value="toc">业务结构语义树</a-radio-button>
               <a-radio-button value="ontology">业务本体树</a-radio-button>
               <a-radio-button value="original">采购标签图谱</a-radio-button>
-              <a-radio-button value="toc">TOC</a-radio-button>
+              <a-radio-button v-if="!hideDemoFeatures" value="label">业务语义结构树_backup</a-radio-button>
               <a-radio-button v-if="!hideDemoFeatures" value="folder">文件夹</a-radio-button>
             </a-radio-group>
           </div>
@@ -277,6 +277,7 @@ import GraphControls from '../../components/knowledge-graph/GraphControls.vue'
 import { getGraphData } from '../../components/knowledge-graph/graphData'
 import config from '../../config'
 import { useOntologyTree } from './components/ontology/useOntologyTree'
+import { useTreeBuilderV2 } from '@/hooks/useTreeBuilderV2'
 import { highlightNodeOnPdf, createHighlightData, jumpToHighlight, type BoxInfo, type HighlightData } from './utils/pdfHighlightUtils'
 
 defineOptions({
@@ -304,8 +305,8 @@ const taskId = ref((route.query.taskId as string) || '')
 // 视图模式切换：result | search
 const viewMode = ref<'result' | 'search'>('result')
 // 树形结构分组模式：original（采购标签图谱）| label（业务语义结构树）| ontology（业务本体树）| entity（业务实体图谱）| toc（TOC）| folder（文件夹）
-// 默认显示业务语义结构树
-const treeGroupMode = ref<'original' | 'label' | 'ontology' | 'entity' | 'toc' | 'folder'>('label')
+// 默认显示 TOC
+const treeGroupMode = ref<'original' | 'label' | 'ontology' | 'entity' | 'toc' | 'folder'>('toc')
 
 // 树编辑模式：允许拖拽节点改变父节点
 const treeEditMode = ref(false)
@@ -1682,16 +1683,19 @@ const mergeParagraphs = (nodes: any[]): any[] => {
   return mergedNodes
 }
 
-// 构建树形结构（参考 my-app/tree）
+// 使用 useTreeBuilderV2 构建树（与 review 页面保持一致）
+const { buildTree: buildTreeV2 } = useTreeBuilderV2()
+
+// 构建树形结构
 const buildTree = async () => {
   if (!rawTreeData.value.length) {
     console.log('⚠️ 原始数据为空，无法构建树')
     return
   }
 
-  console.log('🌲 开始构建树形结构，原始数据数量:', rawTreeData.value.length)
+  console.log('🌲 [Compliance-Review] 开始构建树形结构，原始数据数量:', rawTreeData.value.length)
 
-  // 第一步：合并段落节点
+  // 第一步：合并段落节点（compliance-review 特有逻辑）
   const mergedData = mergeParagraphs(rawTreeData.value)
   console.log('📝 段落合并后的数据数量:', mergedData.length)
 
@@ -1709,114 +1713,41 @@ const buildTree = async () => {
     console.log('📝 第一个 paragraph 节点示例:', paragraphNodes[0])
   }
 
-  // 创建节点映射（使用过滤后的数据）
-  const nodeMap = new Map()
+  // 第二步：构建 nodeMap（供其他组件使用）
+  const newNodeMap: Record<number, any> = {}
   filteredData.forEach(item => {
-    nodeMap.set(item.line_id, {
-      ...item,
-      children: []
-    })
+    newNodeMap[item.line_id] = item
   })
+  nodeMap.value = newNodeMap
+  console.log('📋 nodeMap 更新完成，节点数量:', Object.keys(newNodeMap).length)
 
-  // 先找到每个节点的真正父节点（处理 equality 链）
-  const findRealParent = (item: any): number => {
-    if (item.parent_id === -1) {
-      return -1
+  // 第三步：使用 useTreeBuilderV2 构建树（与 review 页面保持一致）
+  const roots = buildTreeV2(
+    filteredData,
+    'parentId',
+    {
+      idField: 'line_id',
+      parentIdField: 'parent_id',
+      relationField: 'relation'
     }
-
-    if (item.relation === 'contain') {
-      // contain 关系：parent_id 就是真正的父节点
-      return item.parent_id
-    }
-
-    if (item.relation === 'equality') {
-      // equality 关系：沿着 parent_id 链追溯，找到第一个 contain 关系的节点
-      let current = filteredData.find(n => n.line_id === item.parent_id)
-      while (current) {
-        if (current.relation === 'contain') {
-          // 找到了 contain 节点，它的 parent_id 就是真正的父节点
-          return current.parent_id
-        } else if (current.relation === 'equality') {
-          // 继续往上找
-          current = filteredData.find(n => n.line_id === current.parent_id)
-        } else {
-          break
-        }
-      }
-    }
-
-    // 其他情况或找不到，返回原 parent_id
-    return item.parent_id
-  }
-
-  // 构建父子关系
-  const roots: any[] = []
-  filteredData.forEach(item => {
-    const node = nodeMap.get(item.line_id)
-
-    // 跳过 connect 关系（已在段落合并中处理）
-    if (item.relation === 'connect') {
-      return
-    }
-
-    const realParentId = findRealParent(item)
-
-    if (realParentId === -1) {
-      // 根节点
-      roots.push(node)
-    } else {
-      // 添加到父节点的 children
-      const parent = nodeMap.get(realParentId)
-      if (parent) {
-        parent.children.push(node)
-      } else {
-        // 找不到父节点，作为根节点
-        console.warn('找不到父节点:', realParentId, '节点:', item)
-        roots.push(node)
-      }
-    }
-  })
+  )
 
   builtTreeData.value = roots
-  console.log('✅ 树形结构构建完成，根节点数量:', roots.length)
+  console.log('✅ [Compliance-Review] 树形结构构建完成，根节点数量:', roots.length)
 
   // 生成知识图谱数据
   await buildGraphData()
 
-  // 调试：检查 SEC1 和 SEC2 节点的层级结构
-  const sec1Nodes = filteredData.filter(n => n.class === 'sec1')
-  const sec2Nodes = filteredData.filter(n => n.class === 'sec2')
-
-  console.log(
-    '🔍 SEC1 节点检查:',
-    sec1Nodes.map(n => ({
-      line_id: n.line_id,
-      text: n.text?.substring(0, 30),
-      parent_id: n.parent_id,
-      relation: n.relation,
-      realParent: findRealParent(n),
-      计算后的父节点: nodeMap.get(findRealParent(n))?.text?.substring(0, 30)
-    }))
-  )
-
-  console.log(
-    '🔍 SEC2 节点检查:',
-    sec2Nodes.map(n => ({
-      line_id: n.line_id,
-      text: n.text?.substring(0, 30),
-      parent_id: n.parent_id,
-      relation: n.relation,
-      realParent: findRealParent(n),
-      计算后的父节点: nodeMap.get(findRealParent(n))?.text?.substring(0, 30)
-    }))
-  )
-
   // 默认展开第一层（根节点）
   const firstLevel = new Set<number>()
-  filteredData.filter(n => n.parent_id === -1 && n.relation !== 'meta').forEach(n => firstLevel.add(n.line_id))
+  roots.forEach(node => {
+    if (node.line_id !== undefined) {
+      firstLevel.add(node.line_id)
+    }
+  })
 
   treeExpandedNodes.value = firstLevel
-  console.log('🌲 默认展开节点:', firstLevel)
+  console.log('🌲 [Compliance-Review] 默认展开根节点:', firstLevel)
 }
 
 // 构建按标签分组的树形结构
@@ -1992,20 +1923,9 @@ const buildTocTree = async () => {
   console.log('✅ TOC 树构建完成')
   console.log('  - 根节点数量:', tocTreeData.value.length)
 
-  // 默认全部展开
+  // 默认全部折叠（不展开任何节点）
   treeExpandedNodes.value = new Set<number>()
-  const expandAll = (nodes: any[]) => {
-    nodes.forEach(node => {
-      if (node.line_id !== undefined) {
-        treeExpandedNodes.value.add(node.line_id)
-      }
-      if (node.children && node.children.length > 0) {
-        expandAll(node.children)
-      }
-    })
-  }
-  expandAll(tocTreeData.value)
-  console.log('🌲 默认展开所有 TOC 节点')
+  console.log('🌲 TOC 树默认折叠（用户可点击展开）')
 }
 
 // 构建按 directory_path 分组的业务本体树
@@ -2303,12 +2223,8 @@ watch(treeGroupMode, async () => {
     }
     console.log('  - ontologyTreeData 数量:', ontologyTreeData.value.length)
   } else if (treeGroupMode.value === 'toc') {
-    // 切换到 TOC 树
-    console.log('🔄 切换到 TOC 树...')
-    // 如果数据未加载，则加载数据
-    if (tocTreeData.value.length === 0 && taskId.value) {
-      await loadTocTreeData(taskId.value)
-    }
+    // 切换到业务结构语义树（TOC 树已在页面加载时预加载）
+    console.log('🔄 切换到业务结构语义树（TOC）...')
     console.log('  - tocTreeData 数量:', tocTreeData.value.length)
   } else if (treeGroupMode.value === 'folder') {
     // 切换到文件夹视图
@@ -2915,7 +2831,13 @@ const handleUpdateLabel = async (data: { nodeId: number; pid: string; label: str
 /**
  * 处理更新节点关系
  */
-const handleUpdateRelation = async (data: { nodeId: string; relation: string }) => {
+const handleUpdateRelation = async (data: {
+  nodeId: string;
+  class?: string;
+  relation: string;
+  parent_id?: number | string;
+  node_meta?: string;
+}) => {
   console.log('🔗 更新节点关系:', data)
 
   // TODO: 这里需要实现具体的API调用逻辑
@@ -2927,6 +2849,15 @@ const handleUpdateRelation = async (data: { nodeId: string; relation: string }) 
       for (const node of nodes) {
         if (node.line_id === data.nodeId) {
           node.relation = data.relation
+          if (data.class !== undefined) {
+            node.class = data.class
+          }
+          if (data.parent_id !== undefined) {
+            node.parent_id = data.parent_id
+          }
+          if (data.node_meta !== undefined) {
+            node.node_meta = data.node_meta
+          }
           return true
         }
         if (node.children && updateNodeRelation(node.children)) {
@@ -3130,17 +3061,30 @@ const selectTreeNode = async (nodeId: number, event?: MouseEvent) => {
   selectedNodeIds.value = [nodeId]
   console.log('🎯 选中节点 line_id:', nodeId)
 
-  // 先在构建好的树中查找（用于处理虚拟节点）
-  let node = findNodeById(builtTreeData.value, nodeId)
+  // 根据当前模式在不同的树中查找节点
+  let node = null
 
-  // 如果在构建树中没找到，尝试在原始数据中查找
-  if (!node) {
-    console.log('⚠️ 在构建树中未找到，尝试在原始数据中查找')
-    node = findNodeById(allTreeNodes.value, nodeId)
+  if (treeGroupMode.value === 'toc') {
+    // TOC 模式：在 tocTreeData 中查找
+    node = findNodeById(tocTreeData.value, nodeId)
+    console.log('🔍 TOC 模式，在 tocTreeData 中查找节点')
+  } else if (treeGroupMode.value === 'ontology') {
+    // 业务本体树模式：在 ontologyTreeData 中查找
+    node = findNodeById(ontologyTreeData.value, nodeId)
+    console.log('🔍 业务本体树模式，在 ontologyTreeData 中查找节点')
+  } else {
+    // 其他模式：先在构建好的树中查找
+    node = findNodeById(builtTreeData.value, nodeId)
+
+    // 如果没找到，尝试在原始数据中查找
+    if (!node) {
+      console.log('⚠️ 在构建树中未找到，尝试在原始数据中查找')
+      node = findNodeById(allTreeNodes.value, nodeId)
+    }
   }
 
   if (!node) {
-    console.warn('❌ 未找到节点 line_id:', nodeId)
+    console.warn('❌ 未找到节点 line_id:', nodeId, '当前模式:', treeGroupMode.value)
     return
   }
 
@@ -3966,6 +3910,11 @@ const refreshData = async () => {
     console.log('📦 开始加载 ontology 数据...')
     await loadOntologyData(taskId.value)
     console.log('✅ ontology 数据加载完成')
+
+    // 加载 TOC 数据（业务结构语义树）
+    console.log('📦 开始加载 TOC 数据...')
+    await loadTocTreeData(taskId.value)
+    console.log('✅ TOC 数据加载完成')
   }
 
   await getData()
