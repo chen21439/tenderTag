@@ -94,10 +94,21 @@ export default defineConfig(env => {
         },
         // 本地Python后端代理（开发环境）
         '/python': {
-          target: 'http://localhost:8000',
+          target: 'http://127.0.0.1:8000',  // 使用 127.0.0.1 而不是 localhost，避免 IPv6 问题
                   // target: 'http://175.42.62.118:9103/',
           changeOrigin: true,
-          rewrite: pathStr => pathStr.replace(/^\/python/, '')
+          rewrite: pathStr => pathStr.replace(/^\/python/, ''),
+          configure: (proxy, options) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              console.log('[Proxy Request]', req.method, req.url, '->', options.target + proxyReq.path)
+            })
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              console.log('[Proxy Response]', proxyRes.statusCode, req.url)
+            })
+            proxy.on('error', (err, req, res) => {
+              console.log('[Proxy Error]', req.url, err)
+            })
+          }
         }
       }
     },
