@@ -8,7 +8,7 @@ const baseOptions = {
   timeout: config.api.timeout,
   withCredentials: false,
   headers: config.api.commonHeaders,
-  baseURL:'/'
+  baseURL:''  // 保持为空字符串，让请求路径保持原样（包括 /python 前缀）
   // baseUrl: config.api.baseUrl
 };
 const responseHandler = (response: AxiosResponse<any, AppRequestConfig>) => {
