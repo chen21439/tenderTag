@@ -3156,7 +3156,11 @@ const selectTreeNode = async (nodeId: number, event?: MouseEvent) => {
   // 根据当前模式在不同的树中查找节点
   let node = null
 
-  if (treeGroupMode.value === 'toc') {
+  if (treeGroupMode.value === 'construct') {
+    // Construct 模式：在 constructTreeData 中查找
+    node = findNodeById(constructTreeData.value, nodeId)
+    console.log('🔍 Construct 模式，在 constructTreeData 中查找节点')
+  } else if (treeGroupMode.value === 'toc') {
     // TOC 模式：在 tocTreeData 中查找
     node = findNodeById(tocTreeData.value, nodeId)
     console.log('🔍 TOC 模式，在 tocTreeData 中查找节点')
