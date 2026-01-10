@@ -327,8 +327,8 @@ const taskId = ref((route.query.taskId as string) || '')
 // 视图模式切换：result | search
 const viewMode = ref<'result' | 'search'>('result')
 // 树形结构分组模式：construct（TOC）| original（采购标签图谱）| label（业务语义结构树）| ontology（业务本体树）| entity（业务实体图谱）| toc（业务结构语义树）| folder（文件夹）
-// 默认显示 construct
-const treeGroupMode = ref<'construct' | 'original' | 'label' | 'ontology' | 'entity' | 'toc' | 'folder'>('construct')
+// 默认显示 toc
+const treeGroupMode = ref<'construct' | 'original' | 'label' | 'ontology' | 'entity' | 'toc' | 'folder'>('toc')
 
 // 树编辑模式：允许拖拽节点改变父节点
 const treeEditMode = ref(false)
