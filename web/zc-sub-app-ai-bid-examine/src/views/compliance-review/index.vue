@@ -74,6 +74,7 @@
           </div>
           <div style="margin-left: auto; display: flex; gap: 12px; align-items: center">
             <a-radio-group v-model:value="treeGroupMode" size="middle" button-style="solid">
+              <a-radio-button value="construct">TOC</a-radio-button>
               <a-radio-button value="toc">业务结构语义树</a-radio-button>
               <a-radio-button value="ontology">业务本体树</a-radio-button>
               <a-radio-button value="original">采购标签图谱</a-radio-button>
@@ -206,7 +207,28 @@
             />
           </div>
 
-          <!-- TOC 模式 -->
+          <!-- Construct 模式（TOC） -->
+          <div
+            v-show="treeGroupMode === 'construct' && constructTreeData.length > 0"
+            class="tree-list"
+          >
+            <TreeNode
+              v-for="node in constructTreeData"
+              :key="node.line_id"
+              :node="node"
+              :depth="0"
+              :expanded-nodes="treeExpandedNodes"
+              :selected-ids="selectedNodeIds"
+              :node-map="nodeMap"
+              :debug-mode="false"
+              :edit-mode="false"
+              @toggle="toggleTreeNode"
+              @select="selectTreeNode"
+              @paragraphClick="handleParagraphClick"
+            />
+          </div>
+
+          <!-- TOC 模式（业务结构语义树） -->
           <div
             v-show="treeGroupMode === 'toc' && tocTreeData.length > 0"
             class="tree-list"
@@ -227,7 +249,7 @@
             />
           </div>
 
-          <div v-show="treeGroupMode !== 'original' && treeGroupMode !== 'folder' && builtTreeData.length === 0 && ontologyTreeData.length === 0 && tocTreeData.length === 0" style="padding: 20px; text-align: center; color: #999">暂无数据</div>
+          <div v-show="treeGroupMode !== 'original' && treeGroupMode !== 'folder' && builtTreeData.length === 0 && ontologyTreeData.length === 0 && tocTreeData.length === 0 && constructTreeData.length === 0" style="padding: 20px; text-align: center; color: #999">暂无数据</div>
         </div>
       </div>
     </div>
@@ -304,9 +326,9 @@ const existRisk = ref(true)
 const taskId = ref((route.query.taskId as string) || '')
 // 视图模式切换：result | search
 const viewMode = ref<'result' | 'search'>('result')
-// 树形结构分组模式：original（采购标签图谱）| label（业务语义结构树）| ontology（业务本体树）| entity（业务实体图谱）| toc（TOC）| folder（文件夹）
-// 默认显示 TOC
-const treeGroupMode = ref<'original' | 'label' | 'ontology' | 'entity' | 'toc' | 'folder'>('toc')
+// 树形结构分组模式：construct（TOC）| original（采购标签图谱）| label（业务语义结构树）| ontology（业务本体树）| entity（业务实体图谱）| toc（业务结构语义树）| folder（文件夹）
+// 默认显示 construct
+const treeGroupMode = ref<'construct' | 'original' | 'label' | 'ontology' | 'entity' | 'toc' | 'folder'>('construct')
 
 // 树编辑模式：允许拖拽节点改变父节点
 const treeEditMode = ref(false)
@@ -1573,9 +1595,12 @@ const builtTreeData = ref<any[]>([])
 // 业务本体树数据（独立数据源，按 directory_path 分组）
 const ontologyTreeData = ref<any[]>([])
 const ontologyRawData = ref<any[]>([])  // 业务本体树的原始数据（独立加载）
-// TOC 树数据
+// TOC 树数据（业务结构语义树，来自 agent API）
 const tocTreeData = ref<any[]>([])
 const tocRawData = ref<any[]>([])  // TOC 树的原始数据
+// Construct 树数据（TOC，来自 construct API）
+const constructTreeData = ref<any[]>([])
+const constructRawData = ref<any[]>([])  // Construct 树的原始数据
 // 预构建的树数据（从 _labeled_tree.json 加载的）
 const prebuiltTreeData = ref<any[]>([])
 // 是否使用了预构建的树
@@ -1928,6 +1953,65 @@ const buildTocTree = async () => {
   console.log('🌲 TOC 树默认折叠（用户可点击展开）')
 }
 
+// 加载 Construct 树数据（从 construct API 获取完整树结构）
+const loadConstructTreeData = async (taskId: string) => {
+  try {
+    const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=construct&t=${Date.now()}`
+    console.log(`🔄 加载 Construct 树数据 (construct):`, apiUrl)
+    const response = await fetch(apiUrl)
+    if (response.ok) {
+      const jsonData = await response.json()
+
+      // 处理 API 格式: { success: true, data: { dataList: [...] } }
+      let treeData
+      if (jsonData.success && jsonData.data && jsonData.data.dataList) {
+        treeData = jsonData.data.dataList
+      } else if (Array.isArray(jsonData)) {
+        // 兼容直接返回数组的情况
+        treeData = jsonData
+      } else {
+        treeData = [jsonData]
+      }
+
+      console.log(`📊 获取到 construct 数据，根节点数:`, treeData.length)
+
+      // 转换格式（复用 agent 的转换逻辑）
+      const convertedData = convertAgentTreeData(treeData)
+
+      constructRawData.value = convertedData
+      console.log('✅ Construct 树原始数据已保存，根节点数:', constructRawData.value.length)
+
+      // 构建 Construct 树
+      await buildConstructTree()
+    }
+  } catch (e) {
+    console.error('❌ Construct 树数据加载失败:', e)
+  }
+}
+
+// 构建 Construct 树
+const buildConstructTree = async () => {
+  const dataSource = constructRawData.value
+
+  if (!dataSource.length) {
+    console.log('⚠️ Construct 树原始数据为空，无法构建')
+    return
+  }
+
+  console.log('🏗️ 构建 Construct 树，数据源: constructRawData')
+  console.log('   - 数据节点数:', dataSource.length)
+
+  // 直接使用原始数据作为树结构
+  constructTreeData.value = dataSource
+
+  console.log('✅ Construct 树构建完成')
+  console.log('  - 根节点数量:', constructTreeData.value.length)
+
+  // 默认全部折叠（不展开任何节点）
+  treeExpandedNodes.value = new Set<number>()
+  console.log('🌲 Construct 树默认折叠（用户可点击展开）')
+}
+
 // 构建按 directory_path 分组的业务本体树
 const buildTreeByDirectoryPath = async () => {
   // 使用 ontologyRawData（业务本体树独立数据源）
@@ -2222,6 +2306,14 @@ watch(treeGroupMode, async () => {
       await loadOntologyTreeData(taskId.value)
     }
     console.log('  - ontologyTreeData 数量:', ontologyTreeData.value.length)
+  } else if (treeGroupMode.value === 'construct') {
+    // 切换到 Construct 树（TOC）
+    console.log('🔄 切换到 Construct 树（TOC）...')
+    // 如果数据未加载，则加载数据
+    if (constructTreeData.value.length === 0 && taskId.value) {
+      await loadConstructTreeData(taskId.value)
+    }
+    console.log('  - constructTreeData 数量:', constructTreeData.value.length)
   } else if (treeGroupMode.value === 'toc') {
     // 切换到业务结构语义树（TOC 树已在页面加载时预加载）
     console.log('🔄 切换到业务结构语义树（TOC）...')
