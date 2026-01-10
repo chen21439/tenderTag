@@ -1973,13 +1973,11 @@ const loadConstructTreeData = async (taskId: string) => {
         treeData = [jsonData]
       }
 
-      console.log(`📊 获取到 construct 数据，根节点数:`, treeData.length)
+      console.log(`📊 获取到 construct 数据，节点数:`, treeData.length)
 
-      // 转换格式（复用 agent 的转换逻辑）
-      const convertedData = convertAgentTreeData(treeData)
-
-      constructRawData.value = convertedData
-      console.log('✅ Construct 树原始数据已保存，根节点数:', constructRawData.value.length)
+      // construct 数据是平铺格式（带 parent_id 和 relation），直接保存
+      constructRawData.value = treeData
+      console.log('✅ Construct 树原始数据已保存，节点数:', constructRawData.value.length)
 
       // 构建 Construct 树
       await buildConstructTree()
@@ -1989,7 +1987,7 @@ const loadConstructTreeData = async (taskId: string) => {
   }
 }
 
-// 构建 Construct 树
+// 构建 Construct 树（使用 parent_id + relation 算法）
 const buildConstructTree = async () => {
   const dataSource = constructRawData.value
 
@@ -2001,8 +1999,16 @@ const buildConstructTree = async () => {
   console.log('🏗️ 构建 Construct 树，数据源: constructRawData')
   console.log('   - 数据节点数:', dataSource.length)
 
-  // 直接使用原始数据作为树结构
-  constructTreeData.value = dataSource
+  // 使用 useTreeBuilderV2 的算法构建树（基于 parent_id 和 relation）
+  const { buildTreeByParentId } = useTreeBuilderV2()
+  const treeData = buildTreeByParentId(
+    dataSource,
+    'line_id',      // ID 字段
+    'parent_id',    // 父ID字段
+    'relation'      // 关系字段
+  )
+
+  constructTreeData.value = treeData
 
   console.log('✅ Construct 树构建完成')
   console.log('  - 根节点数量:', constructTreeData.value.length)
