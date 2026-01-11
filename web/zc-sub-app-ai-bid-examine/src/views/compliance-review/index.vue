@@ -3550,34 +3550,40 @@ const handleTocNodeSelected = async (data: { nodeId: string; node: any }) => {
   try {
     // 处理 location 字段的 PDF 跳转
     if (node.location && Array.isArray(node.location) && node.location.length > 0) {
-      const loc = node.location[0]
-      const pageNum = loc.page + 1
-      const box = [loc.l, loc.t, loc.r, loc.b]
+      // 将 location 转换为 BoxInfo 格式
+      const boxes: BoxInfo[] = node.location.map((loc: any) => ({
+        page: loc.page, // 保持 0-index，工具函数会转换
+        box: [loc.l, loc.t, loc.r, loc.b],
+        coord_origin: loc.coord_origin || 'TOPLEFT'
+      }))
 
-      console.log('📍 [index] 从 location 提取坐标:', { pageNum, box })
+      console.log('📍 [index] 从 location 提取 boxes:', boxes)
 
-      pdfData.currentPage = pageNum
+      // 使用共用工具创建高亮数据
+      const highlightData = createHighlightData(boxes, {
+        enableMerge: false, // location 通常只有一个 box，不需要合并
+        filterCurrentPage: true
+      })
+
+      if (!highlightData) {
+        console.warn('⚠️ [index] 无法创建高亮数据')
+        return
+      }
+
+      // 更新页码（工具函数已经转换为 1-index）
+      pdfData.currentPage = highlightData.pageNum
 
       if (enablePdfHighlight.value) {
-        const highlightRect = {
-          pageNum: pageNum,
-          rect: box,
-          quadPoints: [box[0], box[1], box[2], box[1], box[2], box[3], box[0], box[3]],
-          jump: true,
-          needsConversion: true
-        }
-
-        pdfData.highlightRects = [highlightRect]
+        pdfData.highlightRects = [highlightData]
 
         const pdfViewer = contentViewerRef.value?.pdfViewerRef
         if (pdfViewer?.scrollToAnnotation) {
           await nextTick()
-          await pdfViewer.scrollToAnnotation(highlightRect)
-          console.log('✅ [index] 已跳转到 PDF 位置并高亮')
+          await jumpToHighlight(pdfViewer, highlightData)
         }
       } else {
         pdfData.highlightRects = []
-        console.log('✅ [index] 已跳转到页面', pageNum, '(高亮功能已禁用)')
+        console.log('✅ [index] 已跳转到页面', highlightData.pageNum, '(高亮功能已禁用)')
       }
     } else {
       console.warn('⚠️ [index] 节点缺少 location 信息:', node)
