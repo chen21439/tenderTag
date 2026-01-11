@@ -245,7 +245,7 @@ const handleUpdateRelation = async (data: {
     console.log('📦 [TocTree] 请求体:', requestBody)
 
     const response = await fetch(`/python/api/pdf/task/${props.taskId}/construct`, {
-      method: 'PATCH',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
