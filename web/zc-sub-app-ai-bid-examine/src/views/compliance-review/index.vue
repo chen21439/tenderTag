@@ -3545,7 +3545,7 @@ const handleTocNodeSelected = async (data: { nodeId: string; node: any }) => {
   console.log('🎯 [index] TOC 节点选中:', { nodeId, node })
 
   // 更新选中状态
-  selectedNodeIds.value = new Set([Number(nodeId)])
+  selectedNodeIds.value = [Number(nodeId)]
 
   try {
     // 处理 location 字段的 PDF 跳转
