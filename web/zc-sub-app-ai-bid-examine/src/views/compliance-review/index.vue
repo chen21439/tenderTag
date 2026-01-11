@@ -208,25 +208,14 @@
           </div>
 
           <!-- Construct 模式（TOC） -->
-          <div
-            v-show="treeGroupMode === 'construct' && constructTreeData.length > 0"
-            class="tree-list"
-          >
-            <TreeNode
-              v-for="node in constructTreeData"
-              :key="node.line_id"
-              :node="node"
-              :depth="0"
-              :expanded-nodes="treeExpandedNodes"
-              :selected-ids="selectedNodeIds"
-              :node-map="nodeMap"
-              :debug-mode="false"
-              :edit-mode="false"
-              @toggle="toggleTreeNode"
-              @select="selectTreeNode"
-              @paragraphClick="handleParagraphClick"
-            />
-          </div>
+          <TocTree
+            v-show="treeGroupMode === 'construct'"
+            ref="tocTreeRef"
+            :task-id="taskId"
+            :selected-node-ids="selectedNodeIds"
+            @node-selected="handleTocNodeSelected"
+            @paragraph-click="handleParagraphClick"
+          />
 
           <!-- TOC 模式（业务结构语义树） -->
           <div
@@ -292,6 +281,7 @@ import HistoryFilesModal from './components/HistoryFilesModal.vue'
 import ReviewItem from './components/ReviewItem.vue'
 import ReviewTreeNode from './components/ReviewTreeNode.vue'
 import TreeNode from './components/TreeNode.vue'
+import TocTree from './components/TocTree.vue'
 import FolderTree from './components/FolderTree.vue'
 import CytoscapeComponent from './components/CytoscapeComponent.vue'
 import { GraphLegend, GraphNavigationPanel } from '../../components/knowledge-graph'
@@ -727,6 +717,7 @@ const pdfReaderRef = ref<InstanceType<typeof PdfViewer>>()
 const contentViewerRef = ref<any>(null)
 const leftContentType = ref<'pdf' | 'qa' | 'ppt'>('pdf')  // 默认显示PDF
 const folderTreeRef = ref<any>(null)
+const tocTreeRef = ref<any>(null)
 const handleReviewItemClick = async (item: any) => {
   if (!item) return
   activeItem.value = item ?? {}
@@ -3040,47 +3031,91 @@ const handleUpdateRelation = async (data: {
   node_meta?: string;
 }) => {
   console.log('🔗 更新节点关系:', data)
-
-  // TODO: 这里需要实现具体的API调用逻辑
-  // 暂时只更新本地数据
+  console.log('🌳 当前树模式:', treeGroupMode.value)
 
   try {
-    // 在本地数据中更新关系（立即反映）
-    const updateNodeRelation = (nodes: any[]): boolean => {
-      for (const node of nodes) {
-        if (node.line_id === data.nodeId) {
-          node.relation = data.relation
-          if (data.class !== undefined) {
-            node.class = data.class
-          }
-          if (data.parent_id !== undefined) {
-            node.parent_id = data.parent_id
-          }
-          if (data.node_meta !== undefined) {
-            node.node_meta = data.node_meta
-          }
-          return true
-        }
-        if (node.children && updateNodeRelation(node.children)) {
-          return true
-        }
+    // 如果是 TOC 模式，发送 PATCH 请求到后端
+    if (treeGroupMode.value === 'construct') {
+      console.log('📤 发送 PATCH 请求更新 construct 数据')
+
+      // 准备请求体，过滤掉 undefined 的字段，空字符串保留
+      const requestBody: any = {
+        lineId: Number(data.nodeId)
       }
-      return false
-    }
 
-    // 更新所有树结构中的节点关系
-    const updated = updateNodeRelation(builtTreeData.value) ||
-                   updateNodeRelation(ontologyTreeData.value) ||
-                   updateNodeRelation(allTreeNodes.value)
+      // className: 如果 class 是 undefined 则不发送，空字符串则发送
+      if (data.class !== undefined) {
+        requestBody.className = data.class || ''
+      }
 
-    if (updated) {
-      // 触发响应式更新
-      builtTreeData.value = [...builtTreeData.value]
-      console.log('✅ 关系更新成功（仅本地）')
-      message.success('关系已更新')
+      // relation: 空字符串表示删除关系
+      requestBody.relation = data.relation || ''
+
+      // parentId: 如果 parent_id 是空字符串、null、undefined，发送空字符串
+      if (data.parent_id !== undefined) {
+        requestBody.parentId = data.parent_id === '' || data.parent_id === null ? '' : Number(data.parent_id)
+      }
+
+      console.log('📦 请求体:', requestBody)
+
+      const response = await fetch(`/python/api/pdf/task/${taskId.value}/construct`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        message.success('节点信息已更新')
+        console.log('✅ 更新成功:', result)
+
+        // 重新加载 construct 数据
+        await loadConstructTreeData(taskId.value)
+      } else {
+        message.error(result.errMsg || '更新失败')
+        console.error('❌ 更新失败:', result)
+      }
     } else {
-      console.warn('⚠️ 未找到节点:', data.nodeId)
-      message.warning('未找到指定节点')
+      // 其他模式：仅更新本地数据
+      const updateNodeRelation = (nodes: any[]): boolean => {
+        for (const node of nodes) {
+          if (node.line_id === data.nodeId) {
+            node.relation = data.relation
+            if (data.class !== undefined) {
+              node.class = data.class
+            }
+            if (data.parent_id !== undefined) {
+              node.parent_id = data.parent_id
+            }
+            if (data.node_meta !== undefined) {
+              node.node_meta = data.node_meta
+            }
+            return true
+          }
+          if (node.children && updateNodeRelation(node.children)) {
+            return true
+          }
+        }
+        return false
+      }
+
+      // 更新所有树结构中的节点关系
+      const updated = updateNodeRelation(builtTreeData.value) ||
+                     updateNodeRelation(ontologyTreeData.value) ||
+                     updateNodeRelation(allTreeNodes.value)
+
+      if (updated) {
+        // 触发响应式更新
+        builtTreeData.value = [...builtTreeData.value]
+        console.log('✅ 关系更新成功（仅本地）')
+        message.success('关系已更新')
+      } else {
+        console.warn('⚠️ 未找到节点:', data.nodeId)
+        message.warning('未找到指定节点')
+      }
     }
   } catch (error) {
     console.error('❌ 更新关系失败:', error)
@@ -3501,6 +3536,54 @@ const selectTreeNode = async (nodeId: number, event?: MouseEvent) => {
 }
 
 // 获取段落预览文本
+
+// TOC 树节点选中事件处理
+const handleTocNodeSelected = async (data: { nodeId: string; node: any }) => {
+  const { nodeId, node } = data
+  console.log('🎯 [index] TOC 节点选中:', { nodeId, node })
+
+  // 更新选中状态
+  selectedNodeIds.value = new Set([Number(nodeId)])
+
+  try {
+    // 处理 location 字段的 PDF 跳转
+    if (node.location && Array.isArray(node.location) && node.location.length > 0) {
+      const loc = node.location[0]
+      const pageNum = loc.page + 1
+      const box = [loc.l, loc.t, loc.r, loc.b]
+
+      console.log('📍 [index] 从 location 提取坐标:', { pageNum, box })
+
+      pdfData.currentPage = pageNum
+
+      if (enablePdfHighlight.value) {
+        const highlightRect = {
+          pageNum: pageNum,
+          rect: box,
+          quadPoints: [box[0], box[1], box[2], box[1], box[2], box[3], box[0], box[3]],
+          jump: true,
+          needsConversion: true
+        }
+
+        pdfData.highlightRects = [highlightRect]
+
+        const pdfViewer = contentViewerRef.value?.pdfViewerRef
+        if (pdfViewer?.scrollToAnnotation) {
+          await nextTick()
+          await pdfViewer.scrollToAnnotation(highlightRect)
+          console.log('✅ [index] 已跳转到 PDF 位置并高亮')
+        }
+      } else {
+        pdfData.highlightRects = []
+        console.log('✅ [index] 已跳转到页面', pageNum, '(高亮功能已禁用)')
+      }
+    } else {
+      console.warn('⚠️ [index] 节点缺少 location 信息:', node)
+    }
+  } catch (error) {
+    console.error('❌ [index] TOC 节点跳转失败:', error)
+  }
+}
 const getParagraphPreview = (paragraphIds: number[]): string => {
   if (!paragraphIds || paragraphIds.length === 0) return ''
 

@@ -88,9 +88,9 @@
         {{ node.class }}
       </span>
 
-      <!-- ID 显示 -->
-      <span v-if="node.id !== undefined" class="id-badge">
-        ID:{{ node.id }}
+      <!-- ID 显示（兼容 id 和 line_id） -->
+      <span v-if="node.id !== undefined || node.line_id !== undefined" class="id-badge">
+        ID:{{ node.id !== undefined ? node.id : node.line_id }}
       </span>
 
       <!-- Parent ID 显示 -->
