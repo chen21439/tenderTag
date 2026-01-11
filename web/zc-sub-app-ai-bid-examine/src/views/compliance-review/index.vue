@@ -328,7 +328,7 @@ const taskId = ref((route.query.taskId as string) || '')
 const viewMode = ref<'result' | 'search'>('result')
 // 树形结构分组模式：construct（TOC）| original（采购标签图谱）| label（业务语义结构树）| ontology（业务本体树）| entity（业务实体图谱）| toc（业务结构语义树）| folder（文件夹）
 // 默认显示 toc
-const treeGroupMode = ref<'construct' | 'original' | 'label' | 'ontology' | 'entity' | 'toc' | 'folder'>('toc')
+const treeGroupMode = ref<'construct' | 'original' | 'label' | 'ontology' | 'entity' | 'toc' | 'folder'>('construct')
 
 // 树编辑模式：允许拖拽节点改变父节点
 const treeEditMode = ref(false)
@@ -1975,8 +1975,19 @@ const loadConstructTreeData = async (taskId: string) => {
 
       console.log(`📊 获取到 construct 数据，节点数:`, treeData.length)
 
+      // 智能过滤：如果数据有 class 字段，只保留 class 为 'section' 的节点；否则显示所有数据
+      let sectionData = treeData
+      const hasClassField = treeData.length > 0 && treeData[0].hasOwnProperty('class')
+
+      if (hasClassField) {
+        sectionData = treeData.filter((item: any) => item.class === 'section')
+        console.log(`🔍 过滤后（仅 section），节点数: ${sectionData.length}（原始: ${treeData.length}）`)
+      } else {
+        console.log(`ℹ️ 数据无 class 字段，显示所有节点: ${sectionData.length}`)
+      }
+
       // construct 数据是平铺格式（带 parent_id 和 relation），直接保存
-      constructRawData.value = treeData
+      constructRawData.value = sectionData
       console.log('✅ Construct 树原始数据已保存，节点数:', constructRawData.value.length)
 
       // 构建 Construct 树
@@ -1999,43 +2010,108 @@ const buildConstructTree = async () => {
   console.log('🏗️ 构建 Construct 树，数据源: constructRawData')
   console.log('   - 数据节点数:', dataSource.length)
 
-  // 数据验证：检查节点是否指向自身
-  const invalidNodes: any[] = []
-  dataSource.forEach((item, index) => {
+  // 创建 line_id 到节点的映射，方便查找
+  const nodeMap = new Map<string, any>()
+  dataSource.forEach(item => {
+    nodeMap.set(item.line_id, item)
+  })
+
+  // 统计 relation 类型分布
+  const relationStats = new Map<string, number>()
+  dataSource.forEach(item => {
+    const rel = item.relation || 'undefined'
+    relationStats.set(rel, (relationStats.get(rel) || 0) + 1)
+  })
+  const statsObj: Record<string, number> = {}
+  relationStats.forEach((count, rel) => {
+    statsObj[rel] = count
+  })
+  console.log('📊 Relation 分布:', statsObj)
+
+  // 检测循环引用的辅助函数：向上追溯 parent 链
+  const detectCycle = (nodeId: string, visited: Set<string>): boolean => {
+    if (visited.has(nodeId)) {
+      return true  // 检测到循环
+    }
+
+    const node = nodeMap.get(nodeId)
+    if (!node || !node.parent_id || node.parent_id === node.line_id) {
+      return false  // 到达根节点或自引用
+    }
+
+    visited.add(nodeId)
+    return detectCycle(node.parent_id, visited)
+  }
+
+  // 第一步：找出所有需要修正的节点 ID（互相指向、自引用、循环引用）
+  const nodesToFix = new Set<string>()
+
+  // 1. 检查自引用
+  dataSource.forEach(item => {
     if (item.line_id === item.parent_id) {
-      console.error(`❌ 节点指向自身: index=${index}, line_id=${item.line_id}, text="${item.text}"`)
-      invalidNodes.push(item)
+      console.warn(`⚠️ 节点自引用，视为 root: line_id=${item.line_id}, text="${item.text}"`)
+      nodesToFix.add(item.line_id)
     }
   })
 
-  if (invalidNodes.length > 0) {
-    console.error(`❌ 发现 ${invalidNodes.length} 个无效节点（指向自身），已过滤`)
-    // 过滤掉指向自身的节点
-    const validData = dataSource.filter(item => item.line_id !== item.parent_id)
-    console.log('   - 过滤后节点数:', validData.length)
+  // 2. 检查 equality 互相指向（A ⇔ B）
+  const checkedPairs = new Set<string>()
+  dataSource.forEach(item => {
+    if (item.relation === 'equality' && !nodesToFix.has(item.line_id)) {
+      const pairKey = [item.line_id, item.parent_id].sort().join('-')
+      if (!checkedPairs.has(pairKey)) {
+        checkedPairs.add(pairKey)
+        const parentNode = nodeMap.get(item.parent_id)
+        if (parentNode && parentNode.relation === 'equality' && parentNode.parent_id === item.line_id) {
+          console.warn(`⚠️ 检测到 equality 互相指向，两个节点都视为 root:`)
+          console.warn(`   - 节点A: line_id=${item.line_id}, parent_id=${item.parent_id}, text="${item.text}"`)
+          console.warn(`   - 节点B: line_id=${parentNode.line_id}, parent_id=${parentNode.parent_id}, text="${parentNode.text}"`)
+          // 两个节点都标记为需要修正
+          nodesToFix.add(item.line_id)
+          nodesToFix.add(parentNode.line_id)
+        }
+      }
+    }
+  })
 
-    // 使用 useTreeBuilderV2 的算法构建树（基于 parent_id 和 relation）
-    const { buildTreeByParentId } = useTreeBuilderV2()
-    const treeData = buildTreeByParentId(
-      validData,
-      'line_id',      // ID 字段
-      'parent_id',    // 父ID字段
-      'relation'      // 关系字段
-    )
+  // 3. 检查循环引用
+  dataSource.forEach(item => {
+    if (!nodesToFix.has(item.line_id)) {
+      const visited = new Set<string>()
+      if (detectCycle(item.line_id, visited)) {
+        console.warn(`⚠️ 检测到循环引用，视为 root:`)
+        console.warn(`   - line_id: ${item.line_id}`)
+        console.warn(`   - parent_id: ${item.parent_id}`)
+        console.warn(`   - relation: ${item.relation}`)
+        console.warn(`   - text: "${item.text}"`)
+        console.warn(`   - 访问路径:`, Array.from(visited))
+        nodesToFix.add(item.line_id)
+      }
+    }
+  })
 
-    constructTreeData.value = treeData
-  } else {
-    // 使用 useTreeBuilderV2 的算法构建树（基于 parent_id 和 relation）
-    const { buildTreeByParentId } = useTreeBuilderV2()
-    const treeData = buildTreeByParentId(
-      dataSource,
-      'line_id',      // ID 字段
-      'parent_id',    // 父ID字段
-      'relation'      // 关系字段
-    )
+  console.log(`   - 需要修正的节点数: ${nodesToFix.size}`)
 
-    constructTreeData.value = treeData
-  }
+  // 第二步：修正数据
+  const fixedData = dataSource.map(item => {
+    if (nodesToFix.has(item.line_id)) {
+      return { ...item, parent_id: item.line_id }  // 将 parent_id 设为自己，作为 root
+    }
+    return item
+  })
+
+  console.log(`   - 修正后节点数: ${fixedData.length}（修正了 ${nodesToFix.size} 个节点）`)
+
+  // 使用 useTreeBuilderV2 的算法构建树（基于 parent_id 和 relation）
+  const { buildTreeByParentId } = useTreeBuilderV2()
+  const treeData = buildTreeByParentId(
+    fixedData,
+    'line_id',      // ID 字段
+    'parent_id',    // 父ID字段
+    'relation'      // 关系字段
+  )
+
+  constructTreeData.value = treeData
 
   console.log('✅ Construct 树构建完成')
   console.log('  - 根节点数量:', constructTreeData.value.length)
