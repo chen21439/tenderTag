@@ -31,10 +31,12 @@ import { useTreeBuilderV2 } from '@/hooks/useTreeBuilderV2'
 const props = defineProps<{
   taskId: string
   selectedNodeIds: number[]
+  expandedNodes: Set<number>
 }>()
 
 const emit = defineEmits<{
   'node-selected': [data: { nodeId: string; node: any }]
+  'toggle': [nodeId: number]
   'paragraph-click': [paragraphId: number]
 }>()
 
@@ -42,7 +44,6 @@ const emit = defineEmits<{
 const isLoading = ref(false)
 const constructRawData = ref<any[]>([])
 const treeData = ref<any[]>([])
-const expandedNodes = ref<Set<number>>(new Set())
 const nodeMap = ref<Record<string, any>>({})
 
 // 选中的节点 IDs（用于高亮显示）
@@ -190,9 +191,6 @@ const buildConstructTree = async () => {
     nodeMap.value = mapObj
 
     console.log('✅ [TocTree] 树构建完成，根节点数:', treeData.value.length)
-
-    // 默认全部折叠
-    expandedNodes.value = new Set<number>()
   } catch (error) {
     console.error('❌ [TocTree] 树构建失败:', error)
     throw error  // 重新抛出，让外层的 loadConstructTreeData 捕获
@@ -201,17 +199,19 @@ const buildConstructTree = async () => {
 
 // 事件处理
 const handleToggle = (nodeId: number) => {
-  if (expandedNodes.value.has(nodeId)) {
-    expandedNodes.value.delete(nodeId)
-  } else {
-    expandedNodes.value.add(nodeId)
-  }
-  expandedNodes.value = new Set(expandedNodes.value)
+  emit('toggle', nodeId)
 }
+const handleSelect = (nodeId: number, event?: MouseEvent) => {
+  console.log('🎯 [TocTree] 选中节点:', nodeId)
 
-const handleSelect = (data: { nodeId: string; node: any }) => {
-  console.log('🎯 [TocTree] 选中节点:', data.nodeId)
-  emit('node-selected', data)
+  // 从 nodeMap 中查找节点
+  const node = nodeMap.value[nodeId]
+
+  if (node) {
+    emit('node-selected', { nodeId: String(nodeId), node })
+  } else {
+    console.warn('⚠️ [TocTree] 未找到节点:', nodeId)
+  }
 }
 
 const handleParagraphClick = (paragraphId: number) => {

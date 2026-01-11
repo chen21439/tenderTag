@@ -213,8 +213,10 @@
             ref="tocTreeRef"
             :task-id="taskId"
             :selected-node-ids="selectedNodeIds"
+            :expanded-nodes="treeExpandedNodes"
             @node-selected="handleTocNodeSelected"
             @paragraph-click="handleParagraphClick"
+            @toggle="toggleTreeNode"
           />
 
           <!-- TOC 模式（业务结构语义树） -->
