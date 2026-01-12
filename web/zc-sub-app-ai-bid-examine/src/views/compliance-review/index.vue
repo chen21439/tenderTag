@@ -1923,27 +1923,49 @@ const convertAgentTreeData = (nodes: any[]): any[] => {
   return nodes.map(convertNode)
 }
 
-// 构建 TOC 树
+// 构建业务结构语义树（使用 V2 算法）
 const buildTocTree = async () => {
   const dataSource = tocRawData.value
 
   if (!dataSource.length) {
-    console.log('⚠️ TOC 树原始数据为空，无法构建')
+    console.log('⚠️ 业务结构语义树原始数据为空，无法构建')
     return
   }
 
-  console.log('🏗️ 构建 TOC 树，数据源: tocRawData')
+  console.log('🏗️ 构建业务结构语义树（使用 V2 算法），数据源: tocRawData')
   console.log('   - 数据节点数:', dataSource.length)
 
-  // 直接使用原始数据作为树结构
-  tocTreeData.value = dataSource
+  // 将树形结构扁平化为数组（agent API 返回的是树形结构）
+  const flattenTree = (nodes: any[], result: any[] = []): any[] => {
+    for (const node of nodes) {
+      result.push(node)
+      if (node.children && node.children.length > 0) {
+        flattenTree(node.children, result)
+      }
+    }
+    return result
+  }
 
-  console.log('✅ TOC 树构建完成')
+  const flatData = flattenTree(dataSource)
+  console.log('   - 扁平化后节点数:', flatData.length)
+
+  // 使用 useTreeBuilderV2 的算法构建树（基于 parent_id 和 relation）
+  const { buildTreeByParentId } = useTreeBuilderV2()
+  const treeData = buildTreeByParentId(
+    flatData,
+    'line_id',      // ID 字段
+    'parent_id',    // 父ID字段
+    'relation'      // 关系字段
+  )
+
+  tocTreeData.value = treeData
+
+  console.log('✅ 业务结构语义树构建完成（V2 算法）')
   console.log('  - 根节点数量:', tocTreeData.value.length)
 
   // 默认全部折叠（不展开任何节点）
   treeExpandedNodes.value = new Set<number>()
-  console.log('🌲 TOC 树默认折叠（用户可点击展开）')
+  console.log('🌲 业务结构语义树默认折叠（用户可点击展开）')
 }
 
 // 加载 Construct 树数据（从 construct API 获取完整树结构）

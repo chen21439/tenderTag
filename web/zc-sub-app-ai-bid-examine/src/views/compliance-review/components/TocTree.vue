@@ -75,18 +75,10 @@ const loadConstructTreeData = async (taskId: string) => {
 
     console.log(`📊 [TocTree] 获取到 construct 数据，节点数:`, rawData.length)
 
-    // 智能过滤：如果数据有 class 字段，只保留 class 为 'section' 的节点
-    let filteredData = rawData
-    const hasClassField = rawData.length > 0 && rawData[0].hasOwnProperty('class')
+    // 显示全量数据（不过滤）
+    console.log(`📊 [TocTree] 使用全量数据，节点数: ${rawData.length}`)
 
-    if (hasClassField) {
-      filteredData = rawData.filter((item: any) => item.class === 'section')
-      console.log(`🔍 [TocTree] 过滤后（仅 section），节点数: ${filteredData.length}（原始: ${rawData.length}）`)
-    } else {
-      console.log(`ℹ️ [TocTree] 数据无 class 字段，显示所有节点: ${filteredData.length}`)
-    }
-
-    constructRawData.value = filteredData
+    constructRawData.value = rawData
     await buildConstructTree()
   } catch (error) {
     console.error('❌ [TocTree] 数据加载失败:', error)
