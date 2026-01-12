@@ -17,7 +17,22 @@
         <a-input
           v-model:value="formData.fileName"
           placeholder="请输入文件名（不含 .json 后缀）"
+          @blur="handleFileNameBlur"
         />
+      </a-form-item>
+
+      <!-- 搜索结果列表 -->
+      <a-form-item v-if="searchResults.length > 0" label="搜索结果">
+        <div class="search-results-list">
+          <div
+            v-for="(item, index) in searchResults"
+            :key="index"
+            class="search-result-item"
+            @click="selectSearchResult(item)"
+          >
+            {{ item }}
+          </div>
+        </div>
       </a-form-item>
 
       <a-form-item label="推理页码范围">
@@ -65,6 +80,7 @@ const emit = defineEmits<Emits>()
 const visible = ref(false)
 const loading = ref(false)
 const formRef = ref<FormInstance>()
+const searchResults = ref<string[]>([])
 
 const formData = reactive({
   fileName: '',
@@ -97,7 +113,41 @@ const resetForm = () => {
   formData.fileName = ''
   formData.inferRangeStart = 0
   formData.inferRangeEnd = 999
+  searchResults.value = []
   formRef.value?.clearValidate()
+}
+
+// 文件名输入框失去焦点时搜索
+const handleFileNameBlur = async () => {
+  const keyword = formData.fileName.trim()
+  if (!keyword) {
+    searchResults.value = []
+    return
+  }
+
+  try {
+    const response = await fetch(
+      `/python/api/pdf/train/search?keyword=${encodeURIComponent(keyword)}`
+    )
+    const result = await response.json()
+
+    if (response.ok && result.success && result.data?.dataList && Array.isArray(result.data.dataList)) {
+      searchResults.value = result.data.dataList
+    } else {
+      searchResults.value = []
+    }
+  } catch (error) {
+    console.error('搜索失败:', error)
+    searchResults.value = []
+  }
+}
+
+// 选择搜索结果
+const selectSearchResult = (item: string) => {
+  // 移除 .json 后缀（如果有）
+  const fileName = item.replace(/\.json$/, '')
+  formData.fileName = fileName
+  searchResults.value = []
 }
 
 // 提交表单
@@ -159,5 +209,26 @@ const handleCancel = () => {
   margin-top: 4px;
   font-size: 12px;
   color: #999;
+}
+
+.search-results-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+}
+
+.search-result-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+  background-color: #f5f5f5;
+}
+
+.search-result-item:not(:last-child) {
+  border-bottom: 1px solid #f0f0f0;
 }
 </style>
