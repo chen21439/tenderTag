@@ -132,7 +132,7 @@
             >
               <option value="section">section</option>
               <option value="fstline">fstline</option>
-              <option value="para">para</option>
+              <option value="paraline">paraline</option>
               <option value="table">table</option>
               <option value="title">title</option>
               <option value="caption">caption</option>
@@ -586,7 +586,7 @@ const getNodeClassLabel = (nodeClass: string) => {
     affili: '机构',
     mail: '邮箱',
     paragraph: '段落',
-    para: '段落',
+    paraline: '段落',
     fstline: '首行',
     tab: '表格',
     tabcap: '表格标题',
@@ -615,7 +615,7 @@ const getNodeIcon = (nodeClass: string) => {
     sec2: '📍',
     sec3: '📎',
     paragraph: '📝',  // 合并后的段落
-    para: '¶',
+    paraline: '¶',
     fstline: '▸',
     tab: '📊',
     tabcap: '🏷️',
