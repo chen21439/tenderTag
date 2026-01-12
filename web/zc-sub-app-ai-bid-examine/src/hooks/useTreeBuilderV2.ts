@@ -124,16 +124,16 @@ export function useTreeBuilderV2() {
         // contain: 直接成为 refParent 的子节点
         refParent.addChild(node)
         containCount++
-        console.log(`  📦 Contain: id=${item[idField]} → parent_id=${refParentId}`)
+        // console.log(`  📦 Contain: id=${item[idField]} → parent_id=${refParentId}`)
       } else if (relation === 'connect') {
         // connect: 阅读顺序延续，与 refParent 是兄弟
         if (refParent.parent) {
           refParent.parent.addChild(node)
-          console.log(`  🔗 Connect: id=${item[idField]} → parent_id=${refParentId}，添加到共同父节点`)
+          // console.log(`  🔗 Connect: id=${item[idField]} → parent_id=${refParentId}，添加到共同父节点`)
         } else {
           // refParent 是 root 下的顶层节点
           root.addChild(node)
-          console.log(`  🔗 Connect: id=${item[idField]} → parent_id=${refParentId}，添加到 ROOT`)
+          // console.log(`  🔗 Connect: id=${item[idField]} → parent_id=${refParentId}，添加到 ROOT`)
         }
         connectCount++
       } else if (relation === 'equality') {
@@ -159,11 +159,11 @@ export function useTreeBuilderV2() {
           root.addChild(node)
         } else if (oldestBro.parent) {
           oldestBro.parent.addChild(node)
-          console.log(`  ⚖️ Equality: id=${item[idField]} ↔ ${refParentId}，添加到共同父节点`)
+          // console.log(`  ⚖️ Equality: id=${item[idField]} ↔ ${refParentId}，添加到共同父节点`)
         } else {
           // oldestBro 是根节点
           root.addChild(node)
-          console.log(`  ⚖️ Equality: id=${item[idField]} ↔ ${refParentId}，添加到 ROOT`)
+          // console.log(`  ⚖️ Equality: id=${item[idField]} ↔ ${refParentId}，添加到 ROOT`)
         }
         equalityCount++
       }
