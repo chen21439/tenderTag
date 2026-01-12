@@ -752,7 +752,7 @@ const saveRelationEdit = () => {
 
   // 通知父组件更新 class、relation 和 parent_id
   emit('update-relation', {
-    nodeId: props.node.id,
+    nodeId: props.node.id || props.node.line_id,
     class: newClass,
     relation: newRelation,
     parent_id: newParentId

@@ -258,8 +258,24 @@ const handleUpdateRelation = async (data: {
       message.success('节点信息已更新')
       console.log('✅ [TocTree] 更新成功:', result)
 
-      // 重新加载数据
-      await loadConstructTreeData(props.taskId)
+      // 在内存中更新原始数据
+      const nodeId = Number(data.nodeId)
+      const nodeInRawData = constructRawData.value.find(n => n.line_id === nodeId)
+      if (nodeInRawData) {
+        if (data.class !== undefined) {
+          nodeInRawData.class = data.class
+        }
+        if (data.relation !== undefined) {
+          nodeInRawData.relation = data.relation
+        }
+        if (data.parent_id !== undefined) {
+          nodeInRawData.parent_id = data.parent_id === '' || data.parent_id === null ? null : Number(data.parent_id)
+        }
+        console.log('📝 [TocTree] 已在内存中更新节点:', nodeInRawData)
+      }
+
+      // 重新构建树（不重新请求接口）
+      await buildConstructTree()
     } else {
       message.error(result.errMsg || '更新失败')
       console.error('❌ [TocTree] 更新失败:', result)
