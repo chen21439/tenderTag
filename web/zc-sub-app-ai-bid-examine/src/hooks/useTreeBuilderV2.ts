@@ -139,10 +139,25 @@ export function useTreeBuilderV2() {
       } else if (relation === 'equality') {
         // equality: 沿着 refParent 链回溯找到最老的兄弟
         let oldestBro = node.refParent!
-        while (oldestBro.refParentRelation === 'equality') {
-          oldestBro = oldestBro.refParent!
+        const visited = new Set<TreeNode>()
+        visited.add(node)
+
+        // 防止死循环：最多回溯 1000 次，并检查是否访问过
+        let maxIterations = 1000
+        while (oldestBro.refParentRelation === 'equality' && maxIterations > 0) {
+          if (visited.has(oldestBro) || !oldestBro.refParent) {
+            console.warn(`  ⚠️ Equality 回溯异常: id=${item[idField]}，停止回溯`)
+            break
+          }
+          visited.add(oldestBro)
+          oldestBro = oldestBro.refParent
+          maxIterations--
         }
-        if (oldestBro.parent) {
+
+        if (maxIterations === 0) {
+          console.error(`  ❌ Equality 回溯超过 1000 次: id=${item[idField]}，强制添加到 ROOT`)
+          root.addChild(node)
+        } else if (oldestBro.parent) {
           oldestBro.parent.addChild(node)
           console.log(`  ⚖️ Equality: id=${item[idField]} ↔ ${refParentId}，添加到共同父节点`)
         } else {
