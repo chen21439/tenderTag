@@ -74,7 +74,7 @@
           </div>
           <div style="margin-left: auto; display: flex; gap: 12px; align-items: center">
             <a-radio-group v-model:value="treeGroupMode" size="middle" button-style="solid">
-              <a-radio-button value="construct">TOC</a-radio-button>
+              <a-radio-button value="construct">Construct</a-radio-button>
               <a-radio-button value="toc">业务结构语义树</a-radio-button>
               <a-radio-button value="ontology">业务本体树</a-radio-button>
               <a-radio-button value="original">采购标签图谱</a-radio-button>
@@ -207,7 +207,7 @@
             />
           </div>
 
-          <!-- Construct 模式（TOC） -->
+          <!-- Construct 模式 -->
           <TocTree
             v-show="treeGroupMode === 'construct'"
             ref="tocTreeRef"
@@ -264,6 +264,70 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * ============================================================================
+ * 【数据结构对比说明】
+ * ============================================================================
+ *
+ * 本页面有两个主要树形结构显示按钮（第 77-78 行），它们使用不同的 API 和数据结构：
+ *
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ 1. 【Construct 按钮】（主界面按钮 treeGroupMode='construct'）           │
+ * ├─────────────────────────────────────────────────────────────────────────┤
+ * │ 对应组件: TocTree 组件 (components/TocTree.vue)                          │
+ * │ API: /python/api/pdf/task/${taskId}/result?result_type=construct        │
+ * │      (对应文件: ${taskId}/*.json)                                        │
+ * │ 数据结构: 扁平数组 (Flat Array)                                         │
+ * │ 字段格式:                                                                │
+ * │   - line_id: number (行号，节点唯一标识)                                │
+ * │   - text: string (节点文本)                                             │
+ * │   - class: string (节点类型: section/para/paraline/fstline等)           │
+ * │   - parent_id: number (父节点的 line_id，根节点为空串)                  │
+ * │   - relation: string (与父节点的关系: contain/connect/equality)         │
+ * │   - box: Array (位置信息 [l,t,r,b])                                     │
+ * │   - page: string (页码，从0开始)                                         │
+ * │ 构建方式: V2 算法直接构建（不需要转换）                                  │
+ * │ 默认显示: 是（treeGroupMode 默认值为 'construct'）                      │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ 2. 【业务结构语义树按钮】（主界面按钮 treeGroupMode='toc'）              │
+ * ├─────────────────────────────────────────────────────────────────────────┤
+ * │ 对应组件: TreeNode 组件（递归渲染）                                      │
+ * │ API: /python/api/pdf/task/${taskId}/result?result_type=agent            │
+ * │      (对应文件: ${taskId}/*_agent.json)                                  │
+ * │ 数据结构: 树形结构 (Tree with children)                                  │
+ * │ 字段格式:                                                                │
+ * │   - pid: number (原始节点标识)                                          │
+ * │   - content: string (节点文本内容)                                       │
+ * │   - class: string (节点类型)                                            │
+ * │   - parent_id: number (父节点的 pid)                                    │
+ * │   - relation: string (与父节点的关系)                                   │
+ * │   - children: Array (子节点数组，递归结构)                              │
+ * │   - location: Array (位置信息)                                          │
+ * │ 构建方式: convertAgentTreeData 转换为扁平数组 → V2 算法构建             │
+ * │ 函数位置: loadTocTreeData() / buildTocTree()                            │
+ * │ ⚠️ 问题: convertAgentTreeData 重新分配 line_id 但未更新 parent_id 映射  │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ 3. 【业务本体树按钮】（treeGroupMode='ontology'，较少使用）              │
+ * ├─────────────────────────────────────────────────────────────────────────┤
+ * │ API: /python/api/pdf/task/${taskId}/result?result_type=ontology         │
+ * │      (对应文件: ${taskId}/*_ontology.json)                               │
+ * │ 数据结构: 树形结构 (Tree with children)                                  │
+ * │ 构建方式: convertAPITreeData 转换 → buildTreeByDirectoryPath 构建       │
+ * │ 函数位置: loadOntologyTreeData() / buildTreeByDirectoryPath()           │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ *
+ * 【当前问题】
+ * 业务结构语义树按钮 (treeGroupMode='toc') 出现 "Equality 回溯异常" 警告：
+ * - convertAgentTreeData 函数在转换时重新分配了 line_id (0,1,2...)
+ * - 但保留了原始的 parent_id 值，导致 parent_id 指向的节点不存在
+ * - V2 算法在处理 equality 关系时无法找到正确的父节点
+ *
+ * ============================================================================
+ */
 import { ref, computed, reactive, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
@@ -318,8 +382,8 @@ const existRisk = ref(true)
 const taskId = ref((route.query.taskId as string) || '')
 // 视图模式切换：result | search
 const viewMode = ref<'result' | 'search'>('result')
-// 树形结构分组模式：construct（TOC）| original（采购标签图谱）| label（业务语义结构树）| ontology（业务本体树）| entity（业务实体图谱）| toc（业务结构语义树）| folder（文件夹）
-// 默认显示 toc
+// 树形结构分组模式：construct（Construct）| original（采购标签图谱）| label（业务语义结构树）| ontology（业务本体树）| entity（业务实体图谱）| toc（业务结构语义树）| folder（文件夹）
+// 默认显示 construct
 const treeGroupMode = ref<'construct' | 'original' | 'label' | 'ontology' | 'entity' | 'toc' | 'folder'>('construct')
 
 // 树编辑模式：允许拖拽节点改变父节点
@@ -1591,7 +1655,7 @@ const ontologyRawData = ref<any[]>([])  // 业务本体树的原始数据（独�
 // TOC 树数据（业务结构语义树，来自 agent API）
 const tocTreeData = ref<any[]>([])
 const tocRawData = ref<any[]>([])  // TOC 树的原始数据
-// Construct 树数据（TOC，来自 construct API）
+// Construct 树数据（Construct，来自 construct API）
 const constructTreeData = ref<any[]>([])
 const constructRawData = ref<any[]>([])  // Construct 树的原始数据
 // 预构建的树数据（从 _labeled_tree.json 加载的）
@@ -1809,7 +1873,27 @@ const buildTreeByLabel = async () => {
   console.log('🌲 默认展开节点: 0 (全部关闭)')
 }
 
-// 加载业务本体树数据（独立数据源）
+/**
+ * 【业务结构语义树按钮】数据加载
+ *
+ * API: /python/api/pdf/task/${taskId}/result?result_type=ontology
+ *
+ * 数据结构：树形结构 (Tree Structure)
+ * {
+ *   pid: number,              // 节点唯一标识
+ *   content: string,          // 节点文本内容
+ *   class: string,            // 节点类型 (section/para/text等)
+ *   parent_id: number,        // 父节点的 pid
+ *   relation: string,         // 与父节点的关系 (contain/connect/equality)
+ *   children: Array,          // 子节点数组（递归结构）
+ *   location: Array           // 位置信息
+ * }
+ *
+ * 特点：
+ * - 返回的是树形结构（有 children 字段）
+ * - 使用 pid 作为节点标识
+ * - parent_id 指向父节点的 pid
+ */
 const loadOntologyTreeData = async (taskId: string) => {
   try {
     const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=ontology&t=${Date.now()}`
@@ -1844,11 +1928,32 @@ const loadOntologyTreeData = async (taskId: string) => {
   }
 }
 
-// 加载 TOC 树数据（从 agent API 获取完整树结构）
+/**
+ * 【业务结构语义树按钮】数据加载
+ *
+ * API: /python/api/pdf/task/${taskId}/result?result_type=agent
+ *
+ * 数据结构：树形结构 (Tree Structure)
+ * {
+ *   pid: number,              // 节点唯一标识
+ *   content: string,          // 节点文本内容
+ *   class: string,            // 节点类型 (section/para/text等)
+ *   parent_id: number,        // 父节点的 pid
+ *   relation: string,         // 与父节点的关系 (contain/connect/equality)
+ *   children: Array,          // 子节点数组（递归结构）
+ *   location: Array           // 位置信息
+ * }
+ *
+ * 特点：
+ * - 返回的是树形结构（有 children 字段）
+ * - 使用 pid 作为节点标识
+ * - parent_id 指向父节点的 pid
+ * - 需要通过 convertAgentTreeData 转换为扁平结构后使用 V2 算法构建树
+ */
 const loadTocTreeData = async (taskId: string) => {
   try {
     const apiUrl = `/python/api/pdf/task/${taskId}/result?result_type=agent&t=${Date.now()}`
-    console.log(`🔄 加载 TOC 树数据 (agent):`, apiUrl)
+    console.log(`🔄 加载业务结构语义树数据 (agent):`, apiUrl)
     const response = await fetch(apiUrl)
     if (response.ok) {
       const jsonData = await response.json()
@@ -1883,8 +1988,27 @@ const loadTocTreeData = async (taskId: string) => {
 // 转换 agent 数据格式为组件所需格式
 const convertAgentTreeData = (nodes: any[]): any[] => {
   let nodeIdCounter = 0
+  const pidToLineIdMap = new Map<number, number>() // 原始 parent_id → 新 line_id 的映射
 
-  const convertNode = (node: any): any => {
+  // 第一遍遍历：建立 parent_id → line_id 的映射
+  const firstPass = (node: any) => {
+    const lineId = nodeIdCounter++
+    const originalPid = node.pid || node.parent_id
+    if (originalPid !== undefined) {
+      pidToLineIdMap.set(originalPid, lineId)
+    }
+    if (node.children && Array.isArray(node.children)) {
+      node.children.forEach((child: any) => firstPass(child))
+    }
+  }
+
+  nodes.forEach(node => firstPass(node))
+  console.log(`📋 [convertAgentTreeData] 建立了 ${pidToLineIdMap.size} 个 pid 映射`)
+
+  // 重置计数器，第二遍遍历：转换节点
+  nodeIdCounter = 0
+
+  const convertNode = (node: any, parentLineId: number = -1): any => {
     const lineId = nodeIdCounter++
 
     // 转换 agent 格式到组件格式
@@ -1893,9 +2017,10 @@ const convertAgentTreeData = (nodes: any[]): any[] => {
       line_id: lineId,
       text: node.content || node.title || '', // 优先使用 content，回退到 title
       class: node.class || 'text',
-      parent_id: node.parent_id,
-      relation: node.relation,
-      _originalPid: node.pid // 保存原始 pid 用于调试
+      parent_id: parentLineId, // 使用传入的父节点的新 line_id
+      relation: node.relation || 'contain',
+      _originalPid: node.pid, // 保存原始 pid 用于调试
+      _originalParentId: node.parent_id // 保存原始 parent_id 用于调试
     }
 
     // 转换 location 为 boxes 格式
@@ -1910,9 +2035,9 @@ const convertAgentTreeData = (nodes: any[]): any[] => {
       converted.page = converted.boxes[0]?.page || 0
     }
 
-    // 递归转换子节点
+    // 递归转换子节点（传入当前节点的 line_id 作为子节点的 parent_id）
     if (node.children && Array.isArray(node.children) && node.children.length > 0) {
-      converted.children = node.children.map(convertNode)
+      converted.children = node.children.map((child: any) => convertNode(child, lineId))
     } else {
       converted.children = []
     }
@@ -1920,7 +2045,8 @@ const convertAgentTreeData = (nodes: any[]): any[] => {
     return converted
   }
 
-  return nodes.map(convertNode)
+  // 根节点的 parent_id 设为 -1
+  return nodes.map(node => convertNode(node, -1))
 }
 
 // 构建业务结构语义树（使用 V2 算法）
@@ -2439,8 +2565,13 @@ watch(treeGroupMode, async () => {
     }
     console.log('  - constructTreeData 数量:', constructTreeData.value.length)
   } else if (treeGroupMode.value === 'toc') {
-    // 切换到业务结构语义树（TOC 树已在页面加载时预加载）
+    // 切换到业务结构语义树（按需加载）
     console.log('🔄 切换到业务结构语义树（TOC）...')
+    // 如果数据未加载，则加载数据
+    if (tocTreeData.value.length === 0 && taskId.value) {
+      console.log('  - 数据未加载，开始加载...')
+      await loadTocTreeData(taskId.value)
+    }
     console.log('  - tocTreeData 数量:', tocTreeData.value.length)
   } else if (treeGroupMode.value === 'folder') {
     // 切换到文件夹视图
@@ -4229,10 +4360,10 @@ const refreshData = async () => {
     await loadOntologyData(taskId.value)
     console.log('✅ ontology 数据加载完成')
 
-    // 加载 TOC 数据（业务结构语义树）
-    console.log('📦 开始加载 TOC 数据...')
-    await loadTocTreeData(taskId.value)
-    console.log('✅ TOC 数据加载完成')
+    // 业务结构语义树（TOC）数据改为按需加载，在切换到 toc 模式时才加载
+    // console.log('📦 开始加载 TOC 数据...')
+    // await loadTocTreeData(taskId.value)
+    // console.log('✅ TOC 数据加载完成')
   }
 
   await getData()

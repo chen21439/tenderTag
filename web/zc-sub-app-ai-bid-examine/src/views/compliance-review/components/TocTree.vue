@@ -49,7 +49,33 @@ const nodeMap = ref<Record<string, any>>({})
 // 选中的节点 IDs（用于高亮显示）
 const selectedIds = computed(() => props.selectedNodeIds)
 
-// 加载 Construct 树数据
+/**
+ * 【TocTree 组件】数据加载
+ *
+ * 这是一个独立的 TOC 显示组件，在右侧抽屉中显示
+ *
+ * API: /python/api/pdf/task/${taskId}/result?result_type=construct
+ *
+ * 数据结构：扁平数组结构 (Flat Array Structure)
+ * [
+ *   {
+ *     line_id: number,          // 节点唯一标识（行号）
+ *     text: string,             // 节点文本内容
+ *     class: string,            // 节点类型 (section/para/paraline/text等)
+ *     parent_id: number,        // 父节点的 line_id
+ *     relation: string,         // 与父节点的关系 (contain/connect/equality)
+ *     boxes: Array,             // 位置信息（页码+坐标）
+ *     ...
+ *   },
+ *   ...
+ * ]
+ *
+ * 特点：
+ * - 返回的是扁平数组结构（无 children 字段）
+ * - 使用 line_id 作为节点标识
+ * - parent_id 直接指向父节点的 line_id
+ * - 使用 V2 算法直接构建树（不需要额外转换）
+ */
 const loadConstructTreeData = async (taskId: string) => {
   try {
     isLoading.value = true
